@@ -1,0 +1,13 @@
+# Ignore everything by default
+*
+
+# Don't ignore directories
+!*/
+
+# Include specific files by extension
+!/*.gitignore
+!/*.md
+!/*.sh
+!/*.conf
+!/src/*.md
+!/src/posts/*.md
