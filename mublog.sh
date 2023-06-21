@@ -1,10 +1,10 @@
 #!/bin/bash
 
 
-out_root_dir="dst"
-out_posts_dir="${out_root_dir}/posts"
-out_css_dir="${out_root_dir}/css"
-out_assets_dir="${out_root_dir}/assets"
+dst_root_dir="dst"
+dst_posts_dir="${dst_root_dir}/posts"
+dst_css_dir="${dst_root_dir}/css"
+dst_assets_dir="${dst_root_dir}/assets"
 src_root_dir="src"
 src_posts_dir="${src_root_dir}/posts"
 src_css_dir="${src_root_dir}/css"
@@ -36,13 +36,13 @@ load_config() {
 #    The /dst/css directory contains the style sheets of the blog
 initialize_directories() {
     
-    rm -rf "$out_root_dir"
+    rm -rf "$dst_root_dir"
 
     # Create output directories
-    if mkdir -p "$out_root_dir" &&
-        mkdir -p "$out_posts_dir" &&
-        mkdir -p "$out_css_dir" &&
-        mkdir -p "$out_assets_dir"; then
+    if mkdir -p "$dst_root_dir" &&
+        mkdir -p "$dst_posts_dir" &&
+        mkdir -p "$dst_css_dir" &&
+        mkdir -p "$dst_assets_dir"; then
         echo "Build directories initialized."
         sleep 1
     else
@@ -52,17 +52,42 @@ initialize_directories() {
 }
 
 build_pages() {
-    local header="HEADER DATA"
-    local footer="FOOTER DATA"
+    local header="
+<html>
+<meta charset="utf-8">
+<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
+<link rel=\"stylesheet\" href=\"/css/normalize.css\" type=\"text/css\" media=\"all\">
+<link rel=\"stylesheet\" href=\"/css/style.css\" type=\"text/css\" media=\"all\">
+<nav>
+<a href=\"/index.html\">home</a>
+<a href=\"/articles.html\">articles</a>
+<a href=\"mailto:johndoe@mail.com\">mail</a>
+<a href=\"/about.html\">about</a>
+</nav>
+<hr>"
+    local footer="
+</main>
+<footer>
+<hr>
+<p>
+Copyright &copy; 2023 John Doe<br />
+</p>
+</footer>
+</body>
+</html>"
 
+    echo "Generated $2"
     pandoc "$1" -f markdown -t html | { echo -e "$header"; cat; echo -e "$footer"; } > "$2"
 }
 
 load_config
 initialize_directories
 
-build_pages "$src_posts_dir/komodo_dragon.md" "$out_posts_dir/komodo_dragon.html" 
-build_pages "$src_posts_dir/great_white_shark.md" "$out_posts_dir/great_white_shark.html" 
-build_pages "$src_posts_dir/black_mamba.md" "$out_posts_dir/black_mamba.html" 
+build_pages "$src_posts_dir/komodo_dragon.md" "$dst_posts_dir/komodo_dragon.html" 
+build_pages "$src_posts_dir/great_white_shark.md" "$dst_posts_dir/great_white_shark.html" 
+build_pages "$src_posts_dir/black_mamba.md" "$dst_posts_dir/black_mamba.html" 
+build_pages "$src_root_dir/about.md" "$dst_root_dir/about.html"
+build_pages "$src_root_dir/articles.md" "$dst_root_dir/articles.html"
+build_pages "$src_root_dir/index.md" "$dst_root_dir/index.html"
 
 echo "Done"
