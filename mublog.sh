@@ -44,7 +44,8 @@ initialize_directories() {
         mkdir -p "$dst_posts_dir" &&
         mkdir -p "$dst_css_dir" &&
         mkdir -p "$dst_assets_dir" &&
-        cp "$src_css_dir"/*.css "$dst_css_dir"; then
+        cp "$src_css_dir"/*.css "$dst_css_dir" &&
+        cp -r "$src_assets_dir/." "$dst_assets_dir/"; then
         echo "Build directories initialized."
     else
         echo "Failed to create build directories. Aborting."
@@ -156,7 +157,7 @@ echo "Building posts ..."
 process_files "$src_posts_dir"
 sort_posts
 
-article_list=""
+article_list="<ul class=\"articles\">"
 for post_info in "${sorted_posts[@]}"; do
     date=$(cut -d '|' -f 1 <<<"$post_info")
     title=$(cut -d '|' -f 2 <<<"$post_info")
@@ -176,6 +177,7 @@ for post_info in "${sorted_posts[@]}"; do
     # Build post file
     build_pages "$src" "$dst"
 done
+article_list=$article_list"</ul>"
 
 echo "Generating article listing ..."
 sed -i -e '/<article>/ {
