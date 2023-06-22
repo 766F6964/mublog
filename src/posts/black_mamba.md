@@ -1,7 +1,7 @@
 ---
 title: The Black Mamba
 description: Scientific details about black mambas
-date: 2023-06-22
+date: 2011-08-22
 tags: venomous snakes,black mamba,reptiles,african wildlife
 ---
 # Overview

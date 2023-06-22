@@ -1,5 +1,6 @@
 #!/bin/bash
 
+declare -A post_info
 
 dst_root_dir="dst"
 dst_posts_dir="${dst_root_dir}/posts"
@@ -93,9 +94,6 @@ function validate_header() {
 
 build_pages() {
 
-    echo "Input: $1"
-    echo "Output: $1"
-
     local header="
 <html>
 <meta charset="utf-8">
@@ -120,8 +118,31 @@ Copyright &copy; 2023 John Doe<br />
 </body>
 </html>"
 
-    echo "Generated $2"
     pandoc "$1" -f markdown -t html | { echo -e "$header"; cat; echo -e "$footer"; } > "$2"
+}
+
+declare -a posts
+
+process_files() {
+    local src_posts_dir="$1"
+
+    # Find all .md posts in the post directory and extract their information
+    while IFS= read -r -d '' src_post_path; do
+        if validate_header "$src_post_path"; then
+            local date=$(grep -oP "(?<=date: ).*" "$src_post_path")
+            local title=$(grep -oP "(?<=title: ).*" "$src_post_path")
+
+            base_name=$(basename "$src_post_path")
+            local dst_post_path="${dst_posts_dir}/${base_name%.md}.html"
+
+            posts+=("$date|$title|$src_post_path|$dst_post_path")
+        fi
+    done < <(find "$src_posts_dir" -name "*.md" -print0)
+}
+
+sort_posts() {
+    IFS=$'\n' sorted_posts=($(sort -r <<<"${posts[*]}"))
+    unset IFS
 }
 
 load_config
@@ -129,27 +150,38 @@ initialize_directories
 
 echo "Building home page ..."
 build_pages "$src_root_dir/about.md" "$dst_root_dir/about.html"
-build_pages "$src_root_dir/articles.md" "$dst_root_dir/articles.html"
 build_pages "$src_root_dir/index.md" "$dst_root_dir/index.html"
+build_pages "$src_root_dir/articles.md" "$dst_root_dir/articles.html"
 echo "Building posts ..."
+process_files "$src_posts_dir"
+sort_posts
 
-for src_post_file in $src_posts_dir/*.md; do
-    if validate_header $src_post_file; then
-        echo "Processing $src_post_file ..."
-        dst_post_file="$src_post_file"; new_filename="${filepath%.*}.html"; echo "$new_filename"
+article_list=""
+for post_info in "${sorted_posts[@]}"; do
+    date=$(cut -d '|' -f 1 <<<"$post_info")
+    title=$(cut -d '|' -f 2 <<<"$post_info")
+    src=$(cut -d '|' -f 3 <<<"$post_info")
+    dst=$(cut -d '|' -f 4 <<<"$post_info")
+    dst_link=${dst#*/} 
+    echo "Processing post: $src"
+    echo "  title: $title"
+    echo "  date: $date"
+    echo "  output: $dst"
+    echo "  dst_link: $dst_link"
+    
+    # Build article list
+	article_item="<li><b style=\"color: #58A6FF;\">"[${date}]"</b> <a href="\"/${dst_link}\"">${title}</a></li>"
+    article_list=$article_list$article_item
 
-        #$filepath=$(basename "$src_post_file" .md).html
-        #echo $dst_post_file
-        build_pages "$src_post_file" "$dst_post_file"
-            #COUNT_PROCESSED_POSTS+=1
-    #else
-            #COUNT_SKIPPED_POSTS+=1
-    fi
+    # Build post file
+    build_pages "$src" "$dst"
 done
 
-#build_pages "$src_posts_dir/komodo_dragon.md" "$dst_posts_dir/komodo_dragon.html" 
-#build_pages "$src_posts_dir/great_white_shark.md" "$dst_posts_dir/great_white_shark.html" 
-#build_pages "$src_posts_dir/black_mamba.md" "$dst_posts_dir/black_mamba.html" 
+echo "Generating article listing ..."
+sed -i -e '/<article>/ {
+    N
+    s|<article>\(.*\)</article>|<article>\1\n'"$(sed 's/[&/\]/\\&/g' <<< "$article_list")"'\n</article>|
+}' "$dst_root_dir/articles.html"
 
 
 echo "Done"

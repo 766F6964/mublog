@@ -1,1 +1,2 @@
-<article></article>
+<article>
+</article>

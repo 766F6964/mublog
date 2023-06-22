@@ -1,7 +1,7 @@
 ---
 title: The Komodo Dragon
 description: Exploring the remarkable features of Komodo dragons
-date: 2023-02-22
+date: 2011-07-16
 tags: reptiles,monitor lizards,Komodo dragon,wildlife conservation
 ---
 # Overview

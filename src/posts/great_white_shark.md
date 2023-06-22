@@ -1,7 +1,7 @@
 ---
 title: The Great White Shark
 description: Fascinating facts about great white sharks
-date: 2022-12-15
+date: 2011-07-15
 tags: marine predators,great white shark,aquatic wildlife,shark facts
 ---
 # Overview
