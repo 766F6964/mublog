@@ -12,6 +12,8 @@ src_posts_dir="${src_root_dir}/posts"
 src_css_dir="${src_root_dir}/css"
 src_assets_dir="${src_root_dir}/assets"
 post_ignore_delim="_"
+footer_copyright="Copyright &copy; 2023 John Doe :)"
+author_mail="johndoe@mail.com"
 
 # Description:
 #    Removes old build artefacts, and generates the build directories
@@ -37,26 +39,28 @@ initialize_directories() {
     fi  
 }
 
+# Description:
+#     Verifies presence and validity of header fields line by line.
+#     If a field is not present, or its value is not valid, the variables 
+#     will be set to empty. Leading and trailing whitespaces will be stripped, 
+#     if present, except or the markers, where only trailing whitespace is stripped.
+# Parameters:
+#     $1: The path to the src post file to validate
 function validate_header() {
-  # Verifies presence and validity of header fields line by line. If a field 
-  # is not present, or its value is not valid, the variables will be set to empty. 
-  # Leading and trailing whitespaces will be stripped, if present, except 
-  # for the markers, where only trailing whitespace is stripped.
-  #   Line 1: Check for --- marker
-  #   Line 2: Check for title-field
-  #   Line 3: Check for description-field
-  #   Line 4: Check for date-field with valid date in YYYY-MM-DD format
-  #   Line 5: Check for tags-field
-  #   Line 6: Check for --- marker
-
   echo "Validating post $1 ..."
+  # Line 1: Check for --- start-marker
   marker1=$(sed -n '1p' "$1" | sed 's/^---[[:space:]]*$/---/; t; s/.*//')
+  # Line 2: Check for title-field
   title=$(sed -n '2p' "$1" | sed -n 's/^title:\s*\(.*\)\s*$/\1/p')
+  # Line 3: Check for description-field
   description=$(sed -n '3p' "$1" | sed -n 's/^description:\s*\(.*\)\s*$/\1/p')
+  # Line 4: Check for date-field with valid date in YYYY-MM-DD format
   date=$(sed -n '4p' "$1" | sed -n 's/^date:\s*\(.*\)\s*$/\1/p')
   regex='^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$'
   date=$(echo "$date" | grep -P "$regex" | awk '{print $1}')
+  # Line 5: Check for tags-field
   tags=$(sed -n '5p' "$1" | sed -n 's/^tags:\s*\(.*\)\s*$/\1/p')
+  # Line 6: Check for --- end-marker
   marker2=$(sed -n '6p' "$1" | sed 's/^---[[:space:]]*$/---/; t; s/.*//')
   
   # Check if the header is invalid (aka, non-empty fields)
@@ -75,6 +79,12 @@ function validate_header() {
   fi
 }
 
+# Description:
+#     Converts the markdown post or page into html format using pandoc.
+#     During this process, the header is prepended and the footer appended to the post.
+# Parameters:
+#     $1: The source path to the markdown post/page file
+#     $2: The destination path where the converted html file will be saved.
 build_pages() {
 
     local header="
@@ -86,7 +96,7 @@ build_pages() {
 <nav>
 <a href=\"/index.html\">home</a>
 <a href=\"/articles.html\">articles</a>
-<a href=\"mailto:johndoe@mail.com\">mail</a>
+<a href=\"mailto:$author_mail\">mail</a>
 <a href=\"/about.html\">about</a>
 </nav>
 <hr>"
@@ -95,7 +105,8 @@ build_pages() {
 <footer>
 <hr>
 <p>
-Copyright &copy; 2023 John Doe<br />
+$footer_copyright
+<br/>
 </p>
 </footer>
 </body>
@@ -104,12 +115,15 @@ Copyright &copy; 2023 John Doe<br />
     pandoc "$1" -f markdown -t html | { echo -e "$header"; cat; echo -e "$footer"; } > "$2"
 }
 
-
-
+# Description:
+#     Iterate through all source post files, and extract values stored in their headers
+#     such as date, title, but also stores source path and destination path.
+# Parameters:
+#     $1: The path to the source directory of the posts
 process_files() {
     local src_posts_dir="$1"
 
-    # Find all .md posts in the post directory and extract their information
+    # Find all .md posts in the post directory and extract info from the headers
     while IFS= read -r -d '' src_post_path; do
         if validate_header "$src_post_path"; then
             local date=$(grep -oP "(?<=date: ).*" "$src_post_path")
@@ -123,18 +137,17 @@ process_files() {
     done < <(find "$src_posts_dir" -name "*.md" -print0)
 }
 
+# Description:
+#     Sorts posts in reverse chronological order, based on the extracted date
 sort_posts() {
     IFS=$'\n' sorted_posts=($(sort -r <<<"${posts[*]}"))
     unset IFS
 }
 
 initialize_directories
-
-echo "Building home page ..."
 build_pages "$src_root_dir/about.md" "$dst_root_dir/about.html"
 build_pages "$src_root_dir/index.md" "$dst_root_dir/index.html"
 build_pages "$src_root_dir/articles.md" "$dst_root_dir/articles.html"
-echo "Building posts ..."
 process_files "$src_posts_dir"
 sort_posts
 
@@ -173,6 +186,8 @@ done
 article_list=$article_list"</ul>"
 
 echo "Generating article listing ..."
+
+# Replace article tags in the article.html file with the generated article list
 sed -i -e '/<article>/ {
     N
     s|<article>\(.*\)</article>|<article>\1\n'"$(sed 's/[&/\]/\\&/g' <<< "$article_list")"'\n</article>|
