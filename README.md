@@ -9,6 +9,8 @@ Create your blog now, without having to leverage large frameworks and software s
 
 https://i.imgur.com/buqOsqu.gif
 
+![](https://i.imgur.com/buqOsqu.gif)
+
 ## Features
 All the usual constructs, that you find in markdown:
 
