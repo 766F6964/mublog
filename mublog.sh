@@ -1,6 +1,7 @@
 #!/bin/bash
 
 declare -A post_info
+declare -a posts
 
 dst_root_dir="dst"
 dst_posts_dir="${dst_root_dir}/posts"
@@ -10,24 +11,7 @@ src_root_dir="src"
 src_posts_dir="${src_root_dir}/posts"
 src_css_dir="${src_root_dir}/css"
 src_assets_dir="${src_root_dir}/assets"
-
-# Description: 
-#     Reads the config file and extracts key-value entries into variables.
-#     Each extracted variable is accessible as with the key name (lowercase). 
-# Parameters: 
-#     $1: Path to the configuration file
-load_config() {
-    while IFS='=' read -r key value
-    do
-        key=$(echo "$key" | sed 's/^[ \t]*//;s/[ \t]*$//')
-        value=$(echo "$value" | sed 's/^[ \t]*//;s/[ \t]*$//')
-        if [[ -z $key || $key == \#* ]]; then
-            continue
-        fi
-        key_var=$(echo "$key" | tr '[:upper:]' '[:lower:]' | sed 's/[^[:alnum:]]/_/g')
-        eval "$key_var='$value'"
-    done < "mublog.conf"
-}
+post_ignore_delim="_"
 
 # Description:
 #    Removes old build artefacts, and generates the build directories
@@ -122,7 +106,7 @@ Copyright &copy; 2023 John Doe<br />
     pandoc "$1" -f markdown -t html | { echo -e "$header"; cat; echo -e "$footer"; } > "$2"
 }
 
-declare -a posts
+
 
 process_files() {
     local src_posts_dir="$1"
@@ -146,7 +130,6 @@ sort_posts() {
     unset IFS
 }
 
-load_config
 initialize_directories
 
 echo "Building home page ..."
@@ -156,6 +139,9 @@ build_pages "$src_root_dir/articles.md" "$dst_root_dir/articles.html"
 echo "Building posts ..."
 process_files "$src_posts_dir"
 sort_posts
+
+posts_processed=0
+posts_skipped=0
 
 article_list="<ul class=\"articles\">"
 for post_info in "${sorted_posts[@]}"; do
@@ -170,13 +156,22 @@ for post_info in "${sorted_posts[@]}"; do
     echo "  output: $dst"
     echo "  dst_link: $dst_link"
     
-    # Build article list
-	article_item="<li><b style=\"color: #58A6FF;\">"[${date}]"</b> <a href="\"/${dst_link}\"">${title}</a></li>"
-    article_list=$article_list$article_item
+    # Check if the file should be ignored (if it starts with the ignore delimter)
+    filename=$(basename "$src")
+    if [[ $filename == $post_ignore_delim* ]]; then
+        posts_skipped=$(($posts_skipped+1))
+        continue
+    else
+        # Build article list
+        article_item="<li><b style=\"color: #58A6FF;\">"[${date}]"</b> <a href="\"/${dst_link}\"">${title}</a></li>"
+        article_list=$article_list$article_item
 
-    # Build post file
-    build_pages "$src" "$dst"
+        # Build post file
+        build_pages "$src" "$dst"
+        posts_processed=$(($posts_processed+1))
+    fi
 done
+
 article_list=$article_list"</ul>"
 
 echo "Generating article listing ..."
@@ -185,5 +180,4 @@ sed -i -e '/<article>/ {
     s|<article>\(.*\)</article>|<article>\1\n'"$(sed 's/[&/\]/\\&/g' <<< "$article_list")"'\n</article>|
 }' "$dst_root_dir/articles.html"
 
-
-echo "Done"
+echo "Finished! (built: $posts_processed, skipped: $posts_skipped)"
