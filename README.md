@@ -7,9 +7,7 @@ Create your blog now, without having to leverage large frameworks and software s
 
 **Showcase:** 
 
-https://i.imgur.com/buqOsqu.gif
-
-![](https://i.imgur.com/buqOsqu.gif)
+![ezgif com-optimize](https://github.com/766F6964/mublog/assets/34845270/193ad757-6996-498d-bd95-193540c70de2)
 
 ## Features
 All the usual constructs, that you find in markdown:
