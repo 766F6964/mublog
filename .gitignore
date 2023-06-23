@@ -11,3 +11,5 @@
 !/*.conf
 !/src/*.md
 !/src/posts/*.md
+!/src/css/*.css
+!/src/assets/*.*

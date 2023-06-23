@@ -34,9 +34,7 @@ initialize_directories() {
     else
         echo "Failed to create build directories. Aborting."
         exit 1
-    fi
-
-    
+    fi  
 }
 
 function validate_header() {
@@ -163,7 +161,7 @@ for post_info in "${sorted_posts[@]}"; do
         continue
     else
         # Build article list
-        article_item="<li><b style=\"color: #58A6FF;\">"[${date}]"</b> <a href="\"/${dst_link}\"">${title}</a></li>"
+        article_item="<li><b style=\"color: #14263b;\">"[${date}]"</b> <a href="\"/${dst_link}\"">${title}</a></li>"
         article_list=$article_list$article_item
 
         # Build post file
