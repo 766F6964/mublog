@@ -5,6 +5,8 @@ The goal of μblog (pronounced /myuːblɒɡ/) is to provide a single script that
 The μblog tool is written in shell script. It generates posts written in markdown in a beautiful, but minimalistic blog site.
 Create your blog now, without having to leverage large frameworks and software stacks.
 
+[](https://github.com/766F6964/mublog/assets/34845270/a44a8516-130f-4567-89ca-c51a3c304a23)
+
 ## Features
 All the usual constructs, that you find in markdown:
 
