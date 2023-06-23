@@ -21,7 +21,9 @@ All the usual constructs, that you find in markdown:
 **Text Formatting:**
 
 Italic Text: `_italic_`
+
 Bold Text: `**bold**`
+
 Strike-through Text: `~~strikethrough~~`
 
 **Lists:**
@@ -75,6 +77,8 @@ Every blog post file must have a header at the very top, that specifies some met
 This metadata is validated during the build process, and used to ensure all posts show up with 
 the correct title, and ordered by date in the article tab.
 The tag and description field is currently unused.
+
+If a post is a draft, and you dont want to include it in your build, prefix the markdown filename with an underscore.
 
 ## Dependencies:
 
