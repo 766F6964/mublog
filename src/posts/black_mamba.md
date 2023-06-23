@@ -6,6 +6,8 @@ tags: venomous snakes,black mamba,reptiles,african wildlife
 ---
 # Overview
 
+<img src="../assets/black_mamba_1.jpg">
+
 The Black Mamba, scientifically known as Dendroaspis polylepis, is a highly venomous snake found in sub-Saharan Africa. It is widely regarded as one of the deadliest and fastest snakes in the world. Despite its name, the Black Mamba is not closely related to actual mambas but belongs to the elapid family. Its reputation as a fierce and aggressive snake has earned it both fear and respect in its native habitats.
 
 # Anatomy

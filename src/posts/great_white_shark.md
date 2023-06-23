@@ -6,7 +6,83 @@ tags: marine predators,great white shark,aquatic wildlife,shark facts
 ---
 # Overview
 
+<img src="../assets/great_white_shark.jpg">
+
 The Great White Shark, scientifically known as Carcharodon carcharias, is a large predatory fish that is widely recognized as one of the most fearsome and awe-inspiring creatures in the ocean. It is often referred to as the "great white" due to its distinctive white belly. With its powerful build and serrated, triangular teeth, this apex predator has fascinated researchers, divers, and the general public for centuries.
+
+For reference, below is a table, showing the distribution of shark attacks globally:
+
+<table>
+  <tr>
+    <th colspan="4">Shark Attack Activity (2004-2013)</th>
+  </tr>
+  <tr>
+    <th>Year</th>
+    <th>Total Attacks</th>
+    <th>Fatal</th>
+    <th>Non-Fatal</th>
+  </tr>
+  <tr>
+    <td>2004</td>
+    <td>66</td>
+    <td>7</td>
+    <td>59</td>
+  </tr>
+  <tr>
+    <td>2005</td>
+    <td>58</td>
+    <td>4</td>
+    <td>54</td>
+  </tr>
+  <tr>
+    <td>2006</td>
+    <td>59</td>
+    <td>4</td>
+    <td>55</td>
+  </tr>
+  <tr>
+    <td>2007</td>
+    <td>71</td>
+    <td>1</td>
+    <td>70</td>
+  </tr>
+  <tr>
+    <td>2008</td>
+    <td>53</td>
+    <td>4</td>
+    <td>49</td>
+  </tr>
+  <tr>
+    <td>2009</td>
+    <td>68</td>
+    <td>7</td>
+    <td>61</td>
+  </tr>
+  <tr>
+    <td>2010</td>
+    <td>82</td>
+    <td>6</td>
+    <td>76</td>
+  </tr>
+  <tr>
+    <td>2011</td>
+    <td>79</td>
+    <td>13</td>
+    <td>66</td>
+  </tr>
+  <tr>
+    <td>2012</td>
+    <td>81</td>
+    <td>7</td>
+    <td>74</td>
+  </tr>
+  <tr>
+    <td>2013</td>
+    <td>72</td>
+    <td>10</td>
+    <td>62</td>
+  </tr>
+</table>
 
 # Anatomy
 
