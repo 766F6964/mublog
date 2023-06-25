@@ -90,7 +90,7 @@ build_pages() {
     local header="
 <!DOCTYPE html>
 <html>
-<meta charset="utf-8">
+<meta charset=\"utf-8\">
 <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
 <link rel=\"stylesheet\" href=\"/css/normalize.css\" type=\"text/css\" media=\"all\">
 <link rel=\"stylesheet\" href=\"/css/style.css\" type=\"text/css\" media=\"all\">
@@ -127,8 +127,10 @@ process_files() {
     # Find all .md posts in the post directory and extract info from the headers
     while IFS= read -r -d '' src_post_path; do
         if validate_header "$src_post_path"; then
-            local date=$(grep -oP "(?<=date: ).*" "$src_post_path")
-            local title=$(grep -oP "(?<=title: ).*" "$src_post_path")
+            local date
+            local title
+            date=$(grep -oP "(?<=date: ).*" "$src_post_path")
+            title=$(grep -oP "(?<=title: ).*" "$src_post_path")
 
             base_name=$(basename "$src_post_path")
             local dst_post_path="${dst_posts_dir}/${base_name%.md}.html"
@@ -141,8 +143,7 @@ process_files() {
 # Description:
 #     Sorts posts in reverse chronological order, based on the extracted date
 sort_posts() {
-    IFS=$'\n' sorted_posts=($(sort -r <<<"${posts[*]}"))
-    unset IFS
+    IFS=$'\n' read -r -d '' -a sorted_posts < <(printf '%s\n' "${posts[@]}" | sort -r)
 }
 
 initialize_directories
@@ -171,7 +172,7 @@ for post_info in "${sorted_posts[@]}"; do
     # Check if the file should be ignored (if it starts with the ignore delimter)
     filename=$(basename "$src")
     if [[ $filename == $post_ignore_delim* ]]; then
-        posts_skipped=$(($posts_skipped+1))
+        posts_skipped=$((posts_skipped+1))
         continue
     else
         # Build article list
@@ -180,7 +181,7 @@ for post_info in "${sorted_posts[@]}"; do
 
         # Build post file
         build_pages "$src" "$dst"
-        posts_processed=$(($posts_processed+1))
+        posts_processed=$((posts_processed+1))
     fi
 done
 
