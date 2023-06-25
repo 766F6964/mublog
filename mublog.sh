@@ -259,6 +259,14 @@ collect_tags() {
 
 insert_tags_in_tag_page() {
     all_tags="<div class=\"tags\">"
+    #declare -A count_tags
+    #for tag in "${!tag_count[@]}"; do
+    #    count="${tag_count[$tag]}"
+    #    count_tags["$count"]="$tag"
+    #done
+
+    #sorted_counts=($(echo "${!count_tags[@]}" | tr ' ' '\n' | sort -rn))
+    
     for tag in "${!tag_count[@]}"; do
         echo "Tag: $tag, Count: ${tag_count[$tag]}"
         tag_data="<div class=\"tag-bubble\">$tag<span>${tag_count[$tag]}</span></div>"
