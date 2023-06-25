@@ -16,6 +16,11 @@ author_name="John Doe"
 author_mail="johndoe@example.com"
 footer_copyright="Copyright 2023 $author_name"
 
+PASS="\e[32m[PASS]\e[0m"
+FAIL="\e[31m[FAIL]\e[0m"
+INFO="\e[34m[INFO]\e[0m"
+WARN="\e[33m[WARN]\e[0m"
+
 # Description:
 #    Removes old build artefacts, and generates the build directories
 #    The /dst directory is the root directory of the blog
@@ -24,6 +29,7 @@ footer_copyright="Copyright 2023 $author_name"
 #    The /dst/css directory contains the style sheets of the blog
 initialize_directories() {
 
+    echo -e "$INFO Initializing build directories ..."
     rm -rf "$dst_root_dir"
 
     # Create output directories
@@ -33,9 +39,9 @@ initialize_directories() {
         mkdir -p "$dst_assets_dir" &&
         cp "$src_css_dir"/*.css "$dst_css_dir" &&
         cp -r "$src_assets_dir/." "$dst_assets_dir/"; then
-        echo "Build directories initialized."
+        echo -e "$PASS Build directories initialized."
     else
-        echo "Failed to create build directories. Aborting."
+        echo -e "$FAIL Failed to create build directories. Aborting."
         exit 1
     fi
 }
@@ -49,7 +55,8 @@ function validate_start_marker() {
     local marker1_line=$(sed -n '1p' "$1")
     marker1=$(echo "$marker1_line" | sed 's/^---[[:space:]]*$/---/; t; s/.*//')
     if [ -z "$marker1" ]; then
-        echo "Invalid Header: Starting markers missing or incorrect" && exit 1
+        echo -e "$FAIL Failed to validate header of $1"
+        echo -e "$FAIL The starting marker \"---\" is missing or incorrect" && exit 1
     fi
 }
 
@@ -61,8 +68,8 @@ function validate_end_marker() {
     local marker2_line=$(sed -n '6p' "$1")
     marker2=$(echo "$marker2_line" | sed 's/^---[[:space:]]*$/---/; t; s/.*//')
     if [ -z "$marker2" ]; then
-        echo "Failed to validate $1"
-        echo "The ending marker \"---\" is missing or incorrect" && exit 1
+        echo -e "$FAIL Failed to validate header of $1"
+        echo -e "$FAIL The ending marker \"---\" is missing or incorrect" && exit 1
     fi
 }
 
@@ -75,11 +82,11 @@ function validate_title() {
     local title_line=$(sed -n '2p' "$1")
     title=$(echo "$title_line" | sed -n 's/^title:\s*\(.*\)\s*$/\1/p')
     if [[ $title == *"|"* ]]; then
-        echo "Failed to validate $1"
-        echo "The \"|\" character is not allowed in the title field." && exit 1
+        echo -e "$FAIL Failed to validate header of $1"
+        echo -e "$FAIL The \"|\" character is not allowed in the title field." && exit 1
     elif [ -z "$title" ]; then
-        echo "Failed to validate $1"
-        echo "The title field is missing or incorrect." && exit 1
+        echo -e "$FAIL Failed to validate header of $1"
+        echo -e "$FAIL The title field is missing or incorrect." && exit 1
     fi
 }
 
@@ -92,11 +99,11 @@ function validate_description() {
     local description_line=$(sed -n '3p' "$1")
     description=$(echo "$description_line" | sed -n 's/^description:\s*\(.*\)\s*$/\1/p')
     if [[ $description == *"|"* ]]; then
-        echo "Failed to validate $1"
-        echo "The \"|\" character is not allowed in the description field." && exit 1
+        echo -e "$FAIL Failed to validate header of $1"
+        echo -e "$FAIL The \"|\" character is not allowed in the description field." && exit 1
     elif [ -z "$description" ]; then
-        echo "Failed to validate $1"
-        echo "The description field missing or incorrect" && exit 1
+        echo -e "$FAIL Failed to validate header of $1"
+        echo -e "$FAIL The description field missing or incorrect" && exit 1
     fi
 }
 
@@ -112,8 +119,8 @@ function validate_date() {
     local regex='^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$'
     date=$(echo "$date" | grep -P "$regex" | awk '{print $1}')
     if [ -z "$date" ]; then
-        echo "Failed to validate $1"
-        echo "The date field is missing, incorrect, or in the wrong format (required: YYYY-MM-DD)." && exit 1
+        echo -e "$FAIL Failed to validate header of $1"
+        echo -e "$FAIL The date field is missing, incorrect, or in the wrong format (required: YYYY-MM-DD)." && exit 1
     fi
 }
 
@@ -126,11 +133,11 @@ function validate_tags() {
     local tags_line=$(sed -n '5p' "$1")
     tags=$(echo "$tags_line" | sed -n 's/^tags:\s*\(.*\)\s*$/\1/p')
     if [[ $tags == *"|"* ]]; then
-        echo "Failed to validate $1"
-        echo "The \"|\" character is not allowed in the tags field." && exit 1
+        echo -e "$FAIL Failed to validate header of $1"
+        echo -e "$FAIL The \"|\" character is not allowed in the tags field." && exit 1
     elif [ -z "$tags" ]; then
-        echo "Failed to validate $1"
-        echo "The tags field is missing or incorrect" && exit 1
+        echo -e "$FAIL Failed to validate $1"
+        echo -e "$FAIL The tags field is missing or incorrect" && exit 1
     fi
 }
 
@@ -141,13 +148,14 @@ function validate_tags() {
 # Parameters:
 #     $1: The path to the src post file to validate
 function validate_header() {
-    echo "Validating post $1 ..."
+    echo -e "$INFO Validating post $1 ..."
     validate_start_marker "$1"
     validate_end_marker "$1"
     validate_title "$1"
     validate_description "$1"
     validate_date "$1"
     validate_tags "$1"
+    echo -e "$PASS Validated post $1"
 }
 
 # Description:
@@ -244,16 +252,13 @@ for post_info in "${sorted_posts[@]}"; do
     src=$(cut -d '|' -f 3 <<<"$post_info")
     dst=$(cut -d '|' -f 4 <<<"$post_info")
     dst_link=${dst#*/}
-    echo "Processing post: $src"
-    echo "  title: $title"
-    echo "  date: $date"
-    echo "  output: $dst"
-    echo "  dst_link: $dst_link"
+    echo -e "$INFO Processing post: $src"
 
     # Check if the file should be ignored (if it starts with the ignore delimter)
     filename=$(basename "$src")
     if [[ $filename == $post_ignore_delim* ]]; then
         posts_skipped=$((posts_skipped + 1))
+        echo -e "$WARN Skipped post: $src"
         continue
     else
         # Build article list
@@ -263,12 +268,14 @@ for post_info in "${sorted_posts[@]}"; do
         # Build post file
         build_pages "$src" "$dst"
         posts_processed=$((posts_processed + 1))
+
+        echo -e "$PASS Processed post: $src"
     fi
 done
 
 article_list=$article_list"</ul>"
 
-echo "Generating article listing ..."
+echo -e "$INFO Generating article listing ..."
 
 # Replace article tags in the article.html file with the generated article list
 sed -i -e '/<article>/ {
@@ -276,4 +283,5 @@ sed -i -e '/<article>/ {
     s|<article>\(.*\)</article>|<article>\1\n'"$(sed 's/[&/\]/\\&/g' <<<"$article_list")"'\n</article>|
 }' "$dst_root_dir/articles.html"
 
-echo "Finished! (built: $posts_processed, skipped: $posts_skipped)"
+echo "-----------------------------------------"
+echo -e "$PASS Finished! (built: $posts_processed, skipped: $posts_skipped)"
