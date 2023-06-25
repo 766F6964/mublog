@@ -249,11 +249,9 @@ build_posts() {
 
     article_list="<ul class=\"articles\">"
     for post_info in "${sorted_posts[@]}"; do
-        date=$(cut -d '|' -f 1 <<<"$post_info")
-        title=$(cut -d '|' -f 2 <<<"$post_info")
-        src=$(cut -d '|' -f 3 <<<"$post_info")
-        dst=$(cut -d '|' -f 4 <<<"$post_info")
+        IFS='|' read date title src dst <<< "$post_info"
         dst_link=${dst#*/}
+
         echo -e "$INFO Processing post: $src"
 
         # Check if the file should be ignored (if it starts with the ignore delimter)
