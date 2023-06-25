@@ -40,44 +40,114 @@ initialize_directories() {
     fi
 }
 
+
 # Description:
-#     Verifies presence and validity of header fields line by line.
-#     If a field is not present, or its value is not valid, the variables
-#     will be set to empty. Leading and trailing whitespaces will be stripped,
-#     if present, except or the markers, where only trailing whitespace is stripped.
+#     Checks that the start-marker "---" is present in the 1st line of the src post file metadata.
+# Paramters:
+#     $1: The path to the src post file to validate
+function validate_start_marker() {
+    local marker1_line=$(sed -n '1p' "$1")
+    marker1=$(echo "$marker1_line" | sed 's/^---[[:space:]]*$/---/; t; s/.*//')
+    if [ -z "$marker1" ]; then
+        echo "Invalid Header: Starting markers missing or incorrect" && exit 1
+    fi
+}
+
+# Description:
+#     Checks that the end-marker "---" is present in the 6th line of the src post file metadata.
+# Paramters:
+#     $1: The path to the src post file to validate
+function validate_end_marker() {
+    local marker2_line=$(sed -n '6p' "$1")
+    marker2=$(echo "$marker2_line" | sed 's/^---[[:space:]]*$/---/; t; s/.*//')
+    if [ -z "$marker2" ]; then
+        echo "Failed to validate $1"
+        echo "The ending marker \"---\" is missing or incorrect" && exit 1
+    fi
+}
+
+# Description:
+#     Checks that the title field is present in the 2nd line of the src post file metadata.
+#     Also validates that the title field does not contain illegal characters.
+# Paramters:
+#     $1: The path to the src post file to validate
+function validate_title() {
+    local title_line=$(sed -n '2p' "$1")
+    title=$(echo "$title_line" | sed -n 's/^title:\s*\(.*\)\s*$/\1/p')
+    if [[ $title == *"|"* ]]; then
+        echo "Failed to validate $1"
+        echo "The \"|\" character is not allowed in the title field." && exit 1
+    elif [ -z "$title" ]; then
+        echo "Failed to validate $1"
+        echo "The title field is missing or incorrect." && exit 1
+    fi
+}
+
+# Description:
+#     Checks that the description field is present in the 3rd line of the src post file metadata.
+#     Also validates that the description field does not contain illegal characters.
+# Paramters:
+#     $1: The path to the src post file to validate
+function validate_description() {
+    local description_line=$(sed -n '3p' "$1")
+    description=$(echo "$description_line" | sed -n 's/^description:\s*\(.*\)\s*$/\1/p')
+    if [[ $description == *"|"* ]]; then
+        echo "Failed to validate $1"
+        echo "The \"|\" character is not allowed in the description field." && exit 1
+    elif [ -z "$description" ]; then
+        echo "Failed to validate $1"
+        echo "The description field missing or incorrect" && exit 1
+    fi
+}
+
+# Function to validate the date field
+# Description:
+#     Checks that the date field is present in the 4th line of the src post file metadata.
+#     Also validates that the date is a valid date in the YYYY-MM-DD format.
+# Paramters:
+#     $1: The path to the src post file to validate
+function validate_date() {
+    local date_line=$(sed -n '4p' "$1")
+    date=$(echo "$date_line" | sed -n 's/^date:\s*\(.*\)\s*$/\1/p')
+    local regex='^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$'
+    date=$(echo "$date" | grep -P "$regex" | awk '{print $1}')
+    if [ -z "$date" ]; then
+        echo "Failed to validate $1"
+        echo "The date field is missing, incorrect, or in the wrong format (required: YYYY-MM-DD)." && exit 1
+    fi
+}
+
+# Description:
+#     Checks that the description field is present in the 3rd line of the src post file metadata.
+#     Also validates that the description field does not contain illegal characters.
+# Paramters:
+#     $1: The path to the src post file to validate
+function validate_tags() {
+    local tags_line=$(sed -n '5p' "$1")
+    tags=$(echo "$tags_line" | sed -n 's/^tags:\s*\(.*\)\s*$/\1/p')
+    if [[ $tags == *"|"* ]]; then
+        echo "Failed to validate $1"
+        echo "The \"|\" character is not allowed in the tags field." && exit 1
+    elif [ -z "$tags" ]; then
+        echo "Failed to validate $1"
+        echo "The tags field is missing or incorrect" && exit 1
+    fi
+}
+
+# Description:
+#     Verifies presence and validity of the header fields line by line.
+#     If a field is not present, the validation fails.
+#     Leading and trailing whitespaces will be stripped, if present.
 # Parameters:
 #     $1: The path to the src post file to validate
 function validate_header() {
     echo "Validating post $1 ..."
-    # Line 1: Check for --- start-marker
-    marker1=$(sed -n '1p' "$1" | sed 's/^---[[:space:]]*$/---/; t; s/.*//')
-    # Line 2: Check for title-field
-    title=$(sed -n '2p' "$1" | sed -n 's/^title:\s*\(.*\)\s*$/\1/p')
-    # Line 3: Check for description-field
-    description=$(sed -n '3p' "$1" | sed -n 's/^description:\s*\(.*\)\s*$/\1/p')
-    # Line 4: Check for date-field with valid date in YYYY-MM-DD format
-    date=$(sed -n '4p' "$1" | sed -n 's/^date:\s*\(.*\)\s*$/\1/p')
-    regex='^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$'
-    date=$(echo "$date" | grep -P "$regex" | awk '{print $1}')
-    # Line 5: Check for tags-field
-    tags=$(sed -n '5p' "$1" | sed -n 's/^tags:\s*\(.*\)\s*$/\1/p')
-    # Line 6: Check for --- end-marker
-    marker2=$(sed -n '6p' "$1" | sed 's/^---[[:space:]]*$/---/; t; s/.*//')
-
-    # Check if the header is invalid (aka, non-empty fields)
-    if [ -z "$marker1" ]; then
-        echo "Invalid Header: Starting markers missing or incorrect" && exit 1
-    elif [ -z "$title" ]; then
-        echo "Invalid Header: Title field missing or incorrect" && exit 1
-    elif [ -z "$description" ]; then
-        echo "Invalid Header: Description field missing or incorrect" && exit 1
-    elif [ -z "$date" ]; then
-        echo "Invalid Header: Date field missing, incorrect or in wrong format." && exit 1
-    elif [ -z "$tags" ]; then
-        echo "Invalid Header: Tags field missing or incorrect" && exit 1
-    elif [ -z "$marker2" ]; then
-        echo "Invalid Header: Ending marker missing or incorrect" && exit 1
-    fi
+    validate_start_marker "$1"
+    validate_end_marker "$1"
+    validate_title "$1"
+    validate_description "$1"
+    validate_date "$1"
+    validate_tags "$1"
 }
 
 # Description:
