@@ -22,12 +22,18 @@ INFO="\e[34m[INFO]\e[0m"
 WARN="\e[33m[WARN]\e[0m"
 
 # Description:
+#    Checks if pandoc is installed on the system.
 #    Removes old build artefacts, and generates the build directories
 #    The /dst directory is the root directory of the blog
 #    The /dst/posts directory contains all the blog post files
 #    The /dst/assets directory stores images, videos etc of posts
 #    The /dst/css directory contains the style sheets of the blog
-initialize_directories() {
+initialize() {
+
+    # Make sure pandoc is installed on the system
+    if ! command -v pandoc &> /dev/null; then
+        echo -e "$FAIL Pandoc is not installed. Please install Pandoc before continuing." && exit 1
+    fi
 
     echo -e "$INFO Initializing build directories ..."
     rm -rf "$dst_root_dir"
@@ -235,7 +241,7 @@ sort_posts() {
     IFS=$'\n' read -r -d '' -a sorted_posts < <(printf '%s\n' "${posts[@]}" | sort -r)
 }
 
-initialize_directories
+initialize
 build_pages "$src_root_dir/about.md" "$dst_root_dir/about.html"
 build_pages "$src_root_dir/index.md" "$dst_root_dir/index.html"
 build_pages "$src_root_dir/articles.md" "$dst_root_dir/articles.html"
