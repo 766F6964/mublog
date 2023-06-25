@@ -88,6 +88,7 @@ function validate_header() {
 build_pages() {
 
     local header="
+<!DOCTYPE html>
 <html>
 <meta charset="utf-8">
 <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
