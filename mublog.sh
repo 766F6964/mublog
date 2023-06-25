@@ -6,10 +6,12 @@ declare -a posts
 
 dst_root_dir="dst"
 dst_posts_dir="${dst_root_dir}/posts"
+dst_js_dir="${dst_root_dir}/js"
 dst_css_dir="${dst_root_dir}/css"
 dst_assets_dir="${dst_root_dir}/assets"
 src_root_dir="src"
 src_posts_dir="${src_root_dir}/posts"
+src_js_dir="${src_root_dir}/js"
 src_css_dir="${src_root_dir}/css"
 src_assets_dir="${src_root_dir}/assets"
 post_ignore_delim="_"
@@ -44,7 +46,9 @@ initialize() {
         mkdir -p "$dst_posts_dir" &&
         mkdir -p "$dst_css_dir" &&
         mkdir -p "$dst_assets_dir" &&
+        mkdir -p "$dst_js_dir" &&
         cp "$src_css_dir"/*.css "$dst_css_dir" &&
+        cp "$src_js_dir"/*.js "$dst_js_dir" &&
         cp -r "$src_assets_dir/." "$dst_assets_dir/"; then
         echo -e "$PASS Build directories initialized."
     else
@@ -180,6 +184,7 @@ build_pages() {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="/css/normalize.css" type="text/css" media="all">
 <link rel="stylesheet" href="/css/style.css" type="text/css" media="all">
+<script src="js/tags.js"></script>
 <nav>
 <a href="/index.html">home</a>
 <a href="/articles.html">articles</a>
@@ -269,7 +274,7 @@ insert_tags_in_tag_page() {
     
     for tag in "${!tag_count[@]}"; do
         echo "Tag: $tag, Count: ${tag_count[$tag]}"
-        tag_data="<div class=\"tag-bubble\">$tag<span>${tag_count[$tag]}</span></div>"
+        tag_data="<div class=\"tag-bubble\" onclick=\"select_tag('$tag')\">$tag<span>${tag_count[$tag]}</span></div>"
         all_tags=$all_tags$tag_data
     done
     all_tags=$all_tags"</div>"

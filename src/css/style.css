@@ -78,6 +78,7 @@ a:hover {
 .tags {
     display: flex;
     flex-wrap: wrap;
+    margin-top: 2rem;
     row-gap: 10px;
     column-gap: 20px;
 }
@@ -85,20 +86,24 @@ a:hover {
 .tag-bubble {
     display: inline-block;
     color: white;
-    padding-left: 20px;
-    padding-right: 20px;
-    padding-top: 5px;
-    padding-bottom: 5px;
+    padding: 0.2em 0.5em;
     border-radius: 10px;
     border-style: solid;
-    border-color: var(--color-blue-lgt);
+    border-color: var(--color-gray-mid);
     border-width: 1px;
-    color: var(--color-gray-charcoal);
-    /*background-color: #2196F3;*/
+    color: var(--color-blue-lgt);
+    transition: background-color ease-in-out 100ms;
+    cursor: pointer;
+}
+
+.tag-bubble:hover {
+    background-color: var(--color-gray-vdark);
 }
 
 .tag-bubble span {
-    color: red;
+    padding-left: 0.5rem;
+    font-size: 0.9em;
+    color: var(--color-gray-mid);
 }
 
 img {
