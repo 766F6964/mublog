@@ -12,4 +12,5 @@
 !/src/*.md
 !/src/posts/*.md
 !/src/css/*.css
+!/src/js/*.js
 !/src/assets/*.*

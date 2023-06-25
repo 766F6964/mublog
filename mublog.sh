@@ -217,6 +217,43 @@ HERE
     } >"$2"
 }
 
+
+generate_tag_mapping() {
+    # We generate variable that holds the mapping from tags to posts
+    # This value will be injected in the JS file.
+
+    local tag_mapping="var tag_mapping = {\n"
+
+    while IFS= read -r -d '' src_post_path; do
+
+        # Get dst-postpath and tags
+        base_name=$(basename "$src_post_path")
+        local dst_post_path="${dst_posts_dir}/${base_name%.md}.html"
+        tags=$(grep -oP "(?<=tags: ).*" "$src_post_path")
+        #echo $tags
+
+        tag_mapping=$tag_mapping"\"$dst_post_path\":["
+
+        IFS=',' read -ra tags <<< "$tags"
+        for tag in "${tags[@]}"
+        do
+        #    # Remove leading and trailing whitespace from tag
+            tag=$(echo "$tag" | awk '{$1=$1};1')
+            # Check if the tag already exists in the tag_count array
+            tag_mapping=$tag_mapping"\"$tag\","
+        done
+        tag_mapping=$tag_mapping"],\n"
+
+    done < <(find "$src_posts_dir" -name "*.md" -print0)
+    
+    tag_mapping=$tag_mapping"\n};"
+    echo -e $tag_mapping
+
+    content=$(tr '\n' '@' < "$dst_js_dir/tags.js")
+
+    new_content=${content//var tag_mapping = \{\};/$tag_mapping}
+    echo -e "${new_content//@/$'\n'}" > "$dst_js_dir/tags.js"
+}
 # Description:
 #     Iterate through all source post files, and extract values stored in their headers
 #     such as date, title, but also stores source path and destination path.
@@ -224,6 +261,7 @@ HERE
 #     $1: The path to the source directory of the posts
 process_posts() {
     local src_posts_dir="$1"
+    
 
     # Find all .md posts in the post directory and extract info from the headers
     while IFS= read -r -d '' src_post_path; do
@@ -241,8 +279,14 @@ process_posts() {
             posts+=("$date|$title|$tags|$src_post_path|$dst_post_path")
 
             collect_tags "$tags"
+
+            tag_mapping=$tag_mapping"\"$dst_post_path\","
+
         fi
     done < <(find "$src_posts_dir" -name "*.md" -print0)
+
+    # Store the generated mapping from pages to tags as a js-variable, that is inserted in the tags.js file
+    
 }
 
 collect_tags() {
@@ -264,13 +308,6 @@ collect_tags() {
 
 insert_tags_in_tag_page() {
     all_tags="<div class=\"tags\">"
-    #declare -A count_tags
-    #for tag in "${!tag_count[@]}"; do
-    #    count="${tag_count[$tag]}"
-    #    count_tags["$count"]="$tag"
-    #done
-
-    #sorted_counts=($(echo "${!count_tags[@]}" | tr ' ' '\n' | sort -rn))
     
     for tag in "${!tag_count[@]}"; do
         echo "Tag: $tag, Count: ${tag_count[$tag]}"
@@ -346,6 +383,8 @@ build_pages "$src_root_dir/articles.md" "$dst_root_dir/articles.html"
 process_posts "$src_posts_dir"
 build_pages "$src_root_dir/tags.md" "$dst_root_dir/tags.html"
 insert_tags_in_tag_page
+echo "Generating tags"
+generate_tag_mapping "$src_posts_dir"
 sort_posts
 build_posts
 echo "-----------------------------------------"
