@@ -75,14 +75,23 @@ a:hover {
     color: var(--color-blue-drk);
 }
 
+.tags {
+    display: flex;
+    max-width: 900px;
+    gap: 30px;
+}
+
 .tag-bubble {
-    border-radius: .7em;
-    padding: 6px 8px 7px;
-    margin-right: .8rem;
-    line-height: 3rem;
-    letter-spacing: 0;
-    border: 1px solid var(--color-gray-mid) !important;
-    box-shadow: 0 0 3px 0 var(--color-gray-charcoal);
+    display: inline-block;
+    color: white;
+    padding: 8px 20px;
+    border-radius: 15px;
+    background-color: #2196F3;
+    margin-top: 25px;
+}
+
+.tag-bubble span {
+    color: red;
 }
 
 img {
