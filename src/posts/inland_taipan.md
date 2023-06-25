@@ -22,6 +22,7 @@ This snake possesses a small, flattened head, distinct from its body, which aids
 The Inland Taipan primarily preys upon small mammals, particularly rodents such as rats and mice. It also feeds on lizards and small birds when the opportunity arises. The snake is an adept hunter, employing a sit-and-wait strategy or actively searching for prey in its habitat.
 
 When the Inland Taipan captures its prey, it delivers a series of rapid and precise strikes, injecting highly potent venom. The venom is a potent neurotoxin that causes paralysis and disrupts the prey's cardiovascular system. This enables the snake to immobilize and consume its prey without risking injury.
+
 # Habitat
 
 The Inland Taipan is found in the arid and semi-arid regions of central Australia, including parts of Queensland, South Australia, and the Northern Territory. It inhabits a variety of landscapes, including grasslands, shrublands, and desert plains. The snake prefers areas with loose, sandy soils, as it facilitates burrowing and constructing its underground shelters.

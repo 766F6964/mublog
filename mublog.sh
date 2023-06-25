@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 declare -A post_info
+declare -A tag_count
 declare -a posts
 
 dst_root_dir="dst"
@@ -182,6 +183,7 @@ build_pages() {
 <nav>
 <a href="/index.html">home</a>
 <a href="/articles.html">articles</a>
+<a href="/tags.html">tags</a>
 <a href="mailto:$author_mail">mail</a>
 <a href="/about.html">about</a>
 </nav>
@@ -225,13 +227,51 @@ process_posts() {
             local title
             date=$(grep -oP "(?<=date: ).*" "$src_post_path")
             title=$(grep -oP "(?<=title: ).*" "$src_post_path")
+            tags=$(grep -oP "(?<=tags: ).*" "$src_post_path")
+
 
             base_name=$(basename "$src_post_path")
             local dst_post_path="${dst_posts_dir}/${base_name%.md}.html"
 
-            posts+=("$date|$title|$src_post_path|$dst_post_path")
+            posts+=("$date|$title|$tags|$src_post_path|$dst_post_path")
+
+            collect_tags "$tags"
         fi
     done < <(find "$src_posts_dir" -name "*.md" -print0)
+}
+
+collect_tags() {
+    IFS=',' read -ra tags <<< "$1"
+    for tag in "${tags[@]}"
+    do
+        # Remove leading and trailing whitespace from tag
+        tag=$(echo "$tag" | awk '{$1=$1};1')
+        # Check if the tag already exists in the tag_count array
+        if [[ ${tag_count[$tag]+_} ]]; then
+            # Increment the count of the existing tag
+            ((tag_count[$tag]++))
+        else
+            # Add the tag to the tag_count array with an initial count of 1
+            tag_count[$tag]=1
+        fi
+    done
+}
+
+insert_tags_in_tag_page() {
+    all_tags=""
+    for tag in "${!tag_count[@]}"; do
+        echo "Tag: $tag, Count: ${tag_count[$tag]}"
+        tag_data="<div class=\"tag-bubble\">$tag</div>"
+        all_tags=$all_tags$tag_data
+    done
+
+    # Replace article tags in the article.html file with the generated article list
+    #sed -i -e '$a"$all_tags"' "$dst_root_dir/tags.md"
+    sed -i -e '/<article>/ {
+        N
+        s|<article>\(.*\)</article>|<article>\1\n'"$(sed 's/[&/\]/\\&/g' <<<"$all_tags")"'\n</article>|
+    }' "$dst_root_dir/tags.html"
+    echo "Inserted tags"
 }
 
 # Description:
@@ -249,7 +289,10 @@ build_posts() {
 
     article_list="<ul class=\"articles\">"
     for post_info in "${sorted_posts[@]}"; do
-        IFS='|' read date title src dst <<< "$post_info"
+        IFS='|' read date title tags src dst <<< "$post_info"
+
+        #process_tags $tags
+
         dst_link=${dst#*/}
 
         echo -e "$INFO Processing post: $src"
@@ -289,7 +332,11 @@ build_pages "$src_root_dir/about.md" "$dst_root_dir/about.html"
 build_pages "$src_root_dir/index.md" "$dst_root_dir/index.html"
 build_pages "$src_root_dir/articles.md" "$dst_root_dir/articles.html"
 process_posts "$src_posts_dir"
+build_pages "$src_root_dir/tags.md" "$dst_root_dir/tags.html"
+insert_tags_in_tag_page
 sort_posts
 build_posts
 echo "-----------------------------------------"
 echo -e "$PASS Finished! (built: $posts_processed, skipped: $posts_skipped)"
+
+
