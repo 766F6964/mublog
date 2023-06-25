@@ -261,12 +261,11 @@ insert_tags_in_tag_page() {
     all_tags=""
     for tag in "${!tag_count[@]}"; do
         echo "Tag: $tag, Count: ${tag_count[$tag]}"
-        tag_data="<div class=\"tag-bubble\">$tag</div>"
+        tag_data="<div class=\"tag-bubble\">$tag<span>${tag_count[$tag]}</span></div>"
         all_tags=$all_tags$tag_data
     done
 
     # Replace article tags in the article.html file with the generated article list
-    #sed -i -e '$a"$all_tags"' "$dst_root_dir/tags.md"
     sed -i -e '/<article>/ {
         N
         s|<article>\(.*\)</article>|<article>\1\n'"$(sed 's/[&/\]/\\&/g' <<<"$all_tags")"'\n</article>|
