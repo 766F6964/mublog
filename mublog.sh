@@ -52,7 +52,6 @@ initialize() {
     fi
 }
 
-
 # Description:
 #     Checks that the start-marker "---" is present in the 1st line of the src post file metadata.
 # Paramters:
@@ -216,7 +215,7 @@ HERE
 #     such as date, title, but also stores source path and destination path.
 # Parameters:
 #     $1: The path to the source directory of the posts
-process_files() {
+process_posts() {
     local src_posts_dir="$1"
 
     # Find all .md posts in the post directory and extract info from the headers
@@ -241,53 +240,58 @@ sort_posts() {
     IFS=$'\n' read -r -d '' -a sorted_posts < <(printf '%s\n' "${posts[@]}" | sort -r)
 }
 
+# Description:
+#     Builds the source posts into html files.
+#     Also generates the article listing, based on the processed posts. 
+build_posts() {
+    posts_processed=0
+    posts_skipped=0
+
+    article_list="<ul class=\"articles\">"
+    for post_info in "${sorted_posts[@]}"; do
+        date=$(cut -d '|' -f 1 <<<"$post_info")
+        title=$(cut -d '|' -f 2 <<<"$post_info")
+        src=$(cut -d '|' -f 3 <<<"$post_info")
+        dst=$(cut -d '|' -f 4 <<<"$post_info")
+        dst_link=${dst#*/}
+        echo -e "$INFO Processing post: $src"
+
+        # Check if the file should be ignored (if it starts with the ignore delimter)
+        filename=$(basename "$src")
+        if [[ $filename == $post_ignore_delim* ]]; then
+            posts_skipped=$((posts_skipped + 1))
+            echo -e "$WARN Skipped post: $src"
+            continue
+        else
+            # Build article list
+            article_item="<li><b style=\"color: #14263b;\">"[${date}]"</b> <a href="\"/${dst_link}\"">${title}</a></li>"
+            article_list=$article_list$article_item
+
+            # Build post file
+            build_pages "$src" "$dst"
+            posts_processed=$((posts_processed + 1))
+
+            echo -e "$PASS Processed post: $src"
+        fi
+    done
+
+    article_list=$article_list"</ul>"
+
+    echo -e "$INFO Generating article listing ..."
+
+    # Replace article tags in the article.html file with the generated article list
+    sed -i -e '/<article>/ {
+        N
+        s|<article>\(.*\)</article>|<article>\1\n'"$(sed 's/[&/\]/\\&/g' <<<"$article_list")"'\n</article>|
+    }' "$dst_root_dir/articles.html"
+}
+
 initialize
 build_pages "$src_root_dir/about.md" "$dst_root_dir/about.html"
 build_pages "$src_root_dir/index.md" "$dst_root_dir/index.html"
 build_pages "$src_root_dir/articles.md" "$dst_root_dir/articles.html"
-process_files "$src_posts_dir"
+process_posts "$src_posts_dir"
 sort_posts
-
-posts_processed=0
-posts_skipped=0
-
-article_list="<ul class=\"articles\">"
-for post_info in "${sorted_posts[@]}"; do
-    date=$(cut -d '|' -f 1 <<<"$post_info")
-    title=$(cut -d '|' -f 2 <<<"$post_info")
-    src=$(cut -d '|' -f 3 <<<"$post_info")
-    dst=$(cut -d '|' -f 4 <<<"$post_info")
-    dst_link=${dst#*/}
-    echo -e "$INFO Processing post: $src"
-
-    # Check if the file should be ignored (if it starts with the ignore delimter)
-    filename=$(basename "$src")
-    if [[ $filename == $post_ignore_delim* ]]; then
-        posts_skipped=$((posts_skipped + 1))
-        echo -e "$WARN Skipped post: $src"
-        continue
-    else
-        # Build article list
-        article_item="<li><b style=\"color: #14263b;\">"[${date}]"</b> <a href="\"/${dst_link}\"">${title}</a></li>"
-        article_list=$article_list$article_item
-
-        # Build post file
-        build_pages "$src" "$dst"
-        posts_processed=$((posts_processed + 1))
-
-        echo -e "$PASS Processed post: $src"
-    fi
-done
-
-article_list=$article_list"</ul>"
-
-echo -e "$INFO Generating article listing ..."
-
-# Replace article tags in the article.html file with the generated article list
-sed -i -e '/<article>/ {
-    N
-    s|<article>\(.*\)</article>|<article>\1\n'"$(sed 's/[&/\]/\\&/g' <<<"$article_list")"'\n</article>|
-}' "$dst_root_dir/articles.html"
-
+build_posts
 echo "-----------------------------------------"
 echo -e "$PASS Finished! (built: $posts_processed, skipped: $posts_skipped)"
