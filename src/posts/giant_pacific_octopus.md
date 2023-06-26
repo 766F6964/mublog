@@ -29,3 +29,7 @@ The Giant Pacific Octopus resides in the cold, rocky coastal waters of the north
 The octopus is highly adaptable and can thrive in various marine environments, including kelp forests, rocky reefs, and sandy or muddy bottoms. It demonstrates an exceptional ability to manipulate its surroundings, constructing intricate dens using rocks, shells, and other debris. These dens serve as shelters and breeding grounds, providing the octopus with security and a safe place to lay its eggs.
 
 The Giant Pacific Octopus is primarily a solitary creature, although males and females come together for mating purposes. It is a nocturnal animal, venturing out of its den during the cover of darkness to hunt for prey. Despite its solitary nature, the octopus displays remarkable intelligence and problem-solving abilities, making it one of the most fascinating creatures in the ocean.
+
+# Credit
+
+Wikipedia contributors, "Giant Pacific octopus," Wikipedia, The Free Encyclopedia, <https://en.wikipedia.org/w/index.php?title=Giant_Pacific_octopus&oldid=1156587123> (accessed June 26, 2023).
