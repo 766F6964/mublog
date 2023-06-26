@@ -73,11 +73,13 @@ class Mublog():
         # Obtain and analyze all posts
         for file_path in glob.glob(self.src_posts_dir + '/*.md'):
             if not os.path.basename(file_path).startswith(self.post_ignore_delim):
-                #print(file_path)
+                Utils.log_info(f"Processing {file_path} ...")
                 self.posts.append(Post(file_path))
 
         # TODO: Convert posts to html
-
+        for post in self.posts:
+            print(post.title)
+            
     def process_pages(self):
         pass
 
@@ -94,23 +96,33 @@ class Post:
 
     def __init__(self, src_file_path):
         self.validate_post(src_file_path)
-    
-    def get_src_path():
+        self.src_path = src_file_path
+        self.dst_path = Utils.src_to_dst_path(src_file_path, "dst/posts/", ".html")
+
+    def get_src_path(self):
         return self.src_path
 
-    def get_dst_path():
+    def get_dst_path(self):
         return self.dst_path
 
-    def get_title():
+    def get_title(self):
         return self.title
 
-    def get_tags():
-        pass
+    def get_description(self):
+        return self.description
+
+    def get_date(self):
+        return self.date
+
+    def get_tags(self):
+        return self.tags
 
     def validate_post(self, src_file_path):
         self.raw_file_contents = Utils.read_file_contents(src_file_path)
-        # TODO: Check that validate len(raw_file_contents) >= 6, to accomodate header
-
+        # Check that file is long enough to accomodate header
+        if (len(self.raw_file_contents) < 6):
+            Utils.log_fail(f"Failed to validate header of {src_file_path}.")
+            exit(1)
         # Validation line 1: Starting marker
         if (self.raw_file_contents[0].strip() != "---"):
             Utils.log_fail(f"Failed to validate header of {src_file_path}")
@@ -179,6 +191,14 @@ class Utils():
         except:
             Utils.log_fail(f"Failed to load file '{file_path}'.")
             exit(1)
+
+    @staticmethod
+    def src_to_dst_path(src_file_path, dst_dir, dst_ext):
+        # Note: This is kinda hacky, ideally replace all the path stuff
+        # with a dedicated conf class
+        file_name = os.path.basename(src_file_path)
+        base_name, extension = os.path.splitext(file_name)
+        return dst_dir + base_name + dst_ext
 
 
 blog = Mublog()
