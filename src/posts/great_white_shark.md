@@ -104,6 +104,7 @@ These sharks are known to undertake long-distance migrations, traveling across v
 
 It's important to note that great white sharks are protected species in many countries due to their vulnerable population status. Conservation efforts and research play a crucial role in understanding and protecting these magnificent creatures.
 
-# Credit
+# Credits
 
-Wikipedia contributors, "Great white shark," Wikipedia, The Free Encyclopedia, <https://en.wikipedia.org/w/index.php?title=Great_white_shark&oldid=1160944529> (accessed June 26, 2023).
+- Shark photo  by [Fiona Ayerst](https://en.wikipedia.org/wiki/Fiona_Ayerst), from <https://www.nhm.ac.uk/discover/great-white-shark-man-eater-or-marine-marvel.html>.
+- Wikipedia contributors, "Great white shark," Wikipedia, The Free Encyclopedia, <https://en.wikipedia.org/w/index.php?title=Great_white_shark&oldid=1160944529> (accessed June 26, 2023).
