@@ -150,11 +150,11 @@ class Post:
         Utils.log_info(f"Processing {src_file_path} ...")
         self.raw_file_contents = Utils.read_file_contents(src_file_path)
         # Check that file is long enough to accomodate header
-        if (len(self.raw_file_contents) < 6):
+        if len(self.raw_file_contents) < 6:
             Utils.log_fail(f"Failed to validate header of {src_file_path}.")
             exit(1)
         # Validation line 1: Starting marker
-        if (self.raw_file_contents[0].strip() != "---"):
+        if self.raw_file_contents[0].strip() != "---":
             Utils.log_fail(f"Failed to validate header of {src_file_path}")
             Utils.log_fail(f"The starting marker \"---\" is missing or incorrect")
             exit(1)
@@ -185,11 +185,10 @@ class Post:
         for tag in re.findall(r'[^,\s][^,]*[^,\s]|[^,\s]', tag_values):
             self.tags.append(tag)
         # Validation line 6: Ending marker
-        if (self.raw_file_contents[5].strip() != "---"):
+        if self.raw_file_contents[5].strip() != "---":
             Utils.log_fail(f"Failed to validate header of {src_file_path}")
             Utils.log_fail(f"The ending marker \"---\" is missing or incorrect")
             exit(1)
-
 
 class SiteBuilder:
 
@@ -220,14 +219,13 @@ class SiteBuilder:
         # Get unique tags, and their occurrence count
         unique_tags = list(set(tag for post in posts for tag in post.get_tags()))
         tag_counts = {tag: sum(tag in post.get_tags() for post in posts) for tag in unique_tags}
+        sorted_tags = sorted(unique_tags, key=lambda tag: tag_counts[tag], reverse=True)
 
         # Generate article list
         content = "<div class=\"tags\">"
-        for tag in unique_tags:
+        for tag in sorted_tags:
             tag_count = tag_counts[tag]
-
-            #window.location.href = 'https://w3docs.com'
-            #content += f"<div class=\"tag-bubble\" onclick=\"select_tag('{tag}')\">{tag}<span>{tag_count}</span></div>"
+            # TODO: Url-encode tag value to prevent possible command-injection vulns!
             content += f"<div class=\"tag-bubble\" onclick=\"location.href='articles.html?tag={tag}'\">{tag}<span>{tag_count}</span></div>"
         content += "</div>"
 
