@@ -73,15 +73,23 @@ class Mublog():
         # Obtain and analyze all posts
         for file_path in glob.glob(self.src_posts_dir + '/*.md'):
             if not os.path.basename(file_path).startswith(self.post_ignore_delim):
-                Utils.log_info(f"Processing {file_path} ...")
-                self.posts.append(Post(file_path))
+                # Validate and convert post
+                post = Post(file_path)
+                self.posts.append(post)
+                self.convert_md_html_with_pandoc(post.get_src_path(), post.get_dst_path())
 
-        # TODO: Convert posts to html
-        for post in self.posts:
-            print(post.title)
-            
     def process_pages(self):
-        pass
+        for file_path in glob.glob(self.src_root_dir + '/*.md'):
+            print(file_path)
+
+    def convert_md_html_with_pandoc(self, src_path, dst_path):
+        command = ["pandoc", src_path, "-f", "markdown", "-t", "html", "-o", dst_path]
+        try:
+            subprocess.run(command, check=True)
+            Utils.log_pass(f"Successfully processed {src_path}")
+        except:
+            Utils.log_fail(f"Pandoc failed while processing {src_path}")
+            exit(1)
 
 
 class Post:
@@ -118,6 +126,7 @@ class Post:
         return self.tags
 
     def validate_post(self, src_file_path):
+        Utils.log_info(f"Processing {src_file_path} ...")
         self.raw_file_contents = Utils.read_file_contents(src_file_path)
         # Check that file is long enough to accomodate header
         if (len(self.raw_file_contents) < 6):
