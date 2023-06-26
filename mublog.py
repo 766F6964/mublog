@@ -21,9 +21,11 @@ post_ignore_delim = "_"
 author_name = "John Doe"
 author_mail = "johndoe@example.com"
 author_copyright = f"Copyright 2023 {author_name}"
+posts = []
+pages = []
 
 class Mublog():
-    posts = []
+
 
     def __init__(self):
         pass
@@ -76,29 +78,45 @@ class Mublog():
             if not os.path.basename(file_path).startswith(post_ignore_delim):
                 # Validate and convert post
                 post = Post(file_path)
-                self.posts.append(post)
+                posts.append(post)
 
                 # Substitute content into template with header, footer etc
-                post_html = builder.generate_post(post)
+                builder.generate_post(post)
 
     def process_pages(self):
+        builder = SiteBuilder()
         for file_path in glob.glob(src_root_dir + '/*.md'):
-            print(file_path)
+            page = Page(file_path)
+            pages.append(page)
+            if (page.get_src_path().endswith("tags.md")):
+                builder.generate_article_page(page)
+            else:
+                builder.generate_page(page)
 
-    
 
-
-class Post:
-
-    src_path = ""
-    dst_path = ""
-    title = ""
-    description = ""
-    date = ""
-    tags = []
-    raw_file_contents = ""
+class Page:
 
     def __init__(self, src_file_path):
+        self.src_path = src_file_path
+        self.dst_path = Utils.src_to_dst_path(src_file_path, "dst/", ".html")
+
+    def get_src_path(self):
+        return self.src_path
+
+    def get_dst_path(self):
+        return self.dst_path
+
+class Post:
+    def __init__(self, src_file_path):
+
+        self.src_path = ""
+        self.dst_path = ""
+        self.title = ""
+        self.description = ""
+        self.date = ""
+        self.tags = []
+        self.raw_file_contents = ""
+
         self.validate_post(src_file_path)
         self.src_path = src_file_path
         self.dst_path = Utils.src_to_dst_path(src_file_path, "dst/posts/", ".html")
@@ -175,7 +193,7 @@ class SiteBuilder:
 
     def generate_post(self, post):
         # Convert markdown to html
-        content = self.convert_md_html_with_pandoc(post.get_src_path(), post.get_dst_path())
+        content = self.convert_md_html_with_pandoc(post.get_src_path())
 
         # Substitute html content into post template
         post_template = self.load_template(src_templates_dir + "/post.template")
@@ -187,12 +205,61 @@ class SiteBuilder:
         }
         post_data = Template(post_template).substitute(substitutions)
         Utils.writefile(post.dst_path, post_data)
-        Utils.log_pass(f"Successfully processed {post.src_path}")
+        Utils.log_pass(f"Successfully processed {post.get_src_path()}")
 
-    def generate_page(self):
-        pass
+    def generate_article_page(self, page):
+        # Get unique tags, and their occurrence count
+        unique_tags = list(set(tag for post in posts for tag in post.get_tags()))
+        tag_counts = {tag: sum(tag in post.get_tags() for post in posts) for tag in unique_tags}
+            
+        # Generate article list
+        content="<div class=\"tags\">"
+        for tag in unique_tags:
+            tag_count = tag_counts[tag]
+            content+=f"<div class=\"tag-bubble\" onclick=\"select_tag('{tag}')\">{tag}<span>{tag_count}</span></div>"
+        content+="</div>"
 
-    def convert_md_html_with_pandoc(self, src_path, dst_path):
+        # Substitute html content into page template
+        post_template = self.load_template(src_templates_dir + "/page.template")
+        substitutions = {
+            "author_mail": author_mail,
+            "author_copyright": author_copyright,
+            "title": "Blog",
+            "content": content,
+        }
+
+        page_data = Template(post_template).substitute(substitutions)
+        Utils.writefile(page.get_dst_path(), page_data)
+        Utils.log_pass(f"Successfully processed {page.get_src_path()}")
+
+    def convert_md_html_with_pandoc(self, src_path):
+        command = ["pandoc", src_path, "-f", "markdown", "-t", "html"]
+        try:
+            result = subprocess.run(command, check=True, capture_output=True, text=True)
+            return result.stdout
+        except:
+            Utils.log_fail(f"Pandoc failed while processing {src_path}")
+            Utils.log_fail(f"Error: {e}")
+            exit(1)
+
+    def generate_page(self, page):
+        # Convert markdown to html
+        content = self.convert_md_html_with_pandoc(page.get_src_path())
+
+        # Substitute html content into page template
+        post_template = self.load_template(src_templates_dir + "/page.template")
+        substitutions = {
+            "author_mail": author_mail,
+            "author_copyright": author_copyright,
+            "title": "Blog",
+            "content": content,
+        }
+
+        page_data = Template(post_template).substitute(substitutions)
+        Utils.writefile(page.get_dst_path(), page_data)
+        Utils.log_pass(f"Successfully processed {page.get_src_path()}")
+
+    def convert_md_html_with_pandoc(self, src_path):
         command = ["pandoc", src_path, "-f", "markdown", "-t", "html"]
         try:
             result = subprocess.run(command, check=True, capture_output=True, text=True)
