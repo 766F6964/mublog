@@ -24,8 +24,8 @@ author_copyright = f"Copyright 2023 {author_name}"
 posts = []
 pages = []
 
-class Mublog():
 
+class Mublog():
 
     def __init__(self):
         pass
@@ -88,8 +88,10 @@ class Mublog():
         for file_path in glob.glob(src_root_dir + '/*.md'):
             page = Page(file_path)
             pages.append(page)
-            if (page.get_src_path().endswith("tags.md")):
-                builder.generate_article_page(page)
+            if page.get_src_path().endswith("tags.md"):
+                builder.generate_tags_page(page)
+            elif page.get_src_path().endswith("articles.md"):
+                builder.generate_articles_page(page)
             else:
                 builder.generate_page(page)
 
@@ -106,6 +108,7 @@ class Page:
     def get_dst_path(self):
         return self.dst_path
 
+
 class Post:
     def __init__(self, src_file_path):
 
@@ -120,12 +123,16 @@ class Post:
         self.validate_post(src_file_path)
         self.src_path = src_file_path
         self.dst_path = Utils.src_to_dst_path(src_file_path, "dst/posts/", ".html")
+        self.dst_path_remote = Utils.src_to_dst_path(src_file_path, "posts/", ".html")
 
     def get_src_path(self):
         return self.src_path
 
     def get_dst_path(self):
         return self.dst_path
+
+    def get_dst_path_remote(self):
+        return self.dst_path_remote
 
     def get_title(self):
         return self.title
@@ -168,7 +175,8 @@ class Post:
             Utils.log_fail(f'Failed to validate header of {src_file_path}')
             Utils.log_fail(f'The date field is missing, empty or not in the correct format (YYYY-MM-DD)')
             exit(1)
-        self.date = re.search(r'([0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$)', self.raw_file_contents[3]).group(1)
+        self.date = re.search(r'([0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$)',
+                              self.raw_file_contents[3]).group(1)
         # Validation line 5: tags field
         if not re.match(r'^tags:\s*(\S+)', self.raw_file_contents[4]):
             Utils.log_fail(f'Failed to validate header of {src_file_path}')
@@ -180,7 +188,8 @@ class Post:
         if (self.raw_file_contents[5].strip() != "---"):
             Utils.log_fail(f"Failed to validate header of {src_file_path}")
             Utils.log_fail(f"The ending marker \"---\" is missing or incorrect")
-            exit(1)    
+            exit(1)
+
 
 class SiteBuilder:
 
@@ -207,17 +216,40 @@ class SiteBuilder:
         Utils.writefile(post.dst_path, post_data)
         Utils.log_pass(f"Successfully processed {post.get_src_path()}")
 
-    def generate_article_page(self, page):
+    def generate_tags_page(self, page):
         # Get unique tags, and their occurrence count
         unique_tags = list(set(tag for post in posts for tag in post.get_tags()))
         tag_counts = {tag: sum(tag in post.get_tags() for post in posts) for tag in unique_tags}
-            
+
         # Generate article list
-        content="<div class=\"tags\">"
+        content = "<div class=\"tags\">"
         for tag in unique_tags:
             tag_count = tag_counts[tag]
-            content+=f"<div class=\"tag-bubble\" onclick=\"select_tag('{tag}')\">{tag}<span>{tag_count}</span></div>"
-        content+="</div>"
+            content += f"<div class=\"tag-bubble\" onclick=\"select_tag('{tag}')\">{tag}<span>{tag_count}</span></div>"
+        content += "</div>"
+
+        # Substitute html content into page template
+        post_template = self.load_template(src_templates_dir + "/page.template")
+        substitutions = {
+            "author_mail": author_mail,
+            "author_copyright": author_copyright,
+            "title": "Blog",
+            "content": content,
+        }
+
+        page_data = Template(post_template).substitute(substitutions)
+        Utils.writefile(page.get_dst_path(), page_data)
+        Utils.log_pass(f"Successfully processed {page.get_src_path()}")
+
+    def generate_articles_page(self, page):
+
+        # Generate article list
+        content = "<article>"
+        content += "<ul class=\"articles\">"
+        for post in posts:
+            content += f"<li><b>[{post.get_date()}]</b> <a href=\"{post.get_dst_path_remote()}\">{post.get_title()}</a></li>"
+        content += "</ul>"
+        content += "</article>"
 
         # Substitute html content into page template
         post_template = self.load_template(src_templates_dir + "/page.template")
@@ -239,7 +271,6 @@ class SiteBuilder:
             return result.stdout
         except:
             Utils.log_fail(f"Pandoc failed while processing {src_path}")
-            Utils.log_fail(f"Error: {e}")
             exit(1)
 
     def generate_page(self, page):
@@ -266,13 +297,10 @@ class SiteBuilder:
             return result.stdout
         except:
             Utils.log_fail(f"Pandoc failed while processing {src_path}")
-            Utils.log_fail(f"Error: {e}")
             exit(1)
 
 
-
 class Utils():
-
     PASS = "\033[32m[PASS]\033[0m"
     FAIL = "\033[31m[FAIL]\033[0m"
     INFO = "\033[34m[INFO]\033[0m"
@@ -310,7 +338,7 @@ class Utils():
         file_name = os.path.basename(src_file_path)
         base_name, extension = os.path.splitext(file_name)
         return dst_dir + base_name + dst_ext
-    
+
     @staticmethod
     def writefile(path: str, contents: str):
         with open(path, "w", encoding="utf-8") as f:
