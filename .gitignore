@@ -8,6 +8,7 @@
 !/*.gitignore
 !/*.md
 !/*.sh
+!/*.py
 !/*.conf
 !/src/*.md
 !/src/posts/*.md

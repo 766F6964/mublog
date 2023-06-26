@@ -311,7 +311,7 @@ insert_tags_in_tag_page() {
     
     for tag in "${!tag_count[@]}"; do
         echo "Tag: $tag, Count: ${tag_count[$tag]}"
-        tag_data="<div class=\"tag-bubble\" onclick=\"select_tag('$tag')\">$tag<span>${tag_count[$tag]}</span></div>"
+        tag_data=$(generate_tag_div "$tag" "${tag_count[$tag]}") 
         all_tags=$all_tags$tag_data
     done
     all_tags=$all_tags"</div>"
@@ -328,6 +328,13 @@ insert_tags_in_tag_page() {
 sort_posts() {
     IFS=$'\n' read -r -d '' -a sorted_posts < <(printf '%s\n' "${posts[@]}" | sort -r)
 }
+
+# $1 tag_value
+# $2 tag_count
+generate_tag_div() {
+    echo -e "<div class=\"tag-bubble\" onclick=\"select_tag('$1')\">$1<span>${$2[$tag]}</span></div>"
+}
+
 
 # Description:
 #     Builds the source posts into html files.
