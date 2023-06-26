@@ -225,7 +225,10 @@ class SiteBuilder:
         content = "<div class=\"tags\">"
         for tag in unique_tags:
             tag_count = tag_counts[tag]
-            content += f"<div class=\"tag-bubble\" onclick=\"select_tag('{tag}')\">{tag}<span>{tag_count}</span></div>"
+
+            #window.location.href = 'https://w3docs.com'
+            #content += f"<div class=\"tag-bubble\" onclick=\"select_tag('{tag}')\">{tag}<span>{tag_count}</span></div>"
+            content += f"<div class=\"tag-bubble\" onclick=\"location.href='articles.html?tag={tag}'\">{tag}<span>{tag_count}</span></div>"
         content += "</div>"
 
         # Substitute html content into page template

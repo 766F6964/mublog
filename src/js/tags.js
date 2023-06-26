@@ -10,10 +10,16 @@ function get_tag_parameter() {
     const urlParams = new URLSearchParams(window.location.search);
     const tag = urlParams.get('tag');
     if (tag) {
-        console.log(`Tag: ${tag}`);
-        filter_by_tag(tag);
-    } else {
-        console.log('Tag parameter not found in the URL');
+        for (var item in tag_mapping) {
+          if (tag_mapping.hasOwnProperty(item)) {
+            var tags = tag_mapping[item];
+            console.log(tag);
+            if (tags.indexOf(tag) == -1) {
+                console.log("Hiding post: " + item)
+                hide_article_listing(item);
+            }
+          }
+        }
     }
 }
 
@@ -25,28 +31,12 @@ function hide_article_listing(post_url) {
         path = list_entries[i].children[1].pathname;
         console.log("path: " + path);
         console.log("post_url: " + post_url);
-        if (path.includes(post_url) == false) {
+        if (path.includes(post_url)) {
             console.log("Hiding: " + post_url);
             list_entries[i].style.display = 'none';
             break;
         }
     }
-}
-
-function filter_by_tag(tag) {
-    for (var item in tag_mapping) {
-      if (tag_mapping.hasOwnProperty(item)) {
-        var tags = tag_mapping[item];
-        for (var i = 0; i < tags.length; i++) {
-          var current_tag = tags[i];
-          if (current_tag == tag) {
-            hide_article_listing(item);
-            break;
-          }
-        }
-      }
-    }
-    console.log(article_list);
 }
 
 document.addEventListener("DOMContentLoaded", get_tag_parameter);
