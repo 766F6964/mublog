@@ -71,34 +71,21 @@ class Mublog():
 
     def process_posts(self):
         # Obtain and analyze all posts
-        builder = TemplateBuilder()
+        builder = SiteBuilder()
         for file_path in glob.glob(src_posts_dir + '/*.md'):
             if not os.path.basename(file_path).startswith(post_ignore_delim):
                 # Validate and convert post
                 post = Post(file_path)
                 self.posts.append(post)
 
-                # Convert markdown to html
-                html = self.convert_md_html_with_pandoc(post.get_src_path(), post.get_dst_path())
-
                 # Substitute content into template with header, footer etc
-                post_html = builder.construct_post_template(post, html)
-                Utils.writefile(post.dst_path, post_html)
+                post_html = builder.generate_post(post)
 
     def process_pages(self):
         for file_path in glob.glob(src_root_dir + '/*.md'):
             print(file_path)
 
-    def convert_md_html_with_pandoc(self, src_path, dst_path):
-        command = ["pandoc", src_path, "-f", "markdown", "-t", "html"]
-        try:
-            result = subprocess.run(command, check=True, capture_output=True, text=True)
-            Utils.log_pass(f"Successfully processed {src_path}")
-            return result.stdout
-        except:
-            Utils.log_fail(f"Pandoc failed while processing {src_path}")
-            Utils.log_fail(f"Error: {e}")
-            exit(1)
+    
 
 
 class Post:
@@ -177,7 +164,7 @@ class Post:
             Utils.log_fail(f"The ending marker \"---\" is missing or incorrect")
             exit(1)    
 
-class TemplateBuilder:
+class SiteBuilder:
 
     def __init__(self):
         pass
@@ -186,19 +173,35 @@ class TemplateBuilder:
         with open(template_path, encoding="utf-8") as f:
             return f.read()
 
-    def construct_post_template(self, post, html_content):
+    def generate_post(self, post):
+        # Convert markdown to html
+        content = self.convert_md_html_with_pandoc(post.get_src_path(), post.get_dst_path())
+
+        # Substitute html content into post template
         post_template = self.load_template(src_templates_dir + "/post.template")
         substitutions = {
             "author_mail": author_mail,
             "author_copyright": author_copyright,
             "title": post.title,
-            "content": html_content,
+            "content": content,
         }
-        return Template(post_template).substitute(substitutions)
+        post_data = Template(post_template).substitute(substitutions)
+        Utils.writefile(post.dst_path, post_data)
+        Utils.log_pass(f"Successfully processed {post.src_path}")
 
-
-    def construct_page_template(self):
+    def generate_page(self):
         pass
+
+    def convert_md_html_with_pandoc(self, src_path, dst_path):
+        command = ["pandoc", src_path, "-f", "markdown", "-t", "html"]
+        try:
+            result = subprocess.run(command, check=True, capture_output=True, text=True)
+            return result.stdout
+        except:
+            Utils.log_fail(f"Pandoc failed while processing {src_path}")
+            Utils.log_fail(f"Error: {e}")
+            exit(1)
+
 
 
 class Utils():
