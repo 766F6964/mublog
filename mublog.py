@@ -4,26 +4,26 @@ import shutil
 import subprocess
 import sys
 import re
+from string import Template
+
+dst_root_dir = "dst"
+dst_posts_dir = f"{dst_root_dir}/posts"
+dst_css_dir = f"{dst_root_dir}/css"
+dst_assets_dir = f"{dst_root_dir}/assets"
+dst_js_dir = f"{dst_root_dir}/js"
+src_root_dir = "src"
+src_posts_dir = f"{src_root_dir}/posts"
+src_css_dir = f"{src_root_dir}/css"
+src_assets_dir = f"{src_root_dir}/assets"
+src_templates_dir = f"{src_root_dir}/templates"
+src_js_dir = f"{src_root_dir}/js"
+post_ignore_delim = "_"
+author_name = "John Doe"
+author_mail = "johndoe@example.com"
+author_copyright = f"Copyright 2023 {author_name}"
 
 class Mublog():
-
-    dst_root_dir = "dst"
-    dst_posts_dir = f"{dst_root_dir}/posts"
-    dst_css_dir = f"{dst_root_dir}/css"
-    dst_assets_dir = f"{dst_root_dir}/assets"
-    dst_js_dir = f"{dst_root_dir}/js"
-    src_root_dir = "src"
-    src_posts_dir = f"{src_root_dir}/posts"
-    src_css_dir = f"{src_root_dir}/css"
-    src_assets_dir = f"{src_root_dir}/assets"
-    src_js_dir = f"{src_root_dir}/js"
-    post_ignore_delim = "_"
-
     posts = []
-
-    author_name = "John Doe"
-    author_mail = "johndoe@example.com"
-    author_copyright = f"Copyright 2023 {author_name}"
 
     def __init__(self):
         pass
@@ -43,14 +43,14 @@ class Mublog():
 
         # Remove dst directory, to ensure clean rebuild
         try:
-            shutil.rmtree(self.dst_root_dir, ignore_errors=True)
+            shutil.rmtree(dst_root_dir, ignore_errors=True)
         except Exception as e:
             Utils.log_fail(f"Failed to remove old build directory: {str(e)}")
             sys.exit(1)
 
         # Create output directories
         try:
-            for d in (self.dst_root_dir, self.dst_posts_dir, self.dst_css_dir, self.dst_assets_dir, self.dst_js_dir):
+            for d in (dst_root_dir, dst_posts_dir, dst_css_dir, dst_assets_dir, dst_js_dir):
                 os.makedirs(d, exist_ok=True)
         except Exception as e:
             Utils.log_fail(f"Failed to create output directories: {str(e)}")
@@ -58,11 +58,11 @@ class Mublog():
 
         # Copy files to dst directories
         try:
-            for f in glob.glob(f"{self.src_css_dir}/*.css"):
-                shutil.copy(f, self.dst_css_dir)
-            for f in glob.glob(f"{self.src_js_dir}/*.js"):
-                shutil.copy(f, self.dst_js_dir)
-            shutil.copytree(self.src_assets_dir, self.dst_assets_dir, dirs_exist_ok=True)
+            for f in glob.glob(f"{src_css_dir}/*.css"):
+                shutil.copy(f, dst_css_dir)
+            for f in glob.glob(f"{src_js_dir}/*.js"):
+                shutil.copy(f, dst_js_dir)
+            shutil.copytree(src_assets_dir, dst_assets_dir, dirs_exist_ok=True)
         except Exception as e:
             Utils.log_fail(f"Failed to copy css/js/asset files: {str(e)}")
             sys.exit(1)
@@ -71,24 +71,33 @@ class Mublog():
 
     def process_posts(self):
         # Obtain and analyze all posts
-        for file_path in glob.glob(self.src_posts_dir + '/*.md'):
-            if not os.path.basename(file_path).startswith(self.post_ignore_delim):
+        builder = TemplateBuilder()
+        for file_path in glob.glob(src_posts_dir + '/*.md'):
+            if not os.path.basename(file_path).startswith(post_ignore_delim):
                 # Validate and convert post
                 post = Post(file_path)
                 self.posts.append(post)
-                self.convert_md_html_with_pandoc(post.get_src_path(), post.get_dst_path())
+
+                # Convert markdown to html
+                html = self.convert_md_html_with_pandoc(post.get_src_path(), post.get_dst_path())
+
+                # Substitute content into template with header, footer etc
+                post_html = builder.construct_post_template(post, html)
+                Utils.writefile(post.dst_path, post_html)
 
     def process_pages(self):
-        for file_path in glob.glob(self.src_root_dir + '/*.md'):
+        for file_path in glob.glob(src_root_dir + '/*.md'):
             print(file_path)
 
     def convert_md_html_with_pandoc(self, src_path, dst_path):
-        command = ["pandoc", src_path, "-f", "markdown", "-t", "html", "-o", dst_path]
+        command = ["pandoc", src_path, "-f", "markdown", "-t", "html"]
         try:
-            subprocess.run(command, check=True)
+            result = subprocess.run(command, check=True, capture_output=True, text=True)
             Utils.log_pass(f"Successfully processed {src_path}")
+            return result.stdout
         except:
             Utils.log_fail(f"Pandoc failed while processing {src_path}")
+            Utils.log_fail(f"Error: {e}")
             exit(1)
 
 
@@ -166,8 +175,31 @@ class Post:
         if (self.raw_file_contents[5].strip() != "---"):
             Utils.log_fail(f"Failed to validate header of {src_file_path}")
             Utils.log_fail(f"The ending marker \"---\" is missing or incorrect")
-            exit(1)
-        
+            exit(1)    
+
+class TemplateBuilder:
+
+    def __init__(self):
+        pass
+
+    def load_template(self, template_path: str):
+        with open(template_path, encoding="utf-8") as f:
+            return f.read()
+
+    def construct_post_template(self, post, html_content):
+        post_template = self.load_template(src_templates_dir + "/post.template")
+        substitutions = {
+            "author_mail": author_mail,
+            "author_copyright": author_copyright,
+            "title": post.title,
+            "content": html_content,
+        }
+        return Template(post_template).substitute(substitutions)
+
+
+    def construct_page_template(self):
+        pass
+
 
 class Utils():
 
@@ -208,6 +240,21 @@ class Utils():
         file_name = os.path.basename(src_file_path)
         base_name, extension = os.path.splitext(file_name)
         return dst_dir + base_name + dst_ext
+    
+    @staticmethod
+    def writefile(path: str, contents: str):
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(contents)
+
+    @staticmethod
+    def substitute(mapping: dict[str, str], in_path: str, out_path: str = None):
+        if not out_path:
+            out_path = in_path
+
+        template_text = readfile(in_path)
+        template = Template(template_text)
+        output = template.substitute(mapping)
+        writefile(out_path, output)
 
 
 blog = Mublog()
