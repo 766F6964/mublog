@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/css/normalize.css" type="text/css" media="all">
+    <link rel="stylesheet" href="/css/style.css" type="text/css" media="all">
+    <script src="js/tags.js"></script>
+    <title>
+        ${title}
+    </title>
+</head>
+<nav>
+    <a href="/index.html">home</a>
+    <a href="/articles.html">articles</a>
+    <a href="/tags.html">tags</a>
+    <a href="mailto:${author_mail}">mail</a>
+    <a href="/about.html">about</a>
+</nav>
+<hr>
+<main>
+${content}
+</main>
+<footer>
+    <hr>
+    <p>
+        ${author_copyright}
+        <br>
+    </p>
+</footer>
+</body>
+
+</html>

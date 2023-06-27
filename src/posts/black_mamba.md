@@ -27,3 +27,7 @@ When hunting, the Black Mamba strikes its target, injecting a lethal neurotoxic 
 The Black Mamba inhabits a range of different habitats, including savannas, woodlands, and rocky areas throughout sub-Saharan Africa. It prefers areas with suitable hiding spots like termite mounds, tree hollows, and rock crevices. This snake is highly adaptable and can thrive in both arid and humid environments.
 
 Although the Black Mamba spends much of its time on the ground, it is an agile climber and can ascend trees with ease. It may use this skill to bask in the sun or to seek refuge from predators or disturbances. The snake is known to be particularly active during the day and may exhibit basking behavior in the mornings and afternoons to regulate its body temperature.
+
+# Credit
+
+Wikipedia contributors, "Black mamba," Wikipedia, The Free Encyclopedia, <https://en.wikipedia.org/w/index.php?title=Black_mamba&oldid=1155695473> (accessed June 26, 2023).

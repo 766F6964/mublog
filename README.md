@@ -2,12 +2,12 @@
 
 ## Overview
 The goal of μblog (pronounced /myuːblɒɡ/) is to provide a single script that allows you to generate and manage a tiny static site blog.
-The μblog tool is written in shell script. It generates posts written in markdown in a beautiful, but minimalistic blog site.
+The μblog tool is written in python. It generates posts written in markdown in a beautiful, but minimalistic blog site.
 Create your blog now, without having to leverage large frameworks and software stacks.
 
 **Showcase:** 
 
-![ezgif com-optimize](https://github.com/766F6964/mublog/assets/34845270/193ad757-6996-498d-bd95-193540c70de2)
+![ezgif com-video-to-gif](https://github.com/766F6964/mublog/assets/34845270/01b27f1d-7ee8-4a66-bb93-4a329fe4695d)
 
 ## Features
 All the usual constructs, that you find in markdown:
@@ -64,7 +64,7 @@ And obviously, you can edit the CSS file to adjust colors, look and feel of the 
 ## Building:
 
 This blog includes some example posts, so you can get an idea about the look and feel.
-To build the page simply run `./mublog.sh` in the root directory. When the script is finished, the generated files
+To build the page simply run `python mublog.py` in the root directory. When the script is finished, the generated files
 can be found in the `dst` directory. To view the blog, you can spin up a webserver in that directory, e.g. `python3 -m http.server 8000`.
 Then visit `http://0.0.0.0:9000/` in your browser.
 
@@ -75,6 +75,7 @@ Then visit `http://0.0.0.0:9000/` in your browser.
 - `src/posts/` This is where all your posts go (Markdown files)
 - `src/css` This contains the CSS file(s) that style the blog
 - `src/assets` This is where assets that you want to reference in your blog go. (E.g. images)
+- `src/template` This contains the templates in which converted post/page/js content is inserted.
 - `dst/` This is the output directory, when your blog got built. Start the webserver in this directory.
 
 Every blog post file must have a header at the very top, that specifies some metadata.

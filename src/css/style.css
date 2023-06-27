@@ -75,6 +75,37 @@ a:hover {
     color: var(--color-blue-drk);
 }
 
+.tags {
+    display: flex;
+    flex-wrap: wrap;
+    margin-top: 2rem;
+    row-gap: 10px;
+    column-gap: 20px;
+}
+
+.tag-bubble {
+    display: inline-block;
+    color: white;
+    padding: 0.2em 0.5em;
+    border-radius: 10px;
+    border-style: solid;
+    border-color: var(--color-gray-mid);
+    border-width: 1px;
+    color: var(--color-blue-lgt);
+    transition: background-color ease-in-out 100ms;
+    cursor: pointer;
+}
+
+.tag-bubble:hover {
+    background-color: var(--color-gray-vdark);
+}
+
+.tag-bubble span {
+    padding-left: 0.5rem;
+    font-size: 0.9em;
+    color: var(--color-gray-mid);
+}
+
 img {
     margin: 0 auto;
     border-radius: 5px;

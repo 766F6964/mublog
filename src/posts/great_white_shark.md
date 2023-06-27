@@ -103,3 +103,8 @@ Great white sharks have a wide distribution, inhabiting coastal and offshore wat
 These sharks are known to undertake long-distance migrations, traveling across vast oceanic areas. They often follow marine mammal migration patterns or move to areas abundant with prey. Great white sharks are typically found in the upper part of the ocean, but they can also dive to considerable depths, reaching over 1,200 meters (3,900 feet).
 
 It's important to note that great white sharks are protected species in many countries due to their vulnerable population status. Conservation efforts and research play a crucial role in understanding and protecting these magnificent creatures.
+
+# Credits
+
+- Shark photo  by [Fiona Ayerst](https://en.wikipedia.org/wiki/Fiona_Ayerst), from <https://www.nhm.ac.uk/discover/great-white-shark-man-eater-or-marine-marvel.html>.
+- Wikipedia contributors, "Great white shark," Wikipedia, The Free Encyclopedia, <https://en.wikipedia.org/w/index.php?title=Great_white_shark&oldid=1160944529> (accessed June 26, 2023).
