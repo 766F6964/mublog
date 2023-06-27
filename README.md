@@ -7,7 +7,7 @@ Create your blog now, without having to leverage large frameworks and software s
 
 **Showcase:** 
 
-![ezgif com-optimize](https://github.com/766F6964/mublog/assets/34845270/193ad757-6996-498d-bd95-193540c70de2)
+![ezgif com-video-to-gif](https://github.com/766F6964/mublog/assets/34845270/01b27f1d-7ee8-4a66-bb93-4a329fe4695d)
 
 ## Features
 All the usual constructs, that you find in markdown:
