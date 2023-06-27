@@ -63,8 +63,8 @@ class Mublog():
         try:
             for f in glob.glob(f"{src_css_dir}/*.css"):
                 shutil.copy(f, dst_css_dir)
-            for f in glob.glob(f"{src_js_dir}/*.js"):
-                shutil.copy(f, dst_js_dir)
+            #for f in glob.glob(f"{src_js_dir}/*.js"):
+            #    shutil.copy(f, dst_js_dir)
             shutil.copytree(src_assets_dir, dst_assets_dir, dirs_exist_ok=True)
         except Exception as e:
             Utils.log_fail(f"Failed to copy css/js/asset files: {str(e)}")
@@ -83,6 +83,8 @@ class Mublog():
 
                 # Substitute content into template with header, footer etc
                 builder.generate_post(post)
+
+        builder.generate_js()
 
     def process_pages(self):
         builder = SiteBuilder()
@@ -200,6 +202,17 @@ class SiteBuilder:
     def load_template(self, template_path: str):
         with open(template_path, encoding="utf-8") as f:
             return f.read()
+
+    def generate_js(self):
+        js_template = self.load_template(src_templates_dir + "/mublog.js.template")
+        entries = [f'    "{post.get_dst_path_remote()}": [{", ".join([f"{tag!r}" for tag in post.get_tags()])}]' for post in posts]
+        mapping = "\n" + ",\n".join(entries) + "\n"
+        substitutions = {
+            "tag_mapping": mapping
+        }
+        js_data = Template(js_template).substitute(substitutions)
+        Utils.writefile(dst_js_dir + "/tags.js", js_data)
+        Utils.log_pass(f"Processed JS file.")
 
     def generate_post(self, post):
         # Convert markdown to html
