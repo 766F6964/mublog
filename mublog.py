@@ -4,6 +4,7 @@ import shutil
 import subprocess
 import sys
 import re
+import urllib.parse
 from string import Template
 
 dst_root_dir = "dst"
@@ -190,6 +191,7 @@ class Post:
             Utils.log_fail(f"The ending marker \"---\" is missing or incorrect")
             exit(1)
 
+
 class SiteBuilder:
 
     def __init__(self):
@@ -226,7 +228,8 @@ class SiteBuilder:
         for tag in sorted_tags:
             tag_count = tag_counts[tag]
             # TODO: Url-encode tag value to prevent possible command-injection vulns!
-            content += f"<div class=\"tag-bubble\" onclick=\"location.href='articles.html?tag={tag}'\">{tag}<span>{tag_count}</span></div>"
+            tag_param = urllib.parse.urlencode({'tag': tag})
+            content += f"<div class=\"tag-bubble\" onclick=\"location.href='articles.html?{tag_param}'\">{tag}<span>{tag_count}</span></div>"
         content += "</div>"
 
         # Substitute html content into page template
