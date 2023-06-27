@@ -7,28 +7,19 @@ function get_tag_parameter() {
     const tag = urlParams.get('tag');
     if (tag) {
         for (var item in tag_mapping) {
-          if (tag_mapping.hasOwnProperty(item)) {
-            var tags = tag_mapping[item];
-            console.log(tag);
-            if (tags.indexOf(tag) == -1) {
-                hide_article_listing(item);
+            if (tag_mapping.hasOwnProperty(item)) {
+                if (tag_mapping[item].indexOf(tag) == -1) {
+                    hide_article_listing(item);
+                }
             }
-          }
         }
     }
 }
 
-function hide_article_listing(post_url) {
-    article_list = document.getElementsByClassName("articles")[0];
-    list_entries = article_list.getElementsByTagName('li');
-
-    for (var i = 0; i < list_entries.length; i++) {
-        path = list_entries[i].children[1].pathname;
-        if (path.includes(post_url)) {
-            console.log("Hiding: " + post_url);
-            list_entries[i].style.display = 'none';
-            break;
-        }
+function hide_article_listing(filename) {
+    elem = document.getElementById(filename);
+    if (elem) {
+        elem.style.display = 'none';
     }
 }
 

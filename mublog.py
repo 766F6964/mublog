@@ -160,9 +160,11 @@ class Post:
         self.raw_file_contents = ""
 
         self.validate_post(src_file_path)
+
         self.src_path = src_file_path
         self.dst_path = Helper.src_to_dst_path(src_file_path, "dst/posts/", ".html")
         self.dst_path_remote = Helper.src_to_dst_path(src_file_path, "posts/", ".html")
+        self.filename = os.path.basename(self.dst_path)
 
     def validate_post(self, src_file_path):
         Logger.log_info(f"Processing {src_file_path} ...")
@@ -220,7 +222,7 @@ class SiteBuilder:
     def generate_js(self):
         js_template = self.load_template(self.config.src_templates_dir + "/tags.js.template")
         entries = [
-            f'    "{post.dst_path_remote}": [{", ".join([f"{tag!r}" for tag in post.tags])}]'
+            f'    "{post.filename}": [{", ".join([f"{tag!r}" for tag in post.tags])}]'
             for post in self.config.posts
         ]
         mapping = "\n" + ",\n".join(entries) + "\n"
@@ -232,11 +234,23 @@ class SiteBuilder:
     def generate_post(self, post):
         content = self.convert_md_html_with_pandoc(post.src_path)
         post_template = self.load_template(self.config.src_templates_dir + "/post.template")
+
+        # Generate the tags for the post
+        post_tags = "<div class=\"tags\">"
+        for tag in post.tags:
+            tag_param = urllib.parse.urlencode({"tag": tag})
+            post_tags += (
+                f'<div class="tag-bubble" onclick="location.href=\'/articles.html?{tag_param}\'">'
+                f"{tag}</div>"
+            )
+        post_tags += "</div>"
+
         substitutions = {
             "author_mail": self.config.author_mail,
             "author_copyright": self.config.author_copyright,
             "title": post.title,
             "content": content,
+            "post_tags": post_tags
         }
         post_data = Template(post_template).substitute(substitutions)
         Helper.writefile(post.dst_path, post_data)
@@ -269,13 +283,13 @@ class SiteBuilder:
         Logger.log_pass(f"Successfully processed {page.src_path}")
 
     def generate_articles_page(self, page):
-        content = "<article>"
-        content += "<ul class=\"articles\">"
+        content = "<article>\n"
+        content += "<ul class=\"articles\">\n"
         for post in self.config.posts:
             content += (
-                f'<li><b>[{post.date}]</b> <a href="{post.dst_path_remote}">{post.title}</a></li>'
+                f'<li id=\"{post.filename}\"><b>[{post.date}]</b> <a href="{post.dst_path_remote}">{post.title}</a></li>\n'
             )
-        content += "</ul>"
+        content += "</ul>\n"
         content += "</article>"
 
         post_template = self.load_template(self.config.src_templates_dir + "/page.template")
