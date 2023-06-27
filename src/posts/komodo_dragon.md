@@ -7,7 +7,7 @@ tags: reptiles,monitor lizards,komodo dragon,wildlife conservation,venomous anim
 # Overview
 
 <img src="../assets/komodo_dragon.jpg">
-   
+
 
 The Komodo Dragon, scientifically known as Varanus komodoensis, is a large reptile found primarily on the Indonesian islands of Komodo, Rinca, Flores, Gili Motang, and Padar. Known for its massive size and powerful build, the Komodo Dragon is the largest living lizard in the world. It has a unique and intriguing place in the animal kingdom.
 
@@ -30,3 +30,8 @@ Komodo Dragons are native to the islands of Indonesia, where they inhabit a vari
 These reptiles are excellent swimmers and can traverse both land and water with ease. They are known to use their strong limbs and muscular tails for swimming across short distances and to move between islands in their range.
 
 It is important to exercise caution and respect when encountering Komodo Dragons in their natural habitats, as they are powerful predators and have been known to be aggressive toward humans.
+
+# Credits
+
+- Komodo dragon photo by [Riza Marlon](https://rizamarlon.com/profil/), from <https://www.discoverwildlife.com/news/komodo-dragon-classified-as-endangered/>.
+- Wikipedia contributors, "Komodo dragon," Wikipedia, The Free Encyclopedia, <https://en.wikipedia.org/w/index.php?title=Komodo_dragon&oldid=1161695338> (accessed June 26, 2023).
