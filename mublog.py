@@ -163,6 +163,8 @@ class Post:
         self.src_path = src_file_path
         self.dst_path = Helper.src_to_dst_path(src_file_path, "dst/posts/", ".html")
         self.dst_path_remote = Helper.src_to_dst_path(src_file_path, "posts/", ".html")
+        self.filename = os.path.basename(self.dst_path)
+        print(self.filename)
 
     def validate_post(self, src_file_path):
         Logger.log_info(f"Processing {src_file_path} ...")
@@ -220,7 +222,7 @@ class SiteBuilder:
     def generate_js(self):
         js_template = self.load_template(self.config.src_templates_dir + "/tags.js.template")
         entries = [
-            f'    "{post.dst_path_remote}": [{", ".join([f"{tag!r}" for tag in post.tags])}]'
+            f'    "{post.filename}": [{", ".join([f"{tag!r}" for tag in post.tags])}]'
             for post in self.config.posts
         ]
         mapping = "\n" + ",\n".join(entries) + "\n"
@@ -273,7 +275,7 @@ class SiteBuilder:
         content += "<ul class=\"articles\">"
         for post in self.config.posts:
             content += (
-                f'<li><b>[{post.date}]</b> <a href="{post.dst_path_remote}">{post.title}</a></li>'
+                f'<li id=\"{post.filename}\"><b>[{post.date}]</b> <a href="{post.dst_path_remote}">{post.title}</a></li>'
             )
         content += "</ul>"
         content += "</article>"
