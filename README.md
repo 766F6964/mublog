@@ -70,9 +70,9 @@ comprehensive table below that explains everything.
         <tr>
             <td><code>src/css/</code></td>
             <td>
-                The <code>src/css/</code> directory, contains `style.css`, the *.css file that defines the colors and the
+                The <code>src/css/</code> directory, contains <code>style.css</code>, the css file that defines the colors and the
                 layout of the blog.
-                It also contains `normalize.css`, a file that ensures that the blog will be shown correctly in all
+                It also contains <code>normalize.css</code>, a file that ensures that the blog will be shown correctly in all
                 browsers and on mobile devices.
             </td>
         </tr>
