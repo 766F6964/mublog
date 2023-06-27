@@ -27,10 +27,12 @@ to your server, and your blog will be up and running.
 ## Usage
 
 Out of the box, μblog comes with some example posts, so you can get an idea how a blog site can look like.
-To build the blog files, first, make sure you have python and pandoc installed. Then simply run `python mublog.py` in 
-the root directory of the repository. When the script is finished, the generated files
-can be found in the `dst` directory. To test the blog locally, you can spin up a webserver in that directory, 
-e.g. by running `python3 -m http.server 8000`. Then visit `http://0.0.0.0:8000/` in your browser.
+To build the blog files, first, make sure you have python and pandoc installed. 
+Then simply run `python mublog.py` in the root directory of the repository. 
+When the script is finished, the generated files can be found in the `dst` directory. 
+To test the blog locally, you can spin up a webserver in that directory, 
+e.g. by running `python3 -m http.server 8000`. 
+Then visit `http://0.0.0.0:8000/` in your browser.
 
 If you want to deploy the blog to your server, all you have to do is upload the generated files in the `dst` directory
 to the webroot of your server.
@@ -52,7 +54,7 @@ comprehensive table below that explains everything.
             <td><code>src/</code></td>
             <td>
                 This <code>src/</code> directory is the root directory of your blog.
-                It contains the main pages of your blog, such as _home_, _articles_, _tags_ and _about_.
+                It contains the main pages of your blog, such as home, articles, tags and about.
                 You can modify these, if you want, or add more pages.
                 Just make sure that you reference new pages in the header of the template files, otherwise they wont
                 show up.
@@ -60,7 +62,7 @@ comprehensive table below that explains everything.
         </tr>
         <tr>
             <td><code>src/assets/</code></td>
-            <td>The <code>assets/</code> directory is where all the files go, you might want to reference in your blog
+            <td>The <code>src/assets/</code> directory is where all the files go, you might want to reference in your blog
                 posts,
                 e.g. images, videos, code-snippets etc.
             </td>
@@ -68,7 +70,7 @@ comprehensive table below that explains everything.
         <tr>
             <td><code>src/css/</code></td>
             <td>
-                The <code>css/</code> directory, contains `style.css`, the *.css file that defines the colors and the
+                The <code>src/css/</code> directory, contains `style.css`, the *.css file that defines the colors and the
                 layout of the blog.
                 It also contains `normalize.css`, a file that ensures that the blog will be shown correctly in all
                 browsers and on mobile devices.
@@ -83,9 +85,9 @@ comprehensive table below that explains everything.
             </td>
         </tr>
         <tr>
-            <td><code>src/template</code></td>
+            <td><code>src/templates/</code></td>
             <td>
-                The <code>src/template/</code> directory holds templates for pages, posts, and generated JavaScript
+                The <code>src/templates/</code> directory holds templates for pages, posts, and generated JavaScript
                 files.
                 These templates are used to incorporate header and footer information into your content, as well as to
                 insert article listings and other elements.
@@ -94,8 +96,10 @@ comprehensive table below that explains everything.
         </tr>
         <tr>
             <td><code>dst/</code></td>
-            <td>The <code>dst/</code> directory serves as the output location for all the compiled blog files.
-                These files should be uploaded to your webroot in order to successfully deploy your blog.</td>
+            <td>
+                The <code>dst/</code> directory serves as the output location for all the compiled blog files.
+                These files should be uploaded to your webroot in order to successfully deploy your blog.
+            </td>
         </tr>
     </tbody>
 </table>
