@@ -2,7 +2,6 @@ import glob
 import os
 import shutil
 import subprocess
-import sys
 import re
 import urllib.parse
 from string import Template
@@ -32,21 +31,21 @@ class Helper:
     @staticmethod
     def check_pandoc_installed():
         if not shutil.which("pandoc"):
-            raise EnvironmentError("Pandoc is not installed. Please install Pandoc before continuing.")
+            Logger.log_fail("Pandoc is not installed. Please install Pandoc before continuing.")
 
     @staticmethod
     def clean_build_directory(directory):
         try:
             shutil.rmtree(directory, ignore_errors=True)
         except Exception as e:
-            raise RuntimeError(f"Failed to remove old build directory: {str(e)}")
+            Logger.log_fail(f"Failed to remove old build directory: {str(e)}")
 
     @staticmethod
     def create_directory(directory):
         try:
             os.makedirs(directory, exist_ok=True)
         except Exception as e:
-            raise RuntimeError(f"Failed to create directory: {str(e)}")
+            Logger.log_fail(f"Failed to create directory: {str(e)}")
 
     @staticmethod
     def copy_files(source, destination):
@@ -54,7 +53,7 @@ class Helper:
             for f in glob.glob(f"{source}/*"):
                 shutil.copy(f, destination)
         except Exception as e:
-            raise RuntimeError(f"Failed to copy files: {str(e)}")
+            Logger.log_fail(f"Failed to copy files: {str(e)}")
 
     @staticmethod
     def read_file_contents(file_path):
@@ -132,9 +131,9 @@ class Blog:
         for file_path in glob.glob(self.config.src_root_dir + "/*.md"):
             page = Page(self.config, file_path)
             self.config.pages.append(page)
-            if page.get_src_path().endswith("tags.md"):
+            if page.src_path.endswith("tags.md"):
                 builder.generate_tags_page(page)
-            elif page.get_src_path().endswith("articles.md"):
+            elif page.src_path.endswith("articles.md"):
                 builder.generate_articles_page(page)
             else:
                 builder.generate_page(page)
@@ -147,16 +146,14 @@ class Page:
         self.src_path = src_file_path
         self.dst_path = Helper.src_to_dst_path(src_file_path, "dst/", ".html")
 
-    def get_src_path(self):
-        return self.src_path
-
-    def get_dst_path(self):
-        return self.dst_path
-
 
 class Post:
     def __init__(self, config, src_file_path):
         self.config = config
+        self.title = ""
+        self.description = ""
+        self.date = ""
+        self.tags = []
         self.src_path = ""
         self.dst_path = ""
         self.dst_path_remote = ""
@@ -268,8 +265,8 @@ class SiteBuilder:
             "content": content,
         }
         page_data = Template(post_template).substitute(substitutions)
-        Helper.writefile(page.get_dst_path(), page_data)
-        Logger.log_pass(f"Successfully processed {page.get_src_path()}")
+        Helper.writefile(page.dst_path, page_data)
+        Logger.log_pass(f"Successfully processed {page.src_path}")
 
     def generate_articles_page(self, page):
         content = "<article>"
@@ -313,7 +310,6 @@ class SiteBuilder:
             return result.stdout
         except subprocess.CalledProcessError:
             Logger.log_fail(f"Pandoc failed while processing {src_path}")
-            exit(1)
 
 
 class Logger:
