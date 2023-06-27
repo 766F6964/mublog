@@ -20,6 +20,7 @@
 <hr>
 <main>
 ${content}
+${post_tags}
 </main>
 <footer>
     <hr>
