@@ -236,8 +236,13 @@ class SiteBuilder:
         self.config = config
 
     def load_template(self, template_path: str) -> str:
-        with open(template_path, encoding="utf-8") as f:
-            return f.read()
+        try:
+            with open(template_path, encoding="utf-8") as f:
+                return f.read()
+        except FileNotFoundError:
+            Logger.log_fail(f"Template file {template_path} not found.")
+        except IOError:
+            Logger.log_fail(f"Failed to open template file {template_path}.")
 
     def generate_js(self) -> None:
         js_template = self.load_template(self.config.src_templates_dir + "tags.js.template")
