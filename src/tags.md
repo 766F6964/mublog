@@ -1,2 +1,1 @@
-<article>
-</article>
+Overview of the tags of all posts:
