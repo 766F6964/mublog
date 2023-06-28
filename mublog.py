@@ -9,54 +9,64 @@ from string import Template
 
 class Config:
     def __init__(self):
-        self.dst_root_dir = "dst"
-        self.dst_posts_dir = f"{self.dst_root_dir}/posts"
-        self.dst_css_dir = f"{self.dst_root_dir}/css"
-        self.dst_assets_dir = f"{self.dst_root_dir}/assets"
-        self.dst_js_dir = f"{self.dst_root_dir}/js"
-        self.src_root_dir = "src"
-        self.src_posts_dir = f"{self.src_root_dir}/posts"
-        self.src_css_dir = f"{self.src_root_dir}/css"
-        self.src_assets_dir = f"{self.src_root_dir}/assets"
-        self.src_templates_dir = f"{self.src_root_dir}/templates"
-        self.post_ignore_delim = "_"
-        self.author_name = "John Doe"
-        self.author_mail = "johndoe@example.com"
-        self.author_copyright = f"Copyright 2023 {self.author_name}"
+        self.dst_root_dir = "dst/"
+        self.dst_posts_dir = f"{self.dst_root_dir}posts/"
+        self.dst_css_dir = f"{self.dst_root_dir}css/"
+        self.dst_assets_dir = f"{self.dst_root_dir}assets/"
+        self.dst_js_dir = f"{self.dst_root_dir}js/"
+
+        self.src_root_dir = "src/"
+        self.src_posts_dir = f"{self.src_root_dir}posts/"
+        self.src_css_dir = f"{self.src_root_dir}css/"
+        self.src_assets_dir = f"{self.src_root_dir}assets/"
+        self.src_templates_dir = f"{self.src_root_dir}templates/"
+
+        self.blog_url = "https://my-blog.com/"
+        self.blog_title = "John's Awesome Blog"
+        self.blog_description = "Short description what the blog is about"
+        self.blog_author_name = "John Doe"
+        self.blog_author_mail = "johndoe@example.com"
+        self.blog_author_copyright = f"Copyright 2023 {self.blog_author_name}"
+        self.post_ignore_prefix = "_"
         self.posts = []
         self.pages = []
 
 
 class Helper:
     @staticmethod
-    def check_pandoc_installed():
+    def check_pandoc_installed() -> None:
         if not shutil.which("pandoc"):
             Logger.log_fail("Pandoc is not installed. Please install Pandoc before continuing.")
 
     @staticmethod
-    def clean_build_directory(directory):
+    def strip_top_directory_in_path(path: str) -> str:
+        parts = path.split(os.sep)
+        return os.sep.join(parts[1:]) if len(parts) > 1 else path
+
+    @staticmethod
+    def clean_build_directory(directory: str) -> None:
         try:
             shutil.rmtree(directory, ignore_errors=True)
         except Exception as e:
             Logger.log_fail(f"Failed to remove old build directory: {str(e)}")
 
     @staticmethod
-    def create_directory(directory):
+    def create_directory(directory: str) -> None:
         try:
             os.makedirs(directory, exist_ok=True)
         except Exception as e:
             Logger.log_fail(f"Failed to create directory: {str(e)}")
 
     @staticmethod
-    def copy_files(source, destination):
+    def copy_files(src_path: str, dst_path: str) -> None:
         try:
-            for f in glob.glob(f"{source}/*"):
-                shutil.copy(f, destination)
+            for f in glob.glob(f"{src_path}/*"):
+                shutil.copy(f, dst_path)
         except Exception as e:
             Logger.log_fail(f"Failed to copy files: {str(e)}")
 
     @staticmethod
-    def read_file_contents(file_path):
+    def read_file_contents(file_path: str) -> list[str]:
         try:
             with open(file_path, 'r') as file:
                 return file.readlines()
@@ -70,12 +80,21 @@ class Helper:
         return os.path.join(dst_dir, base_name + dst_ext)
 
     @staticmethod
-    def writefile(path: str, contents: str):
+    def replace_file_extension(file_path: str, ext: str) -> str:
+        root, old_extension = os.path.splitext(file_path)
+
+        if not old_extension:
+            Logger.log_fail(f"The file path '{file_path}' does not have an extension to replace.")
+
+        return root + '.' + ext.strip('.')
+
+    @staticmethod
+    def writefile(path: str, contents: str) -> None:
         with open(path, "w", encoding="utf-8") as f:
             f.write(contents)
 
     @staticmethod
-    def substitute(mapping: dict[str, str], in_path: str, out_path: str = None):
+    def substitute(mapping: dict[str, str], in_path: str, out_path: str = None) -> None:
         if not out_path:
             out_path = in_path
 
@@ -87,10 +106,10 @@ class Helper:
 
 class Blog:
 
-    def __init__(self, config):
+    def __init__(self, config: Config):
         self.config = config
 
-    def generate(self):
+    def generate(self) -> None:
         Helper.check_pandoc_installed()
         self.clean_build_directory()
         self.create_output_directories()
@@ -98,10 +117,10 @@ class Blog:
         self.process_posts()
         self.process_pages()
 
-    def clean_build_directory(self):
+    def clean_build_directory(self) -> None:
         Helper.clean_build_directory(self.config.dst_root_dir)
 
-    def create_output_directories(self):
+    def create_output_directories(self) -> None:
         directories = [
             self.config.dst_root_dir,
             self.config.dst_posts_dir,
@@ -112,23 +131,23 @@ class Blog:
         for directory in directories:
             Helper.create_directory(directory)
 
-    def copy_files_to_dst(self):
+    def copy_files_to_dst(self) -> None:
         Helper.copy_files(self.config.src_css_dir, self.config.dst_css_dir)
         Helper.copy_files(self.config.src_assets_dir, self.config.dst_assets_dir)
 
-    def process_posts(self):
+    def process_posts(self) -> None:
         builder = SiteBuilder(self.config)
-        for file_path in glob.glob(self.config.src_posts_dir + "/*.md"):
-            if not os.path.basename(file_path).startswith(self.config.post_ignore_delim):
+        for file_path in glob.glob(self.config.src_posts_dir + "*.md"):
+            if not os.path.basename(file_path).startswith(self.config.post_ignore_prefix):
                 post = Post(self.config, file_path)
                 self.config.posts.append(post)
                 builder.generate_post(post)
 
         builder.generate_js()
 
-    def process_pages(self):
+    def process_pages(self) -> None:
         builder = SiteBuilder(self.config)
-        for file_path in glob.glob(self.config.src_root_dir + "/*.md"):
+        for file_path in glob.glob(self.config.src_root_dir + "*.md"):
             page = Page(self.config, file_path)
             self.config.pages.append(page)
             if page.src_path.endswith("tags.md"):
@@ -141,14 +160,14 @@ class Blog:
 
 class Page:
 
-    def __init__(self, config, src_file_path):
+    def __init__(self, config: Config, src_page_path: str):
         self.config = config
-        self.src_path = src_file_path
-        self.dst_path = Helper.src_to_dst_path(src_file_path, "dst/", ".html")
+        self.src_path = src_page_path
+        self.dst_path = Helper.src_to_dst_path(src_page_path, self.config.dst_root_dir, ".html")
 
 
 class Post:
-    def __init__(self, config, src_file_path):
+    def __init__(self, config: Config, src_file_path: str):
         self.config = config
         self.title = ""
         self.description = ""
@@ -158,15 +177,16 @@ class Post:
         self.dst_path = ""
         self.dst_path_remote = ""
         self.raw_file_contents = ""
+        self.raw_html_content = ""
 
         self.validate_post(src_file_path)
 
         self.src_path = src_file_path
-        self.dst_path = Helper.src_to_dst_path(src_file_path, "dst/posts/", ".html")
-        self.dst_path_remote = Helper.src_to_dst_path(src_file_path, "posts/", ".html")
+        self.dst_path = Helper.src_to_dst_path(src_file_path, self.config.dst_posts_dir, ".html")
+        self.dst_path_remote = Helper.strip_top_directory_in_path(Helper.replace_file_extension(self.src_path, ".html"))
         self.filename = os.path.basename(self.dst_path)
 
-    def validate_post(self, src_file_path):
+    def validate_post(self, src_file_path: str) -> None:
         Logger.log_info(f"Processing {src_file_path} ...")
         self.raw_file_contents = Helper.read_file_contents(src_file_path)
 
@@ -212,15 +232,15 @@ class Post:
 
 
 class SiteBuilder:
-    def __init__(self, config):
+    def __init__(self, config: Config):
         self.config = config
 
-    def load_template(self, template_path: str):
+    def load_template(self, template_path: str) -> str:
         with open(template_path, encoding="utf-8") as f:
             return f.read()
 
-    def generate_js(self):
-        js_template = self.load_template(self.config.src_templates_dir + "/tags.js.template")
+    def generate_js(self) -> None:
+        js_template = self.load_template(self.config.src_templates_dir + "tags.js.template")
         entries = [
             f'    "{post.filename}": [{", ".join([f"{tag!r}" for tag in post.tags])}]'
             for post in self.config.posts
@@ -231,9 +251,10 @@ class SiteBuilder:
         Helper.writefile(self.config.dst_js_dir + "/tags.js", js_data)
         Logger.log_pass(f"Processed JS file.")
 
-    def generate_post(self, post):
+    def generate_post(self, post: Post) -> None:
         content = self.convert_md_html_with_pandoc(post.src_path)
-        post_template = self.load_template(self.config.src_templates_dir + "/post.template")
+        post.raw_html_content = content
+        post_template = self.load_template(self.config.src_templates_dir + "post.template")
 
         # Generate the tags for the post
         post_tags = "<div class=\"tags\">"
@@ -246,17 +267,19 @@ class SiteBuilder:
         post_tags += "</div>"
 
         substitutions = {
-            "author_mail": self.config.author_mail,
-            "author_copyright": self.config.author_copyright,
+            "author_mail": self.config.blog_author_mail,
+            "author_copyright": self.config.blog_author_copyright,
             "title": post.title,
             "content": content,
-            "post_tags": post_tags
+            "post_tags": post_tags,
+            "css_dir": Helper.strip_top_directory_in_path(self.config.dst_css_dir),
+            "js_dir": Helper.strip_top_directory_in_path(self.config.dst_js_dir),
         }
         post_data = Template(post_template).substitute(substitutions)
         Helper.writefile(post.dst_path, post_data)
         Logger.log_pass(f"Successfully processed {post.src_path}")
 
-    def generate_tags_page(self, page):
+    def generate_tags_page(self, page: Page) -> None:
         unique_tags = list(set(tag for post in self.config.posts for tag in post.tags))
         tag_counts = {tag: sum(tag in post.tags for post in self.config.posts) for tag in unique_tags}
         sorted_tags = sorted(unique_tags, key=lambda tag: tag_counts[tag], reverse=True)
@@ -271,18 +294,20 @@ class SiteBuilder:
             )
         content += "</div>"
 
-        post_template = self.load_template(self.config.src_templates_dir + "/page.template")
+        post_template = self.load_template(self.config.src_templates_dir + "page.template")
         substitutions = {
-            "author_mail": self.config.author_mail,
-            "author_copyright": self.config.author_copyright,
+            "author_mail": self.config.blog_author_mail,
+            "author_copyright": self.config.blog_author_copyright,
             "title": "Blog",
             "content": content,
+            "css_dir": Helper.strip_top_directory_in_path(self.config.dst_css_dir),
+            "js_dir": Helper.strip_top_directory_in_path(self.config.dst_js_dir),
         }
         page_data = Template(post_template).substitute(substitutions)
         Helper.writefile(page.dst_path, page_data)
         Logger.log_pass(f"Successfully processed {page.src_path}")
 
-    def generate_articles_page(self, page):
+    def generate_articles_page(self, page: Page) -> None:
         content = "<article>\n"
         content += "<ul class=\"articles\">\n"
         for post in self.config.posts:
@@ -292,32 +317,37 @@ class SiteBuilder:
         content += "</ul>\n"
         content += "</article>"
 
-        post_template = self.load_template(self.config.src_templates_dir + "/page.template")
+        post_template = self.load_template(self.config.src_templates_dir + "page.template")
         substitutions = {
-            "author_mail": self.config.author_mail,
-            "author_copyright": self.config.author_copyright,
+            "author_mail": self.config.blog_author_mail,
+            "author_copyright": self.config.blog_author_copyright,
             "title": "Blog",
             "content": content,
+            "css_dir": Helper.strip_top_directory_in_path(self.config.dst_css_dir),
+            "js_dir": Helper.strip_top_directory_in_path(self.config.dst_js_dir),
         }
         page_data = Template(post_template).substitute(substitutions)
         Helper.writefile(page.dst_path, page_data)
         Logger.log_pass(f"Successfully processed {page.src_path}")
 
-    def generate_page(self, page):
+    def generate_page(self, page: Page) -> None:
+        Logger.log_info(f"Generating page: {page.src_path} ...")
         content = self.convert_md_html_with_pandoc(page.src_path)
-        post_template = self.load_template(self.config.src_templates_dir + "/page.template")
+        post_template = self.load_template(self.config.src_templates_dir + "page.template")
         substitutions = {
-            "author_mail": self.config.author_mail,
-            "author_copyright": self.config.author_copyright,
+            "author_mail": self.config.blog_author_mail,
+            "author_copyright": self.config.blog_author_copyright,
             "title": "Blog",
             "content": content,
+            "css_dir": Helper.strip_top_directory_in_path(self.config.dst_css_dir),
+            "js_dir": Helper.strip_top_directory_in_path(self.config.dst_js_dir),
         }
         page_data = Template(post_template).substitute(substitutions)
         Helper.writefile(page.dst_path, page_data)
         Logger.log_pass(f"Successfully processed {page.src_path}")
 
     @staticmethod
-    def convert_md_html_with_pandoc(src_path):
+    def convert_md_html_with_pandoc(src_path: str) -> str:
         command = ["pandoc", src_path, "-f", "markdown", "-t", "html"]
         try:
             result = subprocess.run(command, check=True, capture_output=True, text=True)
@@ -333,20 +363,20 @@ class Logger:
     WARN = "\033[33m[WARN]\033[0m"
 
     @staticmethod
-    def log_info(message):
+    def log_info(message: str) -> None:
         print(f"{Logger.INFO} {message}")
 
     @staticmethod
-    def log_fail(message):
+    def log_fail(message: str) -> None:
         print(f"{Logger.FAIL} {message}")
         exit(1)
 
     @staticmethod
-    def log_warn(message):
+    def log_warn(message: str) -> None:
         print(f"{Logger.WARN} {message}")
 
     @staticmethod
-    def log_pass(message):
+    def log_pass(message: str) -> None:
         print(f"{Logger.PASS} {message}")
 
 
