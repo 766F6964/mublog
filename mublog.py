@@ -284,7 +284,8 @@ class SiteBuilder:
         tag_counts = {tag: sum(tag in post.tags for post in self.config.posts) for tag in unique_tags}
         sorted_tags = sorted(unique_tags, key=lambda tag: tag_counts[tag], reverse=True)
 
-        content = "<div class=\"tags\">"
+        content = self.convert_md_html_with_pandoc(page.src_path)
+        content += "<div class=\"tags\">"
         for tag in sorted_tags:
             tag_count = tag_counts[tag]
             tag_param = urllib.parse.urlencode({"tag": tag})
@@ -308,7 +309,8 @@ class SiteBuilder:
         Logger.log_pass(f"Successfully processed {page.src_path}")
 
     def generate_articles_page(self, page: Page) -> None:
-        content = "<article>\n"
+        content = self.convert_md_html_with_pandoc(page.src_path)
+        content += "<article>\n"
         content += "<ul class=\"articles\">\n"
         for post in self.config.posts:
             content += (
