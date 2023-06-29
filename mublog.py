@@ -5,7 +5,7 @@ import subprocess
 import re
 import urllib.parse
 from string import Template
-
+import html
 
 class Config:
     def __init__(self):
@@ -144,6 +144,7 @@ class Blog:
                 builder.generate_post(post)
 
         builder.generate_js()
+        builder.generate_rss_feed()
 
     def process_pages(self) -> None:
         builder = SiteBuilder(self.config)
@@ -352,6 +353,27 @@ class SiteBuilder:
         page_data = Template(post_template).substitute(substitutions)
         Helper.writefile(page.dst_path, page_data)
         Logger.log_pass(f"Successfully processed {page.src_path}")
+
+    def generate_rss_feed(self):
+        rss_template = self.load_template(self.config.src_templates_dir + "/rss.xml.template")
+        rss_items = ""
+        for post in self.config.posts:
+            rss_items += "<item>\n"
+            rss_items += f"<title>{html.escape(post.title)}</title>\n"
+            link = self.config.blog_url + Helper.strip_top_directory_in_path(self.config.dst_posts_dir) + post.filename
+            rss_items += f"<link>{link}</link>\n"
+            rss_items += f"<description>{html.escape(post.raw_html_content)}</description>\n"
+            rss_items += "</item>\n"
+
+        substitutions = {
+            "blog_title": self.config.blog_title,
+            "blog_url": self.config.blog_url,
+            "blog_description": self.config.blog_description,
+            "rss_items": rss_items
+        }
+        feed = Template(rss_template).substitute(substitutions)
+        Helper.writefile(self.config.dst_root_dir + "feed.xml", feed)
+        Logger.log_pass(f"Successfully generated rss feed")
 
     @staticmethod
     def convert_md_html_with_pandoc(src_path: str) -> str:
