@@ -38,8 +38,6 @@ class Config:
 
 class PathHandler:
 
-
-
     def __init__(self, dst_root_dir, src_root_dir, blog_url):
         self.dst_root_dir = dst_root_dir
         self.src_root_dir = src_root_dir
@@ -97,24 +95,21 @@ class PathHandler:
                 return False
         return True
 
+
     def make_relative_urls_absolute(self, html_input: str, replace_fn):
         regex_pattern = r'''(?:url\(|<(?:link|a|script|img)[^>]+(?:src|href)\s*=\s*)(?!['"]?(?:data|http|https))['"]?([^'"\)\s>#]+)'''
-        all_rel_urls = re.findall(regex_pattern, html_input)
+        new_html = html_input
+        offset = 0
+        for match in re.finditer(regex_pattern, html_input):
+            captured_word = match.group(1)
+            print(f"Captured group: {captured_word}")
+            replacement_text = self.generate_absolute_path(captured_word) #replace_fn(captured_word)
+            start_index = match.start(1) + offset
+            end_index = match.end(1) + offset
+            new_html = new_html[:start_index] + replacement_text + new_html[end_index:]
+            offset += len(replacement_text) - len(captured_word)
 
-        for rel_url in all_rel_urls:
-            abs_url = self.generate_absolute_path(rel_url)
-            html_input = html_input.replace(rel_url, abs_url)
-            print(f"{rel_url}  ->  {abs_url}")
-        return html_input
-
-        #for match in re.finditer(regex_pattern, input_str):
-        #    url_start = match.start(2)  # start position of the URL string
-        #    url_end = match.end(2)  # end position of the URL string
-        #    replaced_url = replace_fn(match.group(2))
-        #    replaced_str = replaced_str[:url_start] + replaced_url + replaced_str[url_end:]
-
-
-        #return "A"
+        return new_html
 
     def custom_replace_fn(self, match):
         url = match.group(1)
@@ -122,7 +117,6 @@ class PathHandler:
         absolute = self.generate_absolute_path(url)
         print(absolute)
         return absolute
-
 
 
 class Helper:
@@ -234,17 +228,12 @@ class Blog:
             if not os.path.basename(file_path).startswith(self.config.post_ignore_prefix):
                 post = Post(self.config, file_path)
 
-
                 self.config.posts.append(post)
                 builder.generate_post(post)
 
-
-
-
         builder.generate_js()
 
-        #for post in blog.config.posts:
-
+        # for post in blog.config.posts:
 
         builder.generate_rss_feed()
 
@@ -332,7 +321,6 @@ class Post:
         if self.raw_file_contents[5].strip() != "---":
             Logger.log_fail(f"Failed to validate header of {src_file_path}")
             Logger.log_fail(f"The ending marker \"---\" is missing or incorrect")
-
 
 
 class SiteBuilder:
@@ -533,12 +521,10 @@ relative_inputs = [
 
 pm = PathHandler(cfg.dst_root_dir, cfg.src_root_dir, cfg.blog_url)
 
-#for item in relative_inputs:
+# for item in relative_inputs:
 #    print(f"{item}  ->  {pm.generate_absolute_path(item)}  ->  {pm.is_relative_path(pm.generate_absolute_path(item))}")
 
 
-
 blog = Blog(cfg)
-
 
 blog.generate()
