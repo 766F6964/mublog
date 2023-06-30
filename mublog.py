@@ -6,6 +6,10 @@ import re
 import urllib.parse
 from string import Template
 import html
+from urllib.parse import urljoin
+from bs4 import BeautifulSoup
+from urllib.parse import urljoin
+
 
 class Config:
     def __init__(self):
@@ -30,6 +34,95 @@ class Config:
         self.post_ignore_prefix = "_"
         self.posts = []
         self.pages = []
+
+
+class PathHandler:
+
+
+
+    def __init__(self, dst_root_dir, src_root_dir, blog_url):
+        self.dst_root_dir = dst_root_dir
+        self.src_root_dir = src_root_dir
+        self.blog_url = blog_url
+
+    def construct_dst_path(self, relative_path, extension=None):
+        path = f"{self.dst_root_dir}{relative_path}"
+        if extension:
+            path = self.replace_extension(path, extension)
+        return path
+
+    def construct_src_path(self, relative_path, extension=None):
+        path = f"{self.src_root_dir}{relative_path}"
+        if extension:
+            path = self.replace_extension(path, extension)
+        return path
+
+    def replace_extension(self, path, new_extension):
+        return f"{path.rsplit('.', maxsplit=1)[0]}.{new_extension}"
+
+    def generate_absolute_path(self, relative_path):
+        return urljoin(self.blog_url, relative_path.lstrip('/'))
+
+    def find_urls_in_html(self, html_text):
+        soup = BeautifulSoup(html_text, 'html.parser')
+        urls = set()
+
+        # Find URLs in anchor tags
+        for anchor in soup.find_all('a'):
+            href = anchor.get('href')
+            if href and not self.is_text_link(href):
+                urls.add(href)
+
+        # Find URLs in img tags
+        for img in soup.find_all('img'):
+            src = img.get('src')
+            if src and not self.is_text_link(src):
+                urls.add(src)
+
+        # Find URLs in other tags (e.g., script, link, etc.)
+        for tag in soup.find_all(['script', 'link']):
+            src = tag.get('src')
+            if src and not self.is_text_link(src):
+                urls.add(src)
+
+        return urls
+
+    def is_text_link(self, text):
+        return text.startswith('"') or text.startswith("'")
+
+    def is_relative_path(self, path):
+        absolute_prefixes = ["http://", "https://", "ftp://", "sftp://"]
+        for prefix in absolute_prefixes:
+            if path.startswith(prefix):
+                return False
+        return True
+
+    def make_relative_urls_absolute(self, html_input: str, replace_fn):
+        regex_pattern = r'''(?:url\(|<(?:link|a|script|img)[^>]+(?:src|href)\s*=\s*)(?!['"]?(?:data|http|https))['"]?([^'"\)\s>#]+)'''
+        all_rel_urls = re.findall(regex_pattern, html_input)
+
+        for rel_url in all_rel_urls:
+            abs_url = self.generate_absolute_path(rel_url)
+            html_input = html_input.replace(rel_url, abs_url)
+            print(f"{rel_url}  ->  {abs_url}")
+        return html_input
+
+        #for match in re.finditer(regex_pattern, input_str):
+        #    url_start = match.start(2)  # start position of the URL string
+        #    url_end = match.end(2)  # end position of the URL string
+        #    replaced_url = replace_fn(match.group(2))
+        #    replaced_str = replaced_str[:url_start] + replaced_url + replaced_str[url_end:]
+
+
+        #return "A"
+
+    def custom_replace_fn(self, match):
+        url = match.group(1)
+        print(url)
+        absolute = self.generate_absolute_path(url)
+        print(absolute)
+        return absolute
+
 
 
 class Helper:
@@ -140,10 +233,19 @@ class Blog:
         for file_path in glob.glob(self.config.src_posts_dir + "*.md"):
             if not os.path.basename(file_path).startswith(self.config.post_ignore_prefix):
                 post = Post(self.config, file_path)
+
+
                 self.config.posts.append(post)
                 builder.generate_post(post)
 
+
+
+
         builder.generate_js()
+
+        #for post in blog.config.posts:
+
+
         builder.generate_rss_feed()
 
     def process_pages(self) -> None:
@@ -230,6 +332,7 @@ class Post:
         if self.raw_file_contents[5].strip() != "---":
             Logger.log_fail(f"Failed to validate header of {src_file_path}")
             Logger.log_fail(f"The ending marker \"---\" is missing or incorrect")
+
 
 
 class SiteBuilder:
@@ -358,11 +461,16 @@ class SiteBuilder:
         rss_template = self.load_template(self.config.src_templates_dir + "/rss.xml.template")
         rss_items = ""
         for post in self.config.posts:
+            # Replace relative urls with absolute URLs
+            raw = post.raw_html_content
+            print(post.title)
+            edited = pm.make_relative_urls_absolute(raw, pm.custom_replace_fn)
+
             rss_items += "<item>\n"
             rss_items += f"<title>{html.escape(post.title)}</title>\n"
             link = self.config.blog_url + Helper.strip_top_directory_in_path(self.config.dst_posts_dir) + post.filename
             rss_items += f"<link>{link}</link>\n"
-            rss_items += f"<description>{html.escape(post.raw_html_content)}</description>\n"
+            rss_items += f"<description>{html.escape(edited)}</description>\n"
             rss_items += "</item>\n"
 
         substitutions = {
@@ -410,5 +518,27 @@ class Logger:
 
 
 cfg = Config()
+
+relative_inputs = [
+    "../assets/black_mamba_1.jpg",
+    "/about.html",
+    "assets/file.png",
+    "/index.html",
+    "/articles.html",
+    "/tags.html",
+    "/feed.xml",
+    "/about.html",
+    "/posts/my_article.html"
+]
+
+pm = PathHandler(cfg.dst_root_dir, cfg.src_root_dir, cfg.blog_url)
+
+#for item in relative_inputs:
+#    print(f"{item}  ->  {pm.generate_absolute_path(item)}  ->  {pm.is_relative_path(pm.generate_absolute_path(item))}")
+
+
+
 blog = Blog(cfg)
+
+
 blog.generate()
