@@ -196,39 +196,39 @@ class Post:
 
         # Validation line 1: Starting marker
         if self.raw_file_contents[0].strip() != "---":
-            Logger.log_fail(f"Failed to validate header of {src_file_path}")
-            Logger.log_fail(f"The starting marker \"---\" is missing or incorrect")
+            Logger.log_fail(f"Failed to validate header of {src_file_path}\n"
+                            f"       The starting marker \"---\" is missing or incorrect.")
 
         # Validation line 2: title field
         if not re.match(r'^title:\s*(\S+)', self.raw_file_contents[1]):
-            Logger.log_fail(f'Failed to validate header of {src_file_path}')
-            Logger.log_fail(f'The title field is missing, empty, or incorrect.')
+            Logger.log_fail(f"Failed to validate header of {src_file_path}\n"
+                            f"       The title field is missing, empty, or incorrect.")
         self.title = re.search(r'^title:\s*(.*?)\s*$', self.raw_file_contents[1]).group(1)
 
         # Validation line 3: description field
         if not re.match(r'^description:\s*(\S+)', self.raw_file_contents[2]):
-            Logger.log_fail(f'Failed to validate header of {src_file_path}')
-            Logger.log_fail(f'The description field is missing, empty, or incorrect.')
+            Logger.log_fail(f"Failed to validate header of {src_file_path}\n"
+                            f"       The description field is missing, empty, or incorrect.")
         self.description = re.search(r'^description:\s*(.*?)\s*$', self.raw_file_contents[2]).group(1)
 
         # Validation line 4: date field
         if not re.match(r'^date:\s*([0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$)', self.raw_file_contents[3]):
-            Logger.log_fail(f'Failed to validate header of {src_file_path}')
-            Logger.log_fail(f'The date field is missing, empty, or not in the correct format (YYYY-MM-DD)')
+            Logger.log_fail(f"Failed to validate header of {src_file_path}\n"
+                            f"       The date field is missing, empty, or not in the expected format (YYYY-MM-DD).")
         self.date = re.search(r'([0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$)',
                               self.raw_file_contents[3]).group(1)
 
         # Validation line 5: tags field
         if not re.match(r'^tags:\s*(\S+)', self.raw_file_contents[4]):
-            Logger.log_fail(f'Failed to validate header of {src_file_path}')
-            Logger.log_fail(f'The tags field is missing, empty, or incorrect.')
+            Logger.log_fail(f"Failed to validate header of {src_file_path}\n"
+                            f"       The tags field is missing, empty, or incorrect.")
         tag_values = re.search(r'^tags:\s*(.*?)\s*$', self.raw_file_contents[4]).group(1)
         self.tags = [tag for tag in re.findall(r'[^,\s][^,]*[^,\s]|[^,\s]', tag_values)]
 
         # Validation line 6: Ending marker
         if self.raw_file_contents[5].strip() != "---":
-            Logger.log_fail(f"Failed to validate header of {src_file_path}")
-            Logger.log_fail(f"The ending marker \"---\" is missing or incorrect")
+            Logger.log_fail(f"Failed to validate header of {src_file_path}\n"
+                            f"       The ending marker \"---\" is missing or incorrect.")
 
 
 class SiteBuilder:
