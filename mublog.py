@@ -5,6 +5,8 @@ import subprocess
 import re
 import urllib.parse
 from string import Template
+import html
+from urllib.parse import urljoin
 
 
 class Config:
@@ -30,6 +32,60 @@ class Config:
         self.post_ignore_prefix = "_"
         self.posts = []
         self.pages = []
+
+
+class PathHandler:
+
+    def __init__(self, dst_root_dir, src_root_dir, blog_url):
+        self.dst_root_dir = dst_root_dir
+        self.src_root_dir = src_root_dir
+        self.blog_url = blog_url
+
+    def generate_absolute_path(self, relative_path):
+        if relative_path.startswith('/'):
+            # Absolute path from the web-root directory
+            return urljoin(self.blog_url, relative_path.lstrip('/'))
+        elif relative_path.startswith('../'):
+            # Relative path from a post
+            return urljoin(self.blog_url, relative_path)
+        else:
+            # Relative path within a post
+            return urljoin(self.blog_url, 'posts/' + relative_path)
+
+    def is_text_link(self, text):
+        return text.startswith('"') or text.startswith("'")
+
+    def is_relative_path(self, path):
+        absolute_prefixes = ["http://", "https://", "ftp://", "sftp://"]
+        for prefix in absolute_prefixes:
+            if path.startswith(prefix):
+                return False
+        return True
+
+    def convert_relative_urls(self, ref_location):
+        print(f"Relative URL found at: {ref_location}")
+
+
+    def make_relative_urls_absolute(self, html_input: str):
+        # Information: Matches relative URLs if they are in a link, a, script or img tag.
+        # For a URL to be considered relative, it can't start with http:// or https:// or data://
+        # It also excludes fragment identifiers (aka #)
+        regex_pattern = r'''(?:url\(|<(?:link|a|script|img)[^>]+(?:src|href)\s*=\s*)(?!['"]?(?:data|http|https))['"]?([^'"\)\s>#]+)'''
+        new_html = html_input
+        offset = 0
+        for match in re.finditer(regex_pattern, html_input):
+            relative_url = match.group(1)
+            absolute_url = self.generate_absolute_path(relative_url)
+
+            Logger.log_info(f"Convert relative URL for RSS feed: {relative_url} => {absolute_url}")
+
+            start_index = match.start(1) + offset
+            end_index = match.end(1) + offset
+            new_html = new_html[:start_index] + absolute_url + new_html[end_index:]
+            offset += len(absolute_url) - len(relative_url)
+
+        return new_html
+
 
 
 class Helper:
@@ -140,10 +196,12 @@ class Blog:
         for file_path in glob.glob(self.config.src_posts_dir + "*.md"):
             if not os.path.basename(file_path).startswith(self.config.post_ignore_prefix):
                 post = Post(self.config, file_path)
+
                 self.config.posts.append(post)
                 builder.generate_post(post)
 
         builder.generate_js()
+        builder.generate_rss_feed()
 
     def process_pages(self) -> None:
         builder = SiteBuilder(self.config)
@@ -353,6 +411,30 @@ class SiteBuilder:
         Helper.writefile(page.dst_path, page_data)
         Logger.log_pass(f"Successfully processed {page.src_path}")
 
+    def generate_rss_feed(self):
+        rss_template = self.load_template(self.config.src_templates_dir + "/rss.xml.template")
+        rss_items = ""
+        for post in self.config.posts:
+            # Replace relative urls with absolute URLs
+            edited = pm.make_relative_urls_absolute(post.raw_html_content)
+
+            rss_items += "<item>\n"
+            rss_items += f"<title>{html.escape(post.title)}</title>\n"
+            link = self.config.blog_url + Helper.strip_top_directory_in_path(self.config.dst_posts_dir) + post.filename
+            rss_items += f"<link>{link}</link>\n"
+            rss_items += f"<description>{html.escape(edited)}</description>\n"
+            rss_items += "</item>\n"
+
+        substitutions = {
+            "blog_title": self.config.blog_title,
+            "blog_url": self.config.blog_url,
+            "blog_description": self.config.blog_description,
+            "rss_items": rss_items
+        }
+        feed = Template(rss_template).substitute(substitutions)
+        Helper.writefile(self.config.dst_root_dir + "feed.xml", feed)
+        Logger.log_pass(f"Successfully generated rss feed")
+
     @staticmethod
     def convert_md_html_with_pandoc(src_path: str) -> str:
         command = ["pandoc", src_path, "-f", "markdown", "-t", "html"]
@@ -388,5 +470,19 @@ class Logger:
 
 
 cfg = Config()
+
+relative_inputs = [
+    "../assets/black_mamba_1.jpg",
+    "/about.html",
+    "assets/file.png",
+    "/index.html",
+    "/articles.html",
+    "/tags.html",
+    "/feed.xml",
+    "/about.html",
+    "/posts/my_article.html"
+]
+
+pm = PathHandler(cfg.dst_root_dir, cfg.src_root_dir, cfg.blog_url)
 blog = Blog(cfg)
 blog.generate()

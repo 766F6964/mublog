@@ -15,6 +15,7 @@
     <a href="/articles.html">articles</a>
     <a href="/tags.html">tags</a>
     <a href="mailto:${author_mail}">mail</a>
+    <a href="/feed.xml">rss</a>
     <a href="/about.html">about</a>
 </nav>
 <hr>
