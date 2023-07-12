@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="/${css_dir}/style.css" type="text/css" media="all">
     <script src="/${js_dir}/tags.js"></script>
     <title>
-        ${title}
+        ${post_title}
     </title>
 </head>
 <nav>
@@ -20,7 +20,7 @@
 </nav>
 <hr>
 <main>
-${content}
+${post_content}
 ${post_tags}
 </main>
 <footer>

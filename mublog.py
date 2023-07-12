@@ -3,9 +3,9 @@ import os
 import shutil
 import subprocess
 import re
+import html
 import urllib.parse
 from string import Template
-import html
 from urllib.parse import urljoin
 
 
@@ -103,11 +103,27 @@ class PathHandler:
 
 
 class Helper:
+
     @staticmethod
-    def check_pandoc_installed() -> bool:
-        if not shutil.which("pandoc"):
-            return False
-        return True
+    def generate_post_tags(post) -> str:
+        tags = "<div class=\"tags\">\n"
+        for tag in post.tags:
+            tag_name = urllib.parse.urlencode({"tag": tag})
+            tags += (
+                f'<div class="tag-bubble" onclick="location.href=\'/articles.html?{tag_name}\'">'
+                f"{tag}</div>\n"
+            )
+        tags += "</div>"
+        return tags
+
+    @staticmethod
+    def convert_md_to_html(src_path: str) -> str:
+        command = ["pandoc", src_path, "-f", "markdown", "-t", "html"]
+        try:
+            result = subprocess.run(command, check=True, capture_output=True, text=True)
+            return result.stdout
+        except subprocess.CalledProcessError:
+            Logger.log_fail(f"Pandoc failed while processing {src_path}")
 
     @staticmethod
     def strip_top_directory_in_path(path: str) -> str:
@@ -175,76 +191,13 @@ class Helper:
         Helper.writefile(out_path, output)
 
 
-class Blog:
-
-    def __init__(self, config: BlogConfig, paths: PathConfig):
-        self.config = config
-        self.paths = paths
-        self.posts = []
-        self.pages = []
-
-        if not Helper.check_pandoc_installed():
-            Logger.log_fail("Pandoc is not installed. Exiting...")
-
-    def generate(self) -> None:
-        builder = SiteBuilder(self.config, self.paths)
-
-        self.clean_build_directory()
-        self.create_build_directories()
-        self.copy_files_to_build_directories()
-
-        self.process_posts(builder)
-        builder.generate_js()
-        builder.generate_rss_feed()
-        self.process_pages()
-
-    def clean_build_directory(self) -> None:
-        Helper.clean_build_directory(self.paths.dst_dir_path)
-
-    def create_build_directories(self) -> None:
-        directories = [
-            self.paths.dst_dir_path,
-            self.paths.dst_posts_dir_path,
-            self.paths.dst_css_dir_path,
-            self.paths.dst_assets_dir_path,
-            self.paths.dst_js_dir_path,
-        ]
-        for directory in directories:
-            Helper.create_directory(directory)
-
-    def copy_files_to_build_directories(self) -> None:
-        Helper.copy_files(self.paths.src_css_dir_path, self.paths.dst_css_dir_path)
-        Helper.copy_files(self.paths.src_assets_dir_path, self.paths.dst_assets_dir_path)
-
-    def process_posts(self, builder: SiteBuilder) -> None:
-        for file_path in glob.glob(os.path.join(self.paths.src_posts_dir_path, "*.md")):
-            # Don't process posts prefixed with post_ignore_prefix
-            if os.path.basename(file_path).startswith(self.config.post_ignore_prefix):
-                continue
-            # Process posts that shouldn't be ignored
-            post = Post(self.config, self.paths, file_path)
-            self.config.posts.append(post)
-            builder.generate_post(post)
-
-    def process_pages(self) -> None:
-        builder = SiteBuilder(self.config)
-        for file_path in glob.glob(self.config.src_root_dir + "*.md"):
-            page = Page(self.config, file_path)
-            self.config.pages.append(page)
-            if page.src_path.endswith("tags.md"):
-                builder.generate_tags_page(page)
-            elif page.src_path.endswith("articles.md"):
-                builder.generate_articles_page(page)
-            else:
-                builder.generate_page(page)
-
-
 class Page:
 
     def __init__(self, config: BlogConfig, paths: PathConfig, src_page_path: str):
         self.config = config
+        self.paths = paths
         self.src_path = src_page_path
-        self.dst_path = Helper.post_src_to_dst_path(src_page_path, self.config.dst_root_dir, ".html")
+        self.dst_path = Helper.post_src_to_dst_path(src_page_path, self.paths.dst_dir_path, ".html")
 
 
 class Post:
@@ -311,25 +264,80 @@ class Post:
                             f"       The ending marker \"---\" is missing or incorrect.")
 
 
-class HTMLGen:
+class Blog:
 
-    @staticmethod
-    def generate_post_tags(post: Post) -> str:
-        tags = "<div class=\"tags\">\n"
-        for tag in post.tags:
-            tag_name = urllib.parse.urlencode({"tag": tag})
-            tags += (
-                f'<div class="tag-bubble" onclick="location.href=\'/articles.html?{tag_name}\'">'
-                f"{tag}</div>\n"
-            )
-        tags += "</div>"
-        return tags
-
-
-class SiteBuilder:
     def __init__(self, config: BlogConfig, paths: PathConfig):
         self.config = config
         self.paths = paths
+        self.posts = []
+        self.pages = []
+
+        if not shutil.which("pandoc"):
+            Logger.log_fail("Pandoc is not installed. Exiting...")
+
+    def generate(self) -> None:
+        # builder = SiteBuilder(self.config, self.paths)
+
+        self.clean_build_directory()
+        self.create_build_directories()
+        self.copy_files_to_build_directories()
+
+        self.process_posts()
+        self.generate_js()
+        # self.generate_rss_feed()
+        self.process_pages()
+
+    def clean_build_directory(self) -> None:
+        Helper.clean_build_directory(self.paths.dst_dir_path)
+
+    def create_build_directories(self) -> None:
+        directories = [
+            self.paths.dst_dir_path,
+            self.paths.dst_posts_dir_path,
+            self.paths.dst_css_dir_path,
+            self.paths.dst_assets_dir_path,
+            self.paths.dst_js_dir_path,
+        ]
+        for directory in directories:
+            Helper.create_directory(directory)
+
+    def copy_files_to_build_directories(self) -> None:
+        Helper.copy_files(self.paths.src_css_dir_path, self.paths.dst_css_dir_path)
+        Helper.copy_files(self.paths.src_assets_dir_path, self.paths.dst_assets_dir_path)
+
+    def process_posts(self) -> None:
+        for file_path in glob.glob(os.path.join(self.paths.src_posts_dir_path, "*.md")):
+            if os.path.basename(file_path).startswith(self.config.post_ignore_prefix):
+                continue
+
+            post = Post(self.config, self.paths, file_path)
+            post.raw_html_content = Helper.convert_md_to_html(post.src_path)
+            post_template = self.load_template(os.path.join(self.paths.src_templates_dir_path, "post.template"))
+
+            substitutions = {
+                "author_mail": self.config.blog_author_mail,
+                "author_copyright": self.config.blog_author_copyright,
+                "post_title": post.title,
+                "post_content": post.raw_html_content,
+                "post_tags": Helper.generate_post_tags(post),
+                "css_dir": Helper.strip_top_directory_in_path(self.paths.dst_css_dir_path),
+                "js_dir": Helper.strip_top_directory_in_path(self.paths.dst_js_dir_path),
+            }
+            post_data = Template(post_template).substitute(substitutions)
+            Helper.writefile(post.dst_path, post_data)
+            Logger.log_pass(f"Successfully processed {post.src_path}")
+            self.posts.append(post)
+
+    def process_pages(self) -> None:
+        for file_path in glob.glob(os.path.join(self.paths.src_dir_path, "*.md")):
+            page = Page(self.config, self.paths, file_path)
+            self.pages.append(page)
+            if page.src_path.endswith("tags.md"):
+                self.generate_tags_page(page)
+            elif page.src_path.endswith("articles.md"):
+                self.generate_articles_page(page)
+            else:
+                self.generate_page(page)
 
     def load_template(self, template_path: str) -> str:
         try:
@@ -342,106 +350,17 @@ class SiteBuilder:
 
     def generate_js(self) -> None:
         js_template = self.load_template(os.path.join(self.paths.src_templates_dir_path, "tags.js.template"))
-        entries = [
-            f'    "{post.filename}": [{", ".join([f"{tag!r}" for tag in post.tags])}]'
-            for post in self.config.posts
-        ]
+        entries = [f'"{post.filename}": [{", ".join(map(repr, post.tags))}]' for post in self.posts]
         mapping = "\n" + ",\n".join(entries) + "\n"
         substitutions = {"tag_mapping": mapping}
         js_data = Template(js_template).substitute(substitutions)
         Helper.writefile(os.path.join(self.paths.dst_js_dir_path, "tags.js"), js_data)
-        Logger.log_pass(f"Processed JS file.")
-
-    def generate_post(self, post: Post) -> None:
-        post.raw_html_content = self.convert_md_to_html(post.src_path)
-        post_template = self.load_template(os.path.join(self.paths.src_templates_dir_path, "post.template"))
-
-        substitutions = {
-            "author_mail": self.config.blog_author_mail,
-            "author_copyright": self.config.blog_author_copyright,
-            "title": post.title,
-            "content": post.raw_html_content,
-            "post_tags": HTMLGen.generate_post_tags(post),
-            "css_dir": Helper.strip_top_directory_in_path(self.paths.dst_css_dir_path),
-            "js_dir": Helper.strip_top_directory_in_path(self.paths.dst_js_dir_path),
-        }
-        post_data = Template(post_template).substitute(substitutions)
-        Helper.writefile(post.dst_path, post_data)
-        Logger.log_pass(f"Successfully processed {post.src_path}")
-
-    def generate_tags_page(self, page: Page) -> None:
-        unique_tags = list(set(tag for post in self.config.posts for tag in post.tags))
-        tag_counts = {tag: sum(tag in post.tags for post in self.config.posts) for tag in unique_tags}
-        sorted_tags = sorted(unique_tags, key=lambda tag: tag_counts[tag], reverse=True)
-
-        content = self.convert_md_to_html(page.src_path)
-        content += "<div class=\"tags\">"
-        for tag in sorted_tags:
-            tag_count = tag_counts[tag]
-            tag_param = urllib.parse.urlencode({"tag": tag})
-            content += (
-                f'<div class="tag-bubble" onclick="location.href=\'articles.html?{tag_param}\'">'
-                f"{tag}<span>{tag_count}</span></div>"
-            )
-        content += "</div>"
-
-        post_template = self.load_template(self.config.src_templates_dir + "page.template")
-        substitutions = {
-            "author_mail": self.config.blog_author_mail,
-            "author_copyright": self.config.blog_author_copyright,
-            "title": "Blog",
-            "content": content,
-            "css_dir": Helper.strip_top_directory_in_path(self.config.dst_css_dir),
-            "js_dir": Helper.strip_top_directory_in_path(self.config.dst_js_dir),
-        }
-        page_data = Template(post_template).substitute(substitutions)
-        Helper.writefile(page.dst_path, page_data)
-        Logger.log_pass(f"Successfully processed {page.src_path}")
-
-    def generate_articles_page(self, page: Page) -> None:
-        content = self.convert_md_to_html(page.src_path)
-        content += "<article>\n"
-        content += "<ul class=\"articles\">\n"
-        for post in self.config.posts:
-            content += (
-                f'<li id=\"{post.filename}\"><b>[{post.date}]</b> <a href="{post.remote_path}">{post.title}</a></li>\n'
-            )
-        content += "</ul>\n"
-        content += "</article>"
-
-        post_template = self.load_template(self.config.src_templates_dir + "page.template")
-        substitutions = {
-            "author_mail": self.config.blog_author_mail,
-            "author_copyright": self.config.blog_author_copyright,
-            "title": "Blog",
-            "content": content,
-            "css_dir": Helper.strip_top_directory_in_path(self.config.dst_css_dir),
-            "js_dir": Helper.strip_top_directory_in_path(self.config.dst_js_dir),
-        }
-        page_data = Template(post_template).substitute(substitutions)
-        Helper.writefile(page.dst_path, page_data)
-        Logger.log_pass(f"Successfully processed {page.src_path}")
-
-    def generate_page(self, page: Page) -> None:
-        Logger.log_info(f"Generating page: {page.src_path} ...")
-        content = self.convert_md_to_html(page.src_path)
-        post_template = self.load_template(self.config.src_templates_dir + "page.template")
-        substitutions = {
-            "author_mail": self.config.blog_author_mail,
-            "author_copyright": self.config.blog_author_copyright,
-            "title": "Blog",
-            "content": content,
-            "css_dir": Helper.strip_top_directory_in_path(self.config.dst_css_dir),
-            "js_dir": Helper.strip_top_directory_in_path(self.config.dst_js_dir),
-        }
-        page_data = Template(post_template).substitute(substitutions)
-        Helper.writefile(page.dst_path, page_data)
-        Logger.log_pass(f"Successfully processed {page.src_path}")
+        Logger.log_pass(f"Processed JavaScript file.")
 
     def generate_rss_feed(self):
-        rss_template = self.load_template(self.config.src_templates_dir + "/rss.xml.template")
+        rss_template = self.load_template(os.path.join(self.paths.src_templates_dir_path, "rss.xml.template"))
         rss_items = ""
-        for post in self.config.posts:
+        for post in self.posts:
             # Replace relative urls with absolute URLs
             edited = pm.make_relative_urls_absolute(post.raw_html_content)
 
@@ -462,14 +381,81 @@ class SiteBuilder:
         Helper.writefile(self.config.dst_root_dir + "feed.xml", feed)
         Logger.log_pass(f"Successfully generated rss feed")
 
-    @staticmethod
-    def convert_md_to_html(src_path: str) -> str:
-        command = ["pandoc", src_path, "-f", "markdown", "-t", "html"]
-        try:
-            result = subprocess.run(command, check=True, capture_output=True, text=True)
-            return result.stdout
-        except subprocess.CalledProcessError:
-            Logger.log_fail(f"Pandoc failed while processing {src_path}")
+    def generate_tags_page(self, page: Page) -> None:
+        unique_tags = list(set(tag for post in self.posts for tag in post.tags))
+        tag_counts = {tag: sum(tag in post.tags for post in self.posts) for tag in unique_tags}
+        sorted_tags = sorted(unique_tags, key=lambda tag: tag_counts[tag], reverse=True)
+
+        content = Helper.convert_md_to_html(page.src_path)
+        content += "<div class=\"tags\">"
+        for tag in sorted_tags:
+            tag_count = tag_counts[tag]
+            tag_param = urllib.parse.urlencode({"tag": tag})
+            content += (
+                f'<div class="tag-bubble" onclick="location.href=\'articles.html?{tag_param}\'">'
+                f"{tag}<span>{tag_count}</span></div>"
+            )
+        content += "</div>"
+
+        post_template = self.load_template(os.path.join(self.paths.src_templates_dir_path, "page.template"))
+        substitutions = {
+            "author_mail": self.config.blog_author_mail,
+            "author_copyright": self.config.blog_author_copyright,
+            "page_title": "Blog",
+            "page_content": content,
+            "css_dir": Helper.strip_top_directory_in_path(self.paths.dst_css_dir_path),
+            "js_dir": Helper.strip_top_directory_in_path(self.paths.dst_js_dir_path),
+        }
+        page_data = Template(post_template).substitute(substitutions)
+        Helper.writefile(page.dst_path, page_data)
+        Logger.log_pass(f"Successfully processed {page.src_path}")
+
+    def generate_articles_page(self, page: Page) -> None:
+        content = Helper.convert_md_to_html(page.src_path)
+        content += "<article>\n"
+        content += "<ul class=\"articles\">\n"
+        for post in self.posts:
+            content += (
+                f'<li id=\"{post.filename}\"><b>[{post.date}]</b> <a href="{post.remote_path}">{post.title}</a></li>\n'
+            )
+        content += "</ul>\n"
+        content += "</article>"
+
+        post_template = self.load_template(os.path.join(self.paths.src_templates_dir_path, "page.template"))
+        substitutions = {
+            "author_mail": self.config.blog_author_mail,
+            "author_copyright": self.config.blog_author_copyright,
+            "page_title": "Blog",
+            "page_content": content,
+            "css_dir": Helper.strip_top_directory_in_path(self.paths.dst_css_dir_path),
+            "js_dir": Helper.strip_top_directory_in_path(self.paths.dst_js_dir_path),
+        }
+        page_data = Template(post_template).substitute(substitutions)
+        Helper.writefile(page.dst_path, page_data)
+        Logger.log_pass(f"Successfully processed {page.src_path}")
+
+    def generate_page(self, page: Page) -> None:
+        Logger.log_info(f"Generating page: {page.src_path} ...")
+        content = Helper.convert_md_to_html(page.src_path)
+        post_template = self.load_template(os.path.join(self.paths.src_templates_dir_path, "page.template"))
+        substitutions = {
+            "author_mail": self.config.blog_author_mail,
+            "author_copyright": self.config.blog_author_copyright,
+            "page_title": self.config.blog_title,
+            "page_content": content,
+            "css_dir": Helper.strip_top_directory_in_path(self.paths.dst_css_dir_path),
+            "js_dir": Helper.strip_top_directory_in_path(self.paths.dst_js_dir_path),
+        }
+        page_data = Template(post_template).substitute(substitutions)
+        Helper.writefile(page.dst_path, page_data)
+        Logger.log_pass(f"Successfully processed {page.src_path}")
+
+
+class SiteBuilder:
+    def __init__(self, config: BlogConfig, paths: PathConfig, posts):
+        self.config = config
+        self.paths = paths
+        self.posts = posts
 
 
 class Logger:
