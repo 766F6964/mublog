@@ -5,6 +5,7 @@ import subprocess
 import re
 import html
 import urllib.parse
+import logging
 from string import Template
 from urllib.parse import urljoin
 
@@ -50,23 +51,42 @@ class BlogConfig:
         self.post_ignore_prefix = "_"
 
 
-class PathHandler:
+class Logger:
+    PASS = "\033[32m[PASS]\033[0m"
+    FAIL = "\033[31m[FAIL]\033[0m"
+    INFO = "\033[34m[INFO]\033[0m"
+    WARN = "\033[33m[WARN]\033[0m"
 
-    def __init__(self, dst_root_dir, src_root_dir, blog_url):
-        self.dst_root_dir = dst_root_dir
-        self.src_root_dir = src_root_dir
-        self.blog_url = blog_url
+    @staticmethod
+    def log_info(message: str) -> None:
+        print(f"{Logger.INFO} {message}")
 
-    def generate_absolute_path(self, relative_path):
+    @staticmethod
+    def log_fail(message: str) -> None:
+        print(f"{Logger.FAIL} {message}")
+        exit(1)
+
+    @staticmethod
+    def log_warn(message: str) -> None:
+        print(f"{Logger.WARN} {message}")
+
+    @staticmethod
+    def log_pass(message: str) -> None:
+        print(f"{Logger.PASS} {message}")
+
+
+class Helper:
+
+    def generate_absolute_path(self, blog_url, relative_path):
         if relative_path.startswith('/'):
             # Absolute path from the web-root directory
-            return urljoin(self.blog_url, relative_path.lstrip('/'))
+            return urljoin(blog_url, relative_path.lstrip('/'))
         elif relative_path.startswith('../'):
             # Relative path from a post
-            return urljoin(self.blog_url, relative_path)
+            return urljoin(blog_url, relative_path)
         else:
             # Relative path within a post
-            return urljoin(self.blog_url, 'posts/' + relative_path)
+            return urljoin(blog_url, 'posts/' + relative_path)
 
     def is_text_link(self, text):
         return text.startswith('"') or text.startswith("'")
@@ -81,7 +101,7 @@ class PathHandler:
     def convert_relative_urls(self, ref_location):
         print(f"Relative URL found at: {ref_location}")
 
-    def make_relative_urls_absolute(self, html_input: str):
+    def make_relative_urls_absolute(self, paths : PathConfig, html_input: str):
         # Information: Matches relative URLs if they are in a link, a, script or img tag.
         # For a URL to be considered relative, it can't start with http:// or https:// or data://
         # It also excludes fragment identifiers (aka #)
@@ -90,7 +110,7 @@ class PathHandler:
         offset = 0
         for match in re.finditer(regex_pattern, html_input):
             relative_url = match.group(1)
-            absolute_url = self.generate_absolute_path(relative_url)
+            absolute_url = self.generate_absolute_path(paths. relative_url)
 
             Logger.log_info(f"Convert relative URL for RSS feed: {relative_url} => {absolute_url}")
 
@@ -101,20 +121,14 @@ class PathHandler:
 
         return new_html
 
-
-class Helper:
-
     @staticmethod
-    def generate_post_tags(post) -> str:
-        tags = "<div class=\"tags\">\n"
-        for tag in post.tags:
+    def generate_post_tags(post_tags: list[str]) -> str:
+        tags = []
+        for tag in post_tags:
             tag_name = urllib.parse.urlencode({"tag": tag})
-            tags += (
-                f'<div class="tag-bubble" onclick="location.href=\'/articles.html?{tag_name}\'">'
-                f"{tag}</div>\n"
-            )
-        tags += "</div>"
-        return tags
+            tag_html = f"<div class=\"tag-bubble\" onclick=\"location.href='/articles.html?{tag_name}'\">{tag}</div>"
+            tags.append(tag_html)
+        return "<div class=\"tags\">\n" + "\n".join(tags) + "\n</div>"
 
     @staticmethod
     def convert_md_to_html(src_path: str) -> str:
@@ -276,16 +290,13 @@ class Blog:
             Logger.log_fail("Pandoc is not installed. Exiting...")
 
     def generate(self) -> None:
-        # builder = SiteBuilder(self.config, self.paths)
-
         self.clean_build_directory()
         self.create_build_directories()
         self.copy_files_to_build_directories()
-
         self.process_posts()
+        self.process_pages()
         self.generate_js()
         # self.generate_rss_feed()
-        self.process_pages()
 
     def clean_build_directory(self) -> None:
         Helper.clean_build_directory(self.paths.dst_dir_path)
@@ -319,7 +330,7 @@ class Blog:
                 "author_copyright": self.config.blog_author_copyright,
                 "post_title": post.title,
                 "post_content": post.raw_html_content,
-                "post_tags": Helper.generate_post_tags(post),
+                "post_tags": Helper.generate_post_tags(post.tags),
                 "css_dir": Helper.strip_top_directory_in_path(self.paths.dst_css_dir_path),
                 "js_dir": Helper.strip_top_directory_in_path(self.paths.dst_js_dir_path),
             }
@@ -362,7 +373,7 @@ class Blog:
         rss_items = ""
         for post in self.posts:
             # Replace relative urls with absolute URLs
-            edited = pm.make_relative_urls_absolute(post.raw_html_content)
+            edited = Helper.make_relative_urls_absolute(self.paths, post.raw_html_content)
 
             rss_items += "<item>\n"
             rss_items += f"<title>{html.escape(post.title)}</title>\n"
@@ -451,43 +462,9 @@ class Blog:
         Logger.log_pass(f"Successfully processed {page.src_path}")
 
 
-class SiteBuilder:
-    def __init__(self, config: BlogConfig, paths: PathConfig, posts):
-        self.config = config
-        self.paths = paths
-        self.posts = posts
+if __name__ == '__main__':
+    blog_conf = BlogConfig()
+    path_conf = PathConfig()
 
-
-class Logger:
-    PASS = "\033[32m[PASS]\033[0m"
-    FAIL = "\033[31m[FAIL]\033[0m"
-    INFO = "\033[34m[INFO]\033[0m"
-    WARN = "\033[33m[WARN]\033[0m"
-
-    @staticmethod
-    def log_info(message: str) -> None:
-        print(f"{Logger.INFO} {message}")
-
-    @staticmethod
-    def log_fail(message: str) -> None:
-        print(f"{Logger.FAIL} {message}")
-        exit(1)
-
-    @staticmethod
-    def log_warn(message: str) -> None:
-        print(f"{Logger.WARN} {message}")
-
-    @staticmethod
-    def log_pass(message: str) -> None:
-        print(f"{Logger.PASS} {message}")
-
-
-blog_conf = BlogConfig()
-path_conf = PathConfig()
-
-blog = Blog(blog_conf, path_conf)
-blog.generate()
-
-# print(paths.src_posts_dir_path)
-# print(paths.src_assets_dir_path)
-# pm = PathHandler(cfg.dst_root_dir, cfg.src_root_dir, cfg.blog_url)
+    blog = Blog(blog_conf, path_conf)
+    blog.generate()
