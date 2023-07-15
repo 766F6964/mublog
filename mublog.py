@@ -5,7 +5,6 @@ import subprocess
 import re
 import html
 import urllib.parse
-import logging
 from string import Template
 from urllib.parse import urljoin
 
@@ -77,7 +76,8 @@ class Logger:
 
 class Helper:
 
-    def generate_absolute_path(self, blog_url, relative_path):
+    @staticmethod
+    def generate_absolute_path(blog_url, relative_path):
         if relative_path.startswith('/'):
             # Absolute path from the web-root directory
             return urljoin(blog_url, relative_path.lstrip('/'))
@@ -86,22 +86,11 @@ class Helper:
             return urljoin(blog_url, relative_path)
         else:
             # Relative path within a post
-            return urljoin(blog_url, 'posts/' + relative_path)
+            return urljoin(blog_url, os.path.join('posts/', relative_path))
 
-    def is_text_link(self, text):
-        return text.startswith('"') or text.startswith("'")
+    @staticmethod
+    def make_relative_urls_absolute(conf: BlogConfig, paths: PathConfig, html_input: str):
 
-    def is_relative_path(self, path):
-        absolute_prefixes = ["http://", "https://", "ftp://", "sftp://"]
-        for prefix in absolute_prefixes:
-            if path.startswith(prefix):
-                return False
-        return True
-
-    def convert_relative_urls(self, ref_location):
-        print(f"Relative URL found at: {ref_location}")
-
-    def make_relative_urls_absolute(self, paths : PathConfig, html_input: str):
         # Information: Matches relative URLs if they are in a link, a, script or img tag.
         # For a URL to be considered relative, it can't start with http:// or https:// or data://
         # It also excludes fragment identifiers (aka #)
@@ -110,7 +99,7 @@ class Helper:
         offset = 0
         for match in re.finditer(regex_pattern, html_input):
             relative_url = match.group(1)
-            absolute_url = self.generate_absolute_path(paths. relative_url)
+            absolute_url = Helper.generate_absolute_path(conf.blog_url, relative_url)  # Is this a good way ??
 
             Logger.log_info(f"Convert relative URL for RSS feed: {relative_url} => {absolute_url}")
 
@@ -194,16 +183,6 @@ class Helper:
         with open(path, "w", encoding="utf-8") as f:
             f.write(contents)
 
-    @staticmethod
-    def substitute(mapping: dict[str, str], in_path: str, out_path: str = None) -> None:
-        if not out_path:
-            out_path = in_path
-
-        template_text = Helper.read_file_contents(in_path)
-        template = Template("".join(template_text))
-        output = template.substitute(mapping)
-        Helper.writefile(out_path, output)
-
 
 class Page:
 
@@ -223,59 +202,145 @@ class Post:
         self.description = ""
         self.date = ""
         self.tags = []
-        self.raw_md_contents = ""
-        self.raw_html_content = ""
+
+        self.md_content = ""
+        self.html_content = ""
 
         self.src_path = src_file_path
         self.dst_path = Helper.post_src_to_dst_path(self.src_path, self.paths.dst_posts_dir_path, ".html")
         self.remote_path = Helper.strip_top_directory_in_path(self.dst_path)
         self.filename = os.path.basename(self.dst_path)
 
-        self.validate_post(src_file_path)
+    def validate_starting_marker(self, md_data: str) -> bool:
+        """
+        Validate the presence and correctness of the starting marker of a markdown post
+        :param md_data: The full content of the markdown post file
+        :return: True if the starting marker is valid, False otherwise
+        """
+        if md_data.strip() != "---":
+            Logger.log_fail(
+                f"Failed to validate header of {self.src_path} - the starting marker \"---\" is missing or incorrect.")
+            return False
+        return True
 
-    def validate_post(self, src_file_path: str) -> None:
-        Logger.log_info(f"Processing {src_file_path} ...")
-        self.raw_md_contents = Helper.read_file_contents(src_file_path)
+    def validate_title_field(self, md_data: str) -> bool:
+        """
+        Validate the presence and correctness of the title field of a markdown post
+        :param md_data: The full content of the markdown post file
+        :return: True if the title field is valid, False otherwise
+        """
+        if not re.match(r'^title:\s*(\S+)', md_data):
+            Logger.log_fail(
+                f"Failed to validate header of {self.src_path} - the title field is missing, empty, or incorrect.")
+            return False
+        self.title = re.search(r'^title:\s*(.*?)\s*$', md_data).group(1)
+        return True
 
-        # Check that file is long enough to accommodate header
-        if len(self.raw_md_contents) < 6:
-            Logger.log_fail(f"Failed to validate header of {src_file_path}.")
+    def validate_description_field(self, md_data: str) -> bool:
+        """
+        Validate the presence and correctness of the description field of a markdown post
+        :param md_data: The full content of the markdown post file
+        :return: True if the description field is valid, False otherwise
+        """
+        if not re.match(r'^description:\s*(\S+)', md_data):
+            Logger.log_fail(
+                f"Failed to validate header of {self.src_path} - the description field is missing, empty, or incorrect.")
+            return False
+        self.description = re.search(r'^description:\s*(.*?)\s*$', md_data).group(1)
+        return True
 
-        # Validation line 1: Starting marker
-        if self.raw_md_contents[0].strip() != "---":
-            Logger.log_fail(f"Failed to validate header of {src_file_path}\n"
-                            f"       The starting marker \"---\" is missing or incorrect.")
+    def validate_date_field(self, md_data: str) -> bool:
+        """
+        Validate the presence and correctness of the date field of a markdown post.
+        The date field must be in the format YYYY-MM-DD.
+        :param md_data: The full content of the markdown post file
+        :return: True if the date field is valid, False otherwise
+        """
+        if not re.match(r'^date:\s*([0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$)', md_data):
+            Logger.log_fail(
+                f"Failed to validate header of {self.src_path} - the date field is missing, empty, or incorrect.")
+            return False
+        self.date = re.search(r'([0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$)', md_data).group(1)
+        return True
 
-        # Validation line 2: title field
-        if not re.match(r'^title:\s*(\S+)', self.raw_md_contents[1]):
-            Logger.log_fail(f"Failed to validate header of {src_file_path}\n"
-                            f"       The title field is missing, empty, or incorrect.")
-        self.title = re.search(r'^title:\s*(.*?)\s*$', self.raw_md_contents[1]).group(1)
-
-        # Validation line 3: description field
-        if not re.match(r'^description:\s*(\S+)', self.raw_md_contents[2]):
-            Logger.log_fail(f"Failed to validate header of {src_file_path}\n"
-                            f"       The description field is missing, empty, or incorrect.")
-        self.description = re.search(r'^description:\s*(.*?)\s*$', self.raw_md_contents[2]).group(1)
-
-        # Validation line 4: date field
-        if not re.match(r'^date:\s*([0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$)', self.raw_md_contents[3]):
-            Logger.log_fail(f"Failed to validate header of {src_file_path}\n"
-                            f"       The date field is missing, empty, or not in the expected format (YYYY-MM-DD).")
-        self.date = re.search(r'([0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$)',
-                              self.raw_md_contents[3]).group(1)
-
-        # Validation line 5: tags field
-        if not re.match(r'^tags:\s*(\S+)', self.raw_md_contents[4]):
-            Logger.log_fail(f"Failed to validate header of {src_file_path}\n"
-                            f"       The tags field is missing, empty, or incorrect.")
-        tag_values = re.search(r'^tags:\s*(.*?)\s*$', self.raw_md_contents[4]).group(1)
+    def validate_tags_field(self, md_data: str) -> bool:
+        """
+        Validate the presence and correctness of the tags field of a markdown post
+        The tags field must be a comma-separated list of strings.
+        :param md_data: The full content of the markdown post file
+        :return: True if the tags field is valid, False otherwise
+        """
+        if not re.match(r'^tags:\s*(\S+)', md_data):
+            Logger.log_fail(
+                f"Failed to validate header of {self.src_path} - the tags field is missing, empty, or incorrect.")
+            return False
+        tag_values = re.search(r'^tags:\s*(.*?)\s*$', md_data).group(1)
         self.tags = [tag for tag in re.findall(r'[^,\s][^,]*[^,\s]|[^,\s]', tag_values)]
+        return True
 
-        # Validation line 6: Ending marker
-        if self.raw_md_contents[5].strip() != "---":
-            Logger.log_fail(f"Failed to validate header of {src_file_path}\n"
-                            f"       The ending marker \"---\" is missing or incorrect.")
+    def validate_end_marker(self, md_data: str) -> bool:
+        """
+        Validate the presence and correctness of the end marker of a markdown post
+        :param md_data: The full content of the markdown post file
+        :return: True if the end marker is valid, False otherwise
+        """
+        if md_data.strip() != "---":
+            Logger.log_fail(
+                f"Failed to validate header of {self.src_path} - the end marker \"---\" is missing or incorrect.")
+            return False
+        return True
+
+    def validate_header(self) -> bool:
+        """
+        Validates all fields in the header of a markdown post
+        :return: True if the header is valid, False otherwise
+        """
+        Logger.log_info(f"Processing {self.src_path} ...")
+        with open(self.src_path, "r") as f:
+            md_data = f.readlines()
+
+        # Validate all fields in the header
+        if not self.validate_starting_marker(md_data[0]) or not self.validate_title_field(md_data[1]) or \
+                not self.validate_description_field(md_data[2]) or not self.validate_date_field(md_data[3]) or \
+                not self.validate_tags_field(md_data[4]) or not self.validate_end_marker(md_data[5]):
+            return False
+        return True
+
+    def get_tags_as_html(self) -> str:
+        """
+        Wraps the tags of the post in html divs
+        :return: The tags wrapped in html divs
+        """
+        tags = []
+        for tag in self.tags:
+            tag_name = urllib.parse.urlencode({"tag": tag})
+            tag_html = f"<div class=\"tag-bubble\" onclick=\"location.href='/articles.html?{tag_name}'\">{tag}</div>"
+            tags.append(tag_html)
+        return "<div class=\"tags\">\n" + "\n".join(tags) + "\n</div>"
+
+    def generate(self) -> str:
+        """
+        Converts the markdown post to html and generates and wraps the html content in the post template
+        :return: The generated post in html format wrapped in the post template
+        """
+
+        # Convert post from markdown to html
+        self.html_content = Helper.convert_md_to_html(self.src_path)
+
+        # Load the post template and substitute the placeholders with the actual values
+        with open(os.path.join(self.paths.src_templates_dir_path, "post.template"), encoding="utf-8") as f:
+            post_template = f.read()
+
+        substitutions = {
+            "author_mail": self.config.blog_author_mail,
+            "author_copyright": self.config.blog_author_copyright,
+            "post_title": self.title,
+            "post_content": self.html_content,
+            "post_tags": self.get_tags_as_html(),
+            "css_dir": Helper.strip_top_directory_in_path(self.paths.dst_css_dir_path),
+            "js_dir": Helper.strip_top_directory_in_path(self.paths.dst_js_dir_path),
+        }
+        return Template(post_template).substitute(substitutions)
 
 
 class Blog:
@@ -296,7 +361,7 @@ class Blog:
         self.process_posts()
         self.process_pages()
         self.generate_js()
-        # self.generate_rss_feed()
+        self.generate_rss_feed()
 
     def clean_build_directory(self) -> None:
         Helper.clean_build_directory(self.paths.dst_dir_path)
@@ -322,22 +387,12 @@ class Blog:
                 continue
 
             post = Post(self.config, self.paths, file_path)
-            post.raw_html_content = Helper.convert_md_to_html(post.src_path)
-            post_template = self.load_template(os.path.join(self.paths.src_templates_dir_path, "post.template"))
-
-            substitutions = {
-                "author_mail": self.config.blog_author_mail,
-                "author_copyright": self.config.blog_author_copyright,
-                "post_title": post.title,
-                "post_content": post.raw_html_content,
-                "post_tags": Helper.generate_post_tags(post.tags),
-                "css_dir": Helper.strip_top_directory_in_path(self.paths.dst_css_dir_path),
-                "js_dir": Helper.strip_top_directory_in_path(self.paths.dst_js_dir_path),
-            }
-            post_data = Template(post_template).substitute(substitutions)
-            Helper.writefile(post.dst_path, post_data)
-            Logger.log_pass(f"Successfully processed {post.src_path}")
-            self.posts.append(post)
+            if post.validate_header():
+                with open(post.dst_path, "w", encoding="utf-8") as f:
+                    f.write(post.generate())
+                self.posts.append(post)
+            else:
+                Logger.log_fail(f"Failed to process post {file_path}")
 
     def process_pages(self) -> None:
         for file_path in glob.glob(os.path.join(self.paths.src_dir_path, "*.md")):
@@ -373,11 +428,12 @@ class Blog:
         rss_items = ""
         for post in self.posts:
             # Replace relative urls with absolute URLs
-            edited = Helper.make_relative_urls_absolute(self.paths, post.raw_html_content)
+            edited = Helper.make_relative_urls_absolute(self.config, self.paths, post.html_content)
 
             rss_items += "<item>\n"
             rss_items += f"<title>{html.escape(post.title)}</title>\n"
-            link = self.config.blog_url + Helper.strip_top_directory_in_path(self.config.dst_posts_dir) + post.filename
+            link = self.config.blog_url + Helper.strip_top_directory_in_path(
+                self.paths.dst_posts_dir_path) + post.filename
             rss_items += f"<link>{link}</link>\n"
             rss_items += f"<description>{html.escape(edited)}</description>\n"
             rss_items += "</item>\n"
@@ -389,7 +445,7 @@ class Blog:
             "rss_items": rss_items
         }
         feed = Template(rss_template).substitute(substitutions)
-        Helper.writefile(self.config.dst_root_dir + "feed.xml", feed)
+        Helper.writefile(os.path.join(self.paths.dst_dir_path, "feed.xml"), feed)
         Logger.log_pass(f"Successfully generated rss feed")
 
     def generate_tags_page(self, page: Page) -> None:
