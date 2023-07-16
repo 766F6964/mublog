@@ -1,26 +1,27 @@
-var tag_mapping = {
-    ${tag_mapping}
+const tag_mapping = {
+	${tag_mapping}
 };
 
 function get_tag_parameter() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const tag = urlParams.get('tag');
-    if (tag) {
-        for (var item in tag_mapping) {
-            if (tag_mapping.hasOwnProperty(item)) {
-                if (tag_mapping[item].indexOf(tag) == -1) {
-                    hide_article_listing(item);
-                }
-            }
-        }
-    }
+	const urlParams = new URLSearchParams(window.location.search);
+	const tag = urlParams.get('tag');
+
+	if (tag) {
+		for (const item of Object.keys(tag_mapping)) {
+			const tags = tag_mapping[item];
+
+			if (!tags.includes(tag)) {
+				hide_article_listing(item);
+			}
+		}
+	}
 }
 
 function hide_article_listing(filename) {
-    elem = document.getElementById(filename);
-    if (elem) {
-        elem.style.display = 'none';
-    }
+	elem = document.getElementById(filename);
+	if (elem) {
+		elem.style.display = 'none';
+	}
 }
 
-document.addEventListener("DOMContentLoaded", get_tag_parameter);
+document.addEventListener('DOMContentLoaded', get_tag_parameter);
