@@ -91,20 +91,6 @@ class Helper:
         return os.sep.join(parts[1:]) if len(parts) > 1 else path
 
     @staticmethod
-    def clean_build_directory(directory: str) -> None:
-        try:
-            shutil.rmtree(directory, ignore_errors=True)
-        except Exception as e:
-            Logger.log_fail(f"Failed to remove old build directory: {str(e)}")
-
-    @staticmethod
-    def create_directory(directory: str) -> None:
-        try:
-            os.makedirs(directory, exist_ok=True)
-        except Exception as e:
-            Logger.log_fail(f"Failed to create directory: {str(e)}")
-
-    @staticmethod
     def copy_files(src_path: str, dst_path: str) -> None:
         try:
             for f in glob.glob(f"{src_path}/*"):
@@ -479,12 +465,14 @@ class Blog:
         self.copy_files_to_build_directories()
         self.process_posts()
         self.process_pages()
-        self.generate_js()
-        feed = RSSFeed(self.config, self.paths, self.posts)
-        feed.generate()
+        self.process_scripts()
+        self.process_rss_feed()
 
     def clean_build_directory(self) -> None:
-        Helper.clean_build_directory(self.paths.dst_dir_path)
+        try:
+            shutil.rmtree(self.paths.dst_dir_path, ignore_errors=True)
+        except Exception as e:
+            Logger.log_fail(f"Failed to remove old build directory: {str(e)}")
 
     def create_build_directories(self) -> None:
         directories = [
@@ -495,7 +483,10 @@ class Blog:
             self.paths.dst_js_dir_path,
         ]
         for directory in directories:
-            Helper.create_directory(directory)
+            try:
+                os.makedirs(directory, exist_ok=True)
+            except Exception as e:
+                Logger.log_fail(f"Failed to create directory: {str(e)}")
 
     def copy_files_to_build_directories(self) -> None:
         Helper.copy_files(self.paths.src_css_dir_path, self.paths.dst_css_dir_path)
@@ -517,12 +508,11 @@ class Blog:
                 Logger.log_fail(f"Failed to process post {file_path}")
 
     def process_pages(self) -> None:
-        # TODO: Add header to pages, e.g. to set the title
         for file_path in glob.glob(os.path.join(self.paths.src_dir_path, "*.md")):
-            # ToDo: Move the logic to distinguish page types to the Page class
+            # ToDo: Add header to pages, e.g. to set the title
             # ToDo: Add page header validation
 
-            # Create correct page type
+            # Create page of the appropriate type
             if os.path.basename(file_path) == "articles.md":
                 page = ArticlesPage(self.config, self.paths, file_path, self.posts)
             elif os.path.basename(file_path) == "tags.md":
@@ -530,12 +520,16 @@ class Blog:
             else:
                 page = Page(self.config, self.paths, file_path)
 
-            # Generate page
+            # Write the generated page to disk
             with open(page.dst_path, "w", encoding="utf-8") as f:
                 f.write(page.generate())
             self.pages.append(page)
 
-    def generate_js(self) -> None:
+    def process_rss_feed(self) -> None:
+        feed = RSSFeed(self.config, self.paths, self.posts)
+        feed.generate()
+
+    def process_scripts(self) -> None:
         # Load the JavaScript template
         with open(os.path.join(self.paths.src_templates_dir_path, "tags.js.template"), encoding="utf-8") as f:
             js_template = f.read()
