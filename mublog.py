@@ -1,5 +1,8 @@
 import glob
+import logging
 import os
+import time
+import sys
 import shutil
 import subprocess
 import re
@@ -50,28 +53,19 @@ class BlogConfig:
         self.post_ignore_prefix = "_"
 
 
-class Logger:
-    PASS = "\033[32m[PASS]\033[0m"
-    FAIL = "\033[31m[FAIL]\033[0m"
-    INFO = "\033[34m[INFO]\033[0m"
-    WARN = "\033[33m[WARN]\033[0m"
+class LogFormatter(logging.Formatter):
+    FORMATS = {
+        logging.DEBUG: "\033[34m[*]\033[0m %(message)s",
+        logging.INFO: "\033[32m[+]\033[0m %(message)s",
+        logging.WARNING: "\033[33m[!]\033[0m %(message)s",
+        logging.ERROR: "\033[31m[x]\033[0m %(message)s",
+        logging.CRITICAL: "\033[31m[x]\033[0m %(message)s",
+    }
 
-    @staticmethod
-    def log_info(message: str) -> None:
-        print(f"{Logger.INFO} {message}")
-
-    @staticmethod
-    def log_fail(message: str) -> None:
-        print(f"{Logger.FAIL} {message}")
-        exit(1)
-
-    @staticmethod
-    def log_warn(message: str) -> None:
-        print(f"{Logger.WARN} {message}")
-
-    @staticmethod
-    def log_pass(message: str) -> None:
-        print(f"{Logger.PASS} {message}")
+    def format(self, record):
+        log_fmt = self.FORMATS.get(record.levelno)
+        formatter = logging.Formatter(log_fmt)
+        return formatter.format(record)
 
 
 class Helper:
@@ -83,7 +77,8 @@ class Helper:
             result = subprocess.run(command, check=True, capture_output=True, text=True)
             return result.stdout
         except subprocess.CalledProcessError:
-            Logger.log_fail(f"Pandoc failed while processing {src_path}")
+            logger.error(f"Pandoc failed while processing {src_path}")
+            exit(1)
 
     @staticmethod
     def strip_top_directory_in_path(path: str) -> str:
@@ -96,7 +91,8 @@ class Helper:
             for f in glob.glob(f"{src_path}/*"):
                 shutil.copy(f, dst_path)
         except Exception as e:
-            Logger.log_fail(f"Failed to copy files: {str(e)}")
+            logger.error(f"Failed to copy files: {str(e)}")
+            exit(1)
 
     @staticmethod
     def post_src_to_dst_path(src_file_path: str, dst_dir: str, dst_ext: str) -> str:
@@ -130,7 +126,7 @@ class Post:
         :return: True if the starting marker is valid, False otherwise
         """
         if md_data.strip() != "---":
-            Logger.log_fail(
+            logger.error(
                 f"Failed to validate header of {self.src_path} - the starting marker \"---\" is missing or incorrect.")
             return False
         return True
@@ -142,7 +138,7 @@ class Post:
         :return: True if the title field is valid, False otherwise
         """
         if not re.match(r'^title:\s*(\S+)', md_data):
-            Logger.log_fail(
+            logger.error(
                 f"Failed to validate header of {self.src_path} - the title field is missing, empty, or incorrect.")
             return False
         self.title = re.search(r'^title:\s*(.*?)\s*$', md_data).group(1)
@@ -155,7 +151,7 @@ class Post:
         :return: True if the description field is valid, False otherwise
         """
         if not re.match(r'^description:\s*(\S+)', md_data):
-            Logger.log_fail(
+            logger.error(
                 f"Failed to validate header of {self.src_path} - the description field is missing, empty, or incorrect.")
             return False
         self.description = re.search(r'^description:\s*(.*?)\s*$', md_data).group(1)
@@ -169,7 +165,7 @@ class Post:
         :return: True if the date field is valid, False otherwise
         """
         if not re.match(r'^date:\s*([0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$)', md_data):
-            Logger.log_fail(
+            logger.error(
                 f"Failed to validate header of {self.src_path} - the date field is missing, empty, or incorrect.")
             return False
         self.date = re.search(r'([0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$)', md_data).group(1)
@@ -183,7 +179,7 @@ class Post:
         :return: True if the tags field is valid, False otherwise
         """
         if not re.match(r'^tags:\s*(\S+)', md_data):
-            Logger.log_fail(
+            logger.error(
                 f"Failed to validate header of {self.src_path} - the tags field is missing, empty, or incorrect.")
             return False
         tag_values = re.search(r'^tags:\s*(.*?)\s*$', md_data).group(1)
@@ -197,7 +193,7 @@ class Post:
         :return: True if the end marker is valid, False otherwise
         """
         if md_data.strip() != "---":
-            Logger.log_fail(
+            logger.error(
                 f"Failed to validate header of {self.src_path} - the end marker \"---\" is missing or incorrect.")
             return False
         return True
@@ -207,7 +203,7 @@ class Post:
         Validates all fields in the header of a markdown post
         :return: True if the header is valid, False otherwise
         """
-        Logger.log_info(f"Processing {self.src_path} ...")
+        logger.debug(f"Processing {self.src_path} ...")
         with open(self.src_path, "r") as f:
             md_data = f.readlines()
 
@@ -418,6 +414,7 @@ class RSSFeed:
 
         # Load RSS template
         template_path = os.path.join(self.paths.src_templates_dir_path, "feed.xml.template")
+        logger.debug(f"Processing {template_path} ...")
         with open(template_path, mode="r", encoding="utf-8") as f:
             rss_template = f.read()
 
@@ -455,24 +452,31 @@ class Blog:
         self.paths = paths
         self.posts = []
         self.pages = []
+        self.processed_posts = 0
+        self.skipped_posts = 0
 
         if not shutil.which("pandoc"):
-            Logger.log_fail("Pandoc is not installed. Exiting...")
+            logger.error("Pandoc is not installed. Exiting...")
 
     def generate(self) -> None:
+        logger.debug("Creating build directories and copying files...")
         self.clean_build_directory()
         self.create_build_directories()
         self.copy_files_to_build_directories()
+        logger.info("Processing posts...")
         self.process_posts()
+        logger.info("Processing pages...")
         self.process_pages()
+        logger.info("Processing scripts...")
         self.process_scripts()
+        logger.info("Processing rss feed...")
         self.process_rss_feed()
 
     def clean_build_directory(self) -> None:
         try:
             shutil.rmtree(self.paths.dst_dir_path, ignore_errors=True)
         except Exception as e:
-            Logger.log_fail(f"Failed to remove old build directory: {str(e)}")
+            logger.error(f"Failed to remove old build directory: {str(e)}")
 
     def create_build_directories(self) -> None:
         directories = [
@@ -486,7 +490,8 @@ class Blog:
             try:
                 os.makedirs(directory, exist_ok=True)
             except Exception as e:
-                Logger.log_fail(f"Failed to create directory: {str(e)}")
+                logger.error(f"Failed to create directory: {str(e)}")
+                exit(1)
 
     def copy_files_to_build_directories(self) -> None:
         Helper.copy_files(self.paths.src_css_dir_path, self.paths.dst_css_dir_path)
@@ -496,6 +501,8 @@ class Blog:
         for file_path in glob.glob(os.path.join(self.paths.src_posts_dir_path, "*.md")):
             # Skip posts that start with the ignore prefix
             if os.path.basename(file_path).startswith(self.config.post_ignore_prefix):
+                logger.warning(f"Skipping {file_path} ...")
+                self.skipped_posts += 1
                 continue
 
             # Validate and generate the post
@@ -503,12 +510,15 @@ class Blog:
             if post.validate_header():
                 with open(post.dst_path, "w", encoding="utf-8") as f:
                     f.write(post.generate())
+                self.processed_posts += 1
                 self.posts.append(post)
             else:
-                Logger.log_fail(f"Failed to process post {file_path}")
+                logger.error(f"Post validation failed. Exiting...")
+                exit(1)
 
     def process_pages(self) -> None:
         for file_path in glob.glob(os.path.join(self.paths.src_dir_path, "*.md")):
+            logger.debug(f"Processing {file_path} ...")
             # ToDo: Add header to pages, e.g. to set the title
             # ToDo: Add page header validation
 
@@ -531,7 +541,9 @@ class Blog:
 
     def process_scripts(self) -> None:
         # Load the JavaScript template
-        with open(os.path.join(self.paths.src_templates_dir_path, "tags.js.template"), encoding="utf-8") as f:
+        tags_template_path = os.path.join(self.paths.src_templates_dir_path, "tags.js.template")
+        logger.debug(f"Processing {tags_template_path} ...")
+        with open(tags_template_path, encoding="utf-8") as f:
             js_template = f.read()
 
         # Create a mapping of post filenames to tags and substitute the template placeholders with the actual values
@@ -540,12 +552,25 @@ class Blog:
             substitutions = {"tag_mapping": "\n" + ",\n".join(entries) + "\n"}
             f.write(Template(js_template).substitute(substitutions))
 
-        Logger.log_pass(f"Processed JavaScript file.")
-
 
 if __name__ == '__main__':
+    # Configure logging
+    start_time = time.time()
+    logger = logging.getLogger('mublog')
+    logger.setLevel(logging.DEBUG)
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    ch.setFormatter(LogFormatter())
+    logger.addHandler(ch)
+
+    # Start blog generation
     blog_conf = BlogConfig()
     path_conf = PathConfig()
 
     blog = Blog(blog_conf, path_conf)
     blog.generate()
+    end_time = time.time()
+    print("---------------------------------------------------------")
+    logger.info(f"Posts Processed: {blog.processed_posts} | Posts Skipped: {blog.skipped_posts}")
+    logger.info(f"Elapsed Time: {round(end_time - start_time, 1)} seconds.")
+    logger.info("Blog generation complete.")
