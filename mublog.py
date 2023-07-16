@@ -471,8 +471,6 @@ class Blog:
         self.process_scripts()
         logger.info("Processing rss feed...")
         self.process_rss_feed()
-        logger.info("Blog generation complete.")
-        logger.info(f"Processed: {self.processed_posts} Skipped: {self.skipped_posts}")
 
     def clean_build_directory(self) -> None:
         try:
@@ -572,4 +570,7 @@ if __name__ == '__main__':
     blog = Blog(blog_conf, path_conf)
     blog.generate()
     end_time = time.time()
-    logger.info(f"Blog generated successfully in {round(end_time - start_time, 1)} seconds.")
+    print("---------------------------------------------------------")
+    logger.info(f"Posts Processed: {blog.processed_posts} | Posts Skipped: {blog.skipped_posts}")
+    logger.info(f"Elapsed Time: {round(end_time - start_time, 1)} seconds.")
+    logger.info("Blog generation complete.")
