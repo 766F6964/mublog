@@ -24,13 +24,26 @@ body {
     padding: 0 1.5rem;
     max-width: 900px;
     align-content: center;
+	min-height: 100vh;
+	flex-direction: column;
+	display: flex;
+    flex-direction: column;
 }
+
 
 body nav {
     font-size: 1.2rem;
     text-align: center;
     margin-bottom: 30px;
     margin-top: 30px;
+}
+
+body main {
+    flex: 1 0 auto;
+}
+
+hr {
+  border-top: thin !important;
 }
 
 header {
@@ -222,6 +235,7 @@ footer {
     margin-top: 2rem;
     text-align: center;
     color: var(--color-gray-mid);
+    flex-shrink: 0;
 }
 
 /*

@@ -3,11 +3,11 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="/${css_dir}normalize.css" type="text/css" media="all">
-    <link rel="stylesheet" href="/${css_dir}style.css" type="text/css" media="all">
-    <script src="/${js_dir}tags.js"></script>
+    <link rel="stylesheet" href="/${css_dir}/normalize.css" type="text/css" media="all">
+    <link rel="stylesheet" href="/${css_dir}/style.css" type="text/css" media="all">
+    <script src="/${js_dir}/tags.js"></script>
     <title>
-        ${title}
+        ${post_title}
     </title>
 </head>
 <nav>
@@ -15,11 +15,12 @@
     <a href="/articles.html">articles</a>
     <a href="/tags.html">tags</a>
     <a href="mailto:${author_mail}">mail</a>
+    <a href="/feed.xml">rss</a>
     <a href="/about.html">about</a>
 </nav>
-<hr>
 <main>
-${content}
+<hr>
+${post_content}
 ${post_tags}
 </main>
 <footer>
