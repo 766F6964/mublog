@@ -13,7 +13,6 @@ from urllib.parse import urljoin
 
 
 class PathConfig:
-
     def __init__(self):
         # Define each individual directory name
         self.dst_dir_name = "dst"
@@ -37,9 +36,6 @@ class PathConfig:
         self.dst_assets_dir_path = os.path.join(self.dst_dir_path, self.assets_dir_name)
         self.dst_css_dir_path = os.path.join(self.dst_dir_path, self.css_dir_name)
         self.dst_js_dir_path = os.path.join(self.dst_dir_path, self.js_dir_name)
-
-        # Construct path used by webserver
-        self.web_root_dir = "/"
 
 
 class BlogConfig:
@@ -72,6 +68,11 @@ class Helper:
 
     @staticmethod
     def pandoc_md_to_html(src_path: str) -> str:
+        """
+        Convert a markdown file to html using pandoc
+        :param src_path: The path to the markdown file
+        :return: The html content of the markdown file
+        """
         command = ["pandoc", src_path, "-f", "markdown", "-t", "html"]
         try:
             result = subprocess.run(command, check=True, capture_output=True, text=True)
@@ -82,11 +83,21 @@ class Helper:
 
     @staticmethod
     def strip_top_directory_in_path(path: str) -> str:
+        """
+        Strip the top directory in a path
+        :param path: The path to strip
+        :return: The stripped path
+        """
         parts = path.split(os.sep)
         return os.sep.join(parts[1:]) if len(parts) > 1 else path
 
     @staticmethod
     def copy_files(src_path: str, dst_path: str) -> None:
+        """
+        Copy all files from a source directory to a destination directory
+        :param src_path: The source directory
+        :param dst_path: The destination directory
+        """
         try:
             for f in glob.glob(f"{src_path}/*"):
                 shutil.copy(f, dst_path)
@@ -96,6 +107,14 @@ class Helper:
 
     @staticmethod
     def post_src_to_dst_path(src_file_path: str, dst_dir: str, dst_ext: str) -> str:
+        """
+        Convert a source file path to a destination file path by joining the destination directory with the
+        filename and the destination extension.
+        :param src_file_path: The source file path
+        :param dst_dir: The destination directory
+        :param dst_ext: The destination extension
+        :return: The converted destination file path as a string
+        """
         file_name = os.path.basename(src_file_path)
         base_name, _ = os.path.splitext(file_name)
         return os.path.join(dst_dir, base_name + dst_ext)
@@ -262,6 +281,11 @@ class Page:
         self.html_content = ""
 
     def generate(self) -> str:
+        """
+        Converts the markdown page to html and generates and wraps the html content in the page template
+        :return: The generated page in html format
+        """
+
         # Convert page from markdown to html
         self.html_content = Helper.pandoc_md_to_html(self.src_path)
 
@@ -306,8 +330,8 @@ class TagsPage(Page):
 
     def generate(self) -> str:
         """
-        Generate the html for the tags page
-        :return: The generated html for the tags page
+        Converts the markdown tags-page to html and generates and wraps the html content in the page template
+        :return: The generated page in html format
         """
         # Convert page from markdown to html
         self.html_content = Helper.pandoc_md_to_html(self.src_path)
@@ -354,8 +378,8 @@ class ArticlesPage(Page):
 
     def generate(self) -> str:
         """
-        Generates the html for the articles page
-        :return: The generated html for the articles page
+        Converts the markdown articles-page to html and generates and wraps the html content in the page template
+        :return: The generated page in html format
         """
         # Convert page from markdown to html
         self.html_content = Helper.pandoc_md_to_html(self.src_path)
@@ -459,6 +483,10 @@ class Blog:
             logger.error("Pandoc is not installed. Exiting...")
 
     def generate(self) -> None:
+        """
+        Generates the blog, i.e. creates the build directory, copies all files to the build directory, processes all
+        posts and pages and generates the rss feed
+        """
         logger.debug("Creating build directories and copying files...")
         self.clean_build_directory()
         self.create_build_directories()
@@ -473,12 +501,18 @@ class Blog:
         self.process_rss_feed()
 
     def clean_build_directory(self) -> None:
+        """
+        Removes the build directory and all its contents
+        """
         try:
             shutil.rmtree(self.paths.dst_dir_path, ignore_errors=True)
         except Exception as e:
             logger.error(f"Failed to remove old build directory: {str(e)}")
 
     def create_build_directories(self) -> None:
+        """
+        Creates the build directory and all subdirectories
+        """
         directories = [
             self.paths.dst_dir_path,
             self.paths.dst_posts_dir_path,
@@ -494,10 +528,16 @@ class Blog:
                 exit(1)
 
     def copy_files_to_build_directories(self) -> None:
+        """
+        Copies css and assets from the src directory to the build directory
+        """
         Helper.copy_files(self.paths.src_css_dir_path, self.paths.dst_css_dir_path)
         Helper.copy_files(self.paths.src_assets_dir_path, self.paths.dst_assets_dir_path)
 
     def process_posts(self) -> None:
+        """
+        Processes all posts, i.e. validates the post header, generates the post html and writes the post to a file
+        """
         for file_path in glob.glob(os.path.join(self.paths.src_posts_dir_path, "*.md")):
             # Skip posts that start with the ignore prefix
             if os.path.basename(file_path).startswith(self.config.post_ignore_prefix):
@@ -517,6 +557,9 @@ class Blog:
                 exit(1)
 
     def process_pages(self) -> None:
+        """
+        Processes all pages, generates the page html and writes the page to a file
+        """
         for file_path in glob.glob(os.path.join(self.paths.src_dir_path, "*.md")):
             logger.debug(f"Processing {file_path} ...")
             # ToDo: Add header to pages, e.g. to set the title
@@ -536,10 +579,16 @@ class Blog:
             self.pages.append(page)
 
     def process_rss_feed(self) -> None:
+        """
+        Generates the rss feed
+        """
         feed = RSSFeed(self.config, self.paths, self.posts)
         feed.generate()
 
     def process_scripts(self) -> None:
+        """
+        Processes all scripts, i.e. generates the tag mapping script
+        """
         # Load the JavaScript template
         tags_template_path = os.path.join(self.paths.src_templates_dir_path, "tags.js.template")
         logger.debug(f"Processing {tags_template_path} ...")
@@ -566,9 +615,10 @@ if __name__ == '__main__':
     # Start blog generation
     blog_conf = BlogConfig()
     path_conf = PathConfig()
-
     blog = Blog(blog_conf, path_conf)
     blog.generate()
+
+    # Build summary
     end_time = time.time()
     print("---------------------------------------------------------")
     logger.info(f"Posts Processed: {blog.processed_posts} | Posts Skipped: {blog.skipped_posts}")
