@@ -18,8 +18,8 @@
     <a href="/feed.xml">rss</a>
     <a href="/about.html">about</a>
 </nav>
-<hr>
 <main>
+<hr>
 ${page_content}
 </main>
 <footer>
