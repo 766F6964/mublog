@@ -1,3 +1,4 @@
+import configparser
 import glob
 import logging
 import os
@@ -40,13 +41,13 @@ class PathConfig:
 
 class BlogConfig:
     def __init__(self):
-        self.blog_url = "https://my-blog.com/"
-        self.blog_title = "John's Awesome Blog"
-        self.blog_description = "Short description what the blog is about"
-        self.blog_author_name = "John Doe"
-        self.blog_author_mail = "johndoe@example.com"
-        self.blog_author_copyright = f"Copyright 2023 {self.blog_author_name}"
-        self.post_ignore_prefix = "_"
+        self.blog_url = ""
+        self.blog_title = ""
+        self.blog_description = ""
+        self.blog_author_name = ""
+        self.blog_author_mail = ""
+        self.post_ignore_prefix = ""
+        self.blog_author_copyright = ""
 
 
 class LogFormatter(logging.Formatter):
@@ -487,6 +488,9 @@ class Blog:
         Generates the blog, i.e. creates the build directory, copies all files to the build directory, processes all
         posts and pages and generates the rss feed
         """
+        logger.debug("Loading configurations...")
+        self.load_configuration()
+        
         logger.debug("Creating build directories and copying files...")
         self.clean_build_directory()
         self.create_build_directories()
@@ -499,6 +503,30 @@ class Blog:
         self.process_scripts()
         logger.info("Processing rss feed...")
         self.process_rss_feed()
+
+    def load_configuration(self)->None:
+        path = "mublog.ini"
+        
+        parser = configparser.ConfigParser()
+        _ = parser.read(path, encoding="utf-8")
+
+        if len(parser.sections()) == 0:
+            logger.error("No configuration sections were loaded")
+            raise FileNotFoundError(path)
+        
+        if "mublog" not in parser:
+            logger.error("mublog configuration section was not found")
+            raise FileNotFoundError(path)
+        
+        section = parser["mublog"]
+
+        self.config.blog_url = section["blog_url"]
+        self.config.blog_title = section["blog_title"]
+        self.config.blog_description = section["blog_description"]
+        self.config.blog_author_name = section["blog_author_name"]
+        self.config.blog_author_mail = section["blog_author_mail"]
+        self.config.post_ignore_prefix = section["post_ignore_prefix"]
+        self.config.blog_author_copyright = section["blog_author_copyright"]
 
     def clean_build_directory(self) -> None:
         """
