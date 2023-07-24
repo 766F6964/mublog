@@ -1,3 +1,4 @@
+import datetime
 import glob
 import logging
 import os
@@ -264,6 +265,7 @@ class Post:
             "post_title": self.title,
             "post_content": self.html_content,
             "post_tags": self.get_tags_as_html(),
+            "assets_dir": Helper.strip_top_directory_in_path(self.paths.dst_assets_dir_path),
             "css_dir": Helper.strip_top_directory_in_path(self.paths.dst_css_dir_path),
             "js_dir": Helper.strip_top_directory_in_path(self.paths.dst_js_dir_path),
         }
@@ -298,6 +300,7 @@ class Page:
             "author_copyright": self.config.blog_author_copyright,
             "page_title": self.page_title,
             "page_content": self.html_content,
+            "assets_dir": Helper.strip_top_directory_in_path(self.paths.dst_assets_dir_path),
             "css_dir": Helper.strip_top_directory_in_path(self.paths.dst_css_dir_path),
             "js_dir": Helper.strip_top_directory_in_path(self.paths.dst_js_dir_path),
         }
@@ -348,6 +351,7 @@ class TagsPage(Page):
             "author_copyright": self.config.blog_author_copyright,
             "page_title": "Tags",
             "page_content": self.html_content + tags_html,
+            "assets_dir": Helper.strip_top_directory_in_path(self.paths.dst_assets_dir_path),
             "css_dir": Helper.strip_top_directory_in_path(self.paths.dst_css_dir_path),
             "js_dir": Helper.strip_top_directory_in_path(self.paths.dst_js_dir_path),
         }
@@ -395,6 +399,7 @@ class ArticlesPage(Page):
             "author_copyright": self.config.blog_author_copyright,
             "page_title": "Articles",
             "page_content": self.html_content + self.get_article_listing_as_html(),
+            "assets_dir": Helper.strip_top_directory_in_path(self.paths.dst_assets_dir_path),
             "css_dir": Helper.strip_top_directory_in_path(self.paths.dst_css_dir_path),
             "js_dir": Helper.strip_top_directory_in_path(self.paths.dst_js_dir_path),
         }
@@ -428,6 +433,9 @@ class RSSFeed:
         :param post: The post in which to convert the urls
         :return: The post content with all relative urls converted to absolute urls
         """
+        if not post.html_content:            
+            return ""
+        
         regex_pattern = r'''(?:url\(|<(?:link|a|script|img)[^>]+(?:src|href)\s*=\s*)(?!['"]?(?:data|http|https))['"]?([^'"\)\s>#]+)'''
         return re.sub(regex_pattern, lambda match: self.replace_relative_url_with_abs_url(match), post.html_content)
 
@@ -469,6 +477,106 @@ class RSSFeed:
             f.write(rss_template)
 
 
+class Sitemap:
+
+    def __init__(self, config: BlogConfig, paths: PathConfig, posts: list[Post]):
+        self.config = config
+        self.paths = paths
+        self.posts = posts
+        self.feed_data = ""
+
+    def replace_relative_url_with_abs_url(self, match: re.Match) -> str:
+        """
+        Converts a relative url to an absolute url, prefixed with the blog url
+        :param match: The match object
+        :return: The absolute url, prefixed with the blog url
+        """
+        if match.group(1).startswith('/'):
+            return urljoin(self.config.blog_url, match.group(1).lstrip('/'))
+        elif match.group(1).startswith('../'):
+            return urljoin(self.config.blog_url, match.group(1))
+        else:
+            return urljoin(self.config.blog_url, os.path.join(self.paths.post_dir_name, match.group(1)))
+
+    def make_post_urls_absolute(self, post: Post) -> str:
+        """
+        Converts all relative urls in the post to absolute urls, prefixed with the blog url
+        :param post: The post in which to convert the urls
+        :return: The post content with all relative urls converted to absolute urls
+        """
+        if not post.html_content:
+            return ''
+        
+        regex_pattern = r'''(?:url\(|<(?:link|a|script|img)[^>]+(?:src|href)\s*=\s*)(?!['"]?(?:data|http|https))['"]?([^'"\)\s>#]+)'''
+        return re.sub(regex_pattern, lambda match: self.replace_relative_url_with_abs_url(match), post.html_content)
+
+    def generate(self) -> None:
+        """
+        Formats all posts as Sitemap entries and writes the feed to a file
+        """
+
+        # Load Sitemap template
+        template_path = os.path.join(self.paths.src_templates_dir_path, "sitemap.xml.template")
+        logger.debug(f"Processing {template_path} ...")
+        with open(template_path, mode="r", encoding="utf-8") as f:
+            sitemap_template = f.read()
+
+        lastmod = datetime.date.today().strftime("%Y-%m-%d")
+
+        site_paths = [self.config.blog_url + post.remote_path for post in self.posts]
+        site_paths.append(self.config.blog_url + "index.html")
+        site_paths.append(self.config.blog_url + "articles.html")
+        site_paths.append(self.config.blog_url + "tags.html")
+        site_paths.append(self.config.blog_url + "about.html")
+
+        # Create a feed entry for each post
+        for site_path in site_paths:
+            self.feed_data += f"<url>"
+            self.feed_data += f"<loc>{site_path}</loc>"
+            self.feed_data += f"<lastmod>{lastmod}</lastmod>"
+            self.feed_data += f"</url>"
+
+        # Substitute the placeholders with the actual values
+        substitutions = {
+            "sitemap_items": self.feed_data,
+        }
+        sitemap_template = Template(sitemap_template).substitute(substitutions)
+
+        # Write substituted template to file
+        sitemap_path = os.path.join(self.paths.dst_dir_path, "sitemap.xml")
+        with open(sitemap_path, mode="w", encoding="utf-8") as f:
+            f.write(sitemap_template)
+
+
+class Robots:
+
+    def __init__(self, config: BlogConfig, paths: PathConfig):
+        self.config = config
+        self.paths = paths
+
+    def generate(self) -> None:
+        """
+        Generates a robots.txt file in the destination
+        """
+
+        # Load Robots template
+        template_path = os.path.join(self.paths.src_templates_dir_path, "robots.txt.template")
+        logger.debug(f"Processing {template_path} ...")
+        with open(template_path, mode="r", encoding="utf-8") as f:
+            robots_template = f.read()
+
+        # Substitute the placeholders with the actual values
+        substitutions = {
+            "blog_url": self.config.blog_url,
+        }
+        robots_template = Template(robots_template).substitute(substitutions)
+
+        # Write substituted template to file
+        sitemap_path = os.path.join(self.paths.dst_dir_path, "robots.txt")
+        with open(sitemap_path, mode="w", encoding="utf-8") as f:
+            f.write(robots_template)
+
+
 class Blog:
 
     def __init__(self, config: BlogConfig, paths: PathConfig):
@@ -499,6 +607,14 @@ class Blog:
         self.process_scripts()
         logger.info("Processing rss feed...")
         self.process_rss_feed()
+        logger.info("Processing favicon...")
+        self.process_favicon()
+        logger.info("Processing manifest...")
+        self.process_manifest()
+        logger.info("Processing sitemap...")
+        self.process_sitemap()
+        logger.info("Processing robots...")
+        self.process_robots()
 
     def clean_build_directory(self) -> None:
         """
@@ -600,6 +716,43 @@ class Blog:
             entries = [f'"{post.filename}": [{", ".join(map(repr, post.tags))}]' for post in self.posts]
             substitutions = {"tag_mapping": "\n" + ",\n".join(entries) + "\n"}
             f.write(Template(js_template).substitute(substitutions))
+
+    def process_favicon(self) -> None:
+        """
+        Processes the site's Favicon, if present.
+        """
+        icon_path = os.path.join(self.paths.dst_assets_dir_path, "favicon.ico")
+        icon_exists = os.path.isfile(icon_path)
+
+        if icon_exists:
+            destination_path = os.path.join(self.paths.dst_dir_name, "favicon.ico")
+            shutil.copy(icon_path, destination_path)
+
+    def process_manifest(self) -> None:
+        """
+        Processes the site's manifest, if present.
+        """
+                
+        manifest_path = os.path.join(self.paths.dst_assets_dir_path, "site.webmanifest")
+        manifest_exists = os.path.isfile(manifest_path)
+
+        if manifest_exists:
+            destination_path = os.path.join(self.paths.dst_dir_name, "site.webmanifest")
+            shutil.copy(manifest_path, destination_path)
+
+    def process_sitemap(self) -> None:
+        """
+        Generates the Sitemap.xml file
+        """
+        sitemap = Sitemap(self.config, self.paths, self.posts)
+        sitemap.generate()
+
+    def process_robots(self) -> None:
+        """
+        Generates the Robots.txt file
+        """
+        sitemap = Robots(self.config, self.paths)
+        sitemap.generate()
 
 
 if __name__ == '__main__':
