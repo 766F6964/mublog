@@ -77,6 +77,12 @@ comprehensive table below that explains everything.
             </td>
         </tr>
         <tr>
+            <td><code>src/meta/</code></td>
+            <td>
+                The <code>src/meta/</code> directory, contains all files that compose some kind of metacharacteristic for the site such as icons.
+            </td>
+        </tr>
+        <tr>
             <td><code>src/posts/</code></td>
             <td>
                 The <code>src/posts/</code> directory contains all your blog posts.
