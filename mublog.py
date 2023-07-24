@@ -21,6 +21,7 @@ class PathConfig:
         self.src_dir_name = "src"
         self.post_dir_name = "posts"
         self.assets_dir_name = "assets"
+        self.meta_dir_name = "meta"
         self.js_dir_name = "js"
         self.css_dir_name = "css"
         self.templates_dir_name = "templates"
@@ -29,6 +30,7 @@ class PathConfig:
         self.src_dir_path = self.src_dir_name
         self.src_posts_dir_path = os.path.join(self.src_dir_path, self.post_dir_name)
         self.src_assets_dir_path = os.path.join(self.src_dir_path, self.assets_dir_name)
+        self.src_meta_dir_path = os.path.join(self.src_dir_path, self.meta_dir_name)
         self.src_css_dir_path = os.path.join(self.src_dir_path, self.css_dir_name)
         self.src_templates_dir_path = os.path.join(self.src_dir_path, self.templates_dir_name)
 
@@ -36,6 +38,7 @@ class PathConfig:
         self.dst_dir_path = self.dst_dir_name
         self.dst_posts_dir_path = os.path.join(self.dst_dir_path, self.post_dir_name)
         self.dst_assets_dir_path = os.path.join(self.dst_dir_path, self.assets_dir_name)
+        self.dst_meta_dir_path = os.path.join(self.dst_dir_path, self.meta_dir_name)
         self.dst_css_dir_path = os.path.join(self.dst_dir_path, self.css_dir_name)
         self.dst_js_dir_path = os.path.join(self.dst_dir_path, self.js_dir_name)
 
@@ -267,6 +270,7 @@ class Post:
             "post_content": self.html_content,
             "post_tags": self.get_tags_as_html(),
             "assets_dir": Helper.strip_top_directory_in_path(self.paths.dst_assets_dir_path),
+            "meta_dir": Helper.strip_top_directory_in_path(self.paths.dst_meta_dir_path),
             "css_dir": Helper.strip_top_directory_in_path(self.paths.dst_css_dir_path),
             "js_dir": Helper.strip_top_directory_in_path(self.paths.dst_js_dir_path),
         }
@@ -302,6 +306,7 @@ class Page:
             "page_title": self.page_title,
             "page_content": self.html_content,
             "assets_dir": Helper.strip_top_directory_in_path(self.paths.dst_assets_dir_path),
+            "meta_dir": Helper.strip_top_directory_in_path(self.paths.dst_meta_dir_path),
             "css_dir": Helper.strip_top_directory_in_path(self.paths.dst_css_dir_path),
             "js_dir": Helper.strip_top_directory_in_path(self.paths.dst_js_dir_path),
         }
@@ -353,6 +358,7 @@ class TagsPage(Page):
             "page_title": "Tags",
             "page_content": self.html_content + tags_html,
             "assets_dir": Helper.strip_top_directory_in_path(self.paths.dst_assets_dir_path),
+            "meta_dir": Helper.strip_top_directory_in_path(self.paths.dst_meta_dir_path),
             "css_dir": Helper.strip_top_directory_in_path(self.paths.dst_css_dir_path),
             "js_dir": Helper.strip_top_directory_in_path(self.paths.dst_js_dir_path),
         }
@@ -401,6 +407,7 @@ class ArticlesPage(Page):
             "page_title": "Articles",
             "page_content": self.html_content + self.get_article_listing_as_html(),
             "assets_dir": Helper.strip_top_directory_in_path(self.paths.dst_assets_dir_path),
+            "meta_dir": Helper.strip_top_directory_in_path(self.paths.dst_meta_dir_path),
             "css_dir": Helper.strip_top_directory_in_path(self.paths.dst_css_dir_path),
             "js_dir": Helper.strip_top_directory_in_path(self.paths.dst_js_dir_path),
         }
@@ -662,6 +669,7 @@ class Blog:
             self.paths.dst_posts_dir_path,
             self.paths.dst_css_dir_path,
             self.paths.dst_assets_dir_path,
+            self.paths.dst_meta_dir_path,
             self.paths.dst_js_dir_path,
         ]
         for directory in directories:
@@ -676,6 +684,7 @@ class Blog:
         Copies css and assets from the src directory to the build directory
         """
         Helper.copy_files(self.paths.src_css_dir_path, self.paths.dst_css_dir_path)
+        Helper.copy_files(self.paths.src_meta_dir_path, self.paths.dst_meta_dir_path)
         Helper.copy_files(self.paths.src_assets_dir_path, self.paths.dst_assets_dir_path)
 
     def process_posts(self) -> None:
@@ -749,7 +758,7 @@ class Blog:
         """
         Processes the site's Favicon, if present.
         """
-        icon_path = os.path.join(self.paths.dst_assets_dir_path, "favicon.ico")
+        icon_path = os.path.join(self.paths.src_meta_dir_path, "favicon.ico")
         icon_exists = os.path.isfile(icon_path)
 
         if icon_exists:

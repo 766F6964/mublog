@@ -8,9 +8,9 @@
 
     <link rel="manifest" href="/site.webmanifest">
 
-    <link rel="apple-touch-icon" sizes="180x180" href="/${assets_dir}/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/${assets_dir}/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/${assets_dir}/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/${meta_dir}/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/${meta_dir}/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/${meta_dir}/favicon-16x16.png">
     <link rel="favicon" href="/favicon.ico"/>
 
     <link rel="stylesheet" type="text/css" media="all" href="/${css_dir}/normalize.css">
