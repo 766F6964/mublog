@@ -4,7 +4,6 @@ import glob
 import logging
 import os
 import time
-import sys
 import shutil
 import subprocess
 import re
@@ -94,7 +93,7 @@ class Helper:
         :return: The stripped path
         """
         parts = path.split(os.sep)
-        return os.sep.join(parts[1:]) if len(parts) > 1 else path
+        return "/".join(parts[1:]) if len(parts) > 1 else path
 
     @staticmethod
     def copy_files(src_path: str, dst_path: str) -> None:
@@ -123,6 +122,33 @@ class Helper:
         file_name = os.path.basename(src_file_path)
         base_name, _ = os.path.splitext(file_name)
         return os.path.join(dst_dir, base_name + dst_ext)
+    
+    @staticmethod
+    def replace_relative_url_with_abs_url(match: re.Match, base_url: str, folder_name: str) -> str:
+        """
+        Converts a relative url to an absolute url, prefixed with the base url
+        :param match: The match object
+        :return: The absolute url, prefixed with the base url
+        """
+        if match.group(1).startswith('/'):
+            return urljoin(base_url, match.group(1).lstrip('/'))
+        elif match.group(1).startswith('../'):
+            return urljoin(base_url, match.group(1))
+        else:
+            return urljoin(base_url, os.path.join(folder_name, match.group(1)))
+    
+    @staticmethod
+    def make_urls_absolute(content: str, base_url: str, folder_name: str) -> str:
+        """
+        Converts all relative urls in the content to absolute urls, prefixed with the blog url
+        :param content: The content in which to convert the urls
+        :return: The content with all relative urls converted to absolute urls
+        """        
+        if not content:            
+            return ""
+        
+        regex_pattern = r'''(?:url\(|<(?:link|a|script|img)[^>]+(?:src|href)\s*=\s*)(?!['"]?(?:data|http|https))['"]?([^'"\)\s>#]+)'''
+        return re.sub(regex_pattern, lambda match: Helper.replace_relative_url_with_abs_url(match, base_url, folder_name), content)
 
 
 class Post:
@@ -451,31 +477,6 @@ class RSSFeed:
         self.posts = posts
         self.feed_data = ""
 
-    def replace_relative_url_with_abs_url(self, match: re.Match) -> str:
-        """
-        Converts a relative url to an absolute url, prefixed with the blog url
-        :param match: The match object
-        :return: The absolute url, prefixed with the blog url
-        """
-        if match.group(1).startswith('/'):
-            return urljoin(self.config.blog_url, match.group(1).lstrip('/'))
-        elif match.group(1).startswith('../'):
-            return urljoin(self.config.blog_url, match.group(1))
-        else:
-            return urljoin(self.config.blog_url, os.path.join(self.paths.post_dir_name, match.group(1)))
-
-    def make_post_urls_absolute(self, post: Post) -> str:
-        """
-        Converts all relative urls in the post to absolute urls, prefixed with the blog url
-        :param post: The post in which to convert the urls
-        :return: The post content with all relative urls converted to absolute urls
-        """
-        if not post.html_content:            
-            return ""
-        
-        regex_pattern = r'''(?:url\(|<(?:link|a|script|img)[^>]+(?:src|href)\s*=\s*)(?!['"]?(?:data|http|https))['"]?([^'"\)\s>#]+)'''
-        return re.sub(regex_pattern, lambda match: self.replace_relative_url_with_abs_url(match), post.html_content)
-
     def generate(self) -> None:
         """
         Formats all posts as RSS feed entries and writes the feed to a file
@@ -490,8 +491,8 @@ class RSSFeed:
         # Create a feed entry for each post
         for post in self.posts:
             post_title = html.escape(post.title)
-            post_link = os.path.join(self.config.blog_url, post.remote_path)
-            post_content = html.escape(self.make_post_urls_absolute(post))
+            post_link = urllib.parse.urljoin(self.config.blog_url, post.remote_path)
+            post_content = html.escape(Helper.make_urls_absolute(post.html_content, self.config.blog_url, self.paths.post_dir_name))
 
             self.feed_data += f"<item>"
             self.feed_data += f"<title>{post_title}</title>"
@@ -522,31 +523,6 @@ class Sitemap:
         self.posts = posts
         self.feed_data = ""
 
-    def replace_relative_url_with_abs_url(self, match: re.Match) -> str:
-        """
-        Converts a relative url to an absolute url, prefixed with the blog url
-        :param match: The match object
-        :return: The absolute url, prefixed with the blog url
-        """
-        if match.group(1).startswith('/'):
-            return urljoin(self.config.blog_url, match.group(1).lstrip('/'))
-        elif match.group(1).startswith('../'):
-            return urljoin(self.config.blog_url, match.group(1))
-        else:
-            return urljoin(self.config.blog_url, os.path.join(self.paths.post_dir_name, match.group(1)))
-
-    def make_post_urls_absolute(self, post: Post) -> str:
-        """
-        Converts all relative urls in the post to absolute urls, prefixed with the blog url
-        :param post: The post in which to convert the urls
-        :return: The post content with all relative urls converted to absolute urls
-        """
-        if not post.html_content:
-            return ''
-        
-        regex_pattern = r'''(?:url\(|<(?:link|a|script|img)[^>]+(?:src|href)\s*=\s*)(?!['"]?(?:data|http|https))['"]?([^'"\)\s>#]+)'''
-        return re.sub(regex_pattern, lambda match: self.replace_relative_url_with_abs_url(match), post.html_content)
-
     def generate(self) -> None:
         """
         Formats all posts as Sitemap entries and writes the feed to a file
@@ -560,11 +536,11 @@ class Sitemap:
 
         lastmod = datetime.date.today().strftime("%Y-%m-%d")
 
-        site_paths = [self.config.blog_url + post.remote_path for post in self.posts]
-        site_paths.append(self.config.blog_url + "index.html")
-        site_paths.append(self.config.blog_url + "articles.html")
-        site_paths.append(self.config.blog_url + "tags.html")
-        site_paths.append(self.config.blog_url + "about.html")
+        site_paths = [urllib.parse.urljoin(self.config.blog_url, post.remote_path) for post in self.posts]
+        site_paths.append(urllib.parse.urljoin(self.config.blog_url, "index.html"))
+        site_paths.append(urllib.parse.urljoin(self.config.blog_url, "articles.html"))
+        site_paths.append(urllib.parse.urljoin(self.config.blog_url, "tags.html"))
+        site_paths.append(urllib.parse.urljoin(self.config.blog_url, "about.html"))
 
         # Create a feed entry for each post
         for site_path in site_paths:
