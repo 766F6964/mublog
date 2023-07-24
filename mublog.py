@@ -135,7 +135,7 @@ class Helper:
         elif match.group(1).startswith('../'):
             return urljoin(base_url, match.group(1))
         else:
-            return urljoin(base_url, os.path.join(folder_name, match.group(1)))
+            return urljoin(base_url, urljoin(folder_name, match.group(1)))
     
     @staticmethod
     def make_urls_absolute(content: str, base_url: str, folder_name: str) -> str:
@@ -491,7 +491,7 @@ class RSSFeed:
         # Create a feed entry for each post
         for post in self.posts:
             post_title = html.escape(post.title)
-            post_link = urllib.parse.urljoin(self.config.blog_url, post.remote_path)
+            post_link = urljoin(self.config.blog_url, post.remote_path)
             post_content = html.escape(Helper.make_urls_absolute(post.html_content, self.config.blog_url, self.paths.post_dir_name))
 
             self.feed_data += f"<item>"
@@ -536,11 +536,11 @@ class Sitemap:
 
         lastmod = datetime.date.today().strftime("%Y-%m-%d")
 
-        site_paths = [urllib.parse.urljoin(self.config.blog_url, post.remote_path) for post in self.posts]
-        site_paths.append(urllib.parse.urljoin(self.config.blog_url, "index.html"))
-        site_paths.append(urllib.parse.urljoin(self.config.blog_url, "articles.html"))
-        site_paths.append(urllib.parse.urljoin(self.config.blog_url, "tags.html"))
-        site_paths.append(urllib.parse.urljoin(self.config.blog_url, "about.html"))
+        site_paths = [urljoin(self.config.blog_url, post.remote_path) for post in self.posts]
+        site_paths.append(urljoin(self.config.blog_url, "index.html"))
+        site_paths.append(urljoin(self.config.blog_url, "articles.html"))
+        site_paths.append(urljoin(self.config.blog_url, "tags.html"))
+        site_paths.append(urljoin(self.config.blog_url, "about.html"))
 
         # Create a feed entry for each post
         for site_path in site_paths:
