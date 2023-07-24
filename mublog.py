@@ -128,6 +128,8 @@ class Helper:
         """
         Converts a relative url to an absolute url, prefixed with the base url
         :param match: The match object
+        :param base_url: The base url which the other urls come from
+        :param folder_name: The name of the folder which sits between the base url and the partial
         :return: The absolute url, prefixed with the base url
         """
         if match.group(1).startswith('/'):
@@ -142,6 +144,8 @@ class Helper:
         """
         Converts all relative urls in the content to absolute urls, prefixed with the blog url
         :param content: The content in which to convert the urls
+        :param base_url: The base url which the other urls come from
+        :param folder_name: The name of the folder which sits between the base url and the partial
         :return: The content with all relative urls converted to absolute urls
         """        
         if not content:            
@@ -310,7 +314,6 @@ class Post:
             "post_description": self.description,
             "post_author": self.config.blog_author_name,
             "post_date": self.date,
-            "post_title": self.title,
             "post_content": self.html_content,
             "posts_url": self.config.blog_url + self.paths.post_dir_name,
             "post_tags": self.get_tags_as_html(),
