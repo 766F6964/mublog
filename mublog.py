@@ -249,6 +249,17 @@ class Post:
             tag_html = f"<div class=\"tag-bubble\" onclick=\"location.href='/articles.html?{tag_name}'\">{tag}</div>"
             tags.append(tag_html)
         return "<div class=\"tags\">\n" + "\n".join(tags) + "\n</div>"
+    
+    def get_tags_as_meta(self) -> str:
+        """
+        Wraps the tags of the post in header meta tags
+        :return: The tags wrapped in header meta tags
+        """
+        tags = []
+        for tag in self.tags:
+            tag_html = f"<meta property=\"og:article:tag\" content=\"{tag}\"/>"
+            tags.append(tag_html)
+        return "".join(tags)
 
     def generate(self) -> str:
         """
@@ -264,11 +275,20 @@ class Post:
             post_template = f.read()
 
         substitutions = {
+            "blog_title": self.config.blog_title,
+            "blog_description": self.config.blog_description,
+            "blog_url": self.config.blog_url,
             "author_mail": self.config.blog_author_mail,
             "author_copyright": self.config.blog_author_copyright,
             "post_title": self.title,
+            "post_description": self.description,
+            "post_author": self.config.blog_author_name,
+            "post_date": self.date,
+            "post_title": self.title,
             "post_content": self.html_content,
+            "posts_url": self.config.blog_url + self.paths.post_dir_name,
             "post_tags": self.get_tags_as_html(),
+            "post_meta_tags": self.get_tags_as_meta(),
             "assets_dir": Helper.strip_top_directory_in_path(self.paths.dst_assets_dir_path),
             "meta_dir": Helper.strip_top_directory_in_path(self.paths.dst_meta_dir_path),
             "css_dir": Helper.strip_top_directory_in_path(self.paths.dst_css_dir_path),
@@ -301,6 +321,9 @@ class Page:
             page_template = f.read()
 
         substitutions = {
+            "blog_title": self.config.blog_title,
+            "blog_description": self.config.blog_description,
+            "blog_url": self.config.blog_url,
             "author_mail": self.config.blog_author_mail,
             "author_copyright": self.config.blog_author_copyright,
             "page_title": self.page_title,
@@ -353,6 +376,9 @@ class TagsPage(Page):
         tags_html = self.get_post_tags_with_count_as_html()
 
         substitutions = {
+            "blog_title": self.config.blog_title,
+            "blog_description": self.config.blog_description,
+            "blog_url": self.config.blog_url,
             "author_mail": self.config.blog_author_mail,
             "author_copyright": self.config.blog_author_copyright,
             "page_title": "Tags",
@@ -402,6 +428,9 @@ class ArticlesPage(Page):
 
         # Write the page template with the actual values
         substitutions = {
+            "blog_title": self.config.blog_title,
+            "blog_description": self.config.blog_description,
+            "blog_url": self.config.blog_url,
             "author_mail": self.config.blog_author_mail,
             "author_copyright": self.config.blog_author_copyright,
             "page_title": "Articles",
