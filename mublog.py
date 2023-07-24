@@ -1,3 +1,4 @@
+import configparser
 import datetime
 import glob
 import logging
@@ -41,13 +42,13 @@ class PathConfig:
 
 class BlogConfig:
     def __init__(self):
-        self.blog_url = "https://my-blog.com/"
-        self.blog_title = "John's Awesome Blog"
-        self.blog_description = "Short description what the blog is about"
-        self.blog_author_name = "John Doe"
-        self.blog_author_mail = "johndoe@example.com"
-        self.blog_author_copyright = f"Copyright 2023 {self.blog_author_name}"
-        self.post_ignore_prefix = "_"
+        self.blog_url = ""
+        self.blog_title = ""
+        self.blog_description = ""
+        self.blog_author_name = ""
+        self.blog_author_mail = ""
+        self.post_ignore_prefix = ""
+        self.blog_author_copyright = ""
 
 
 class LogFormatter(logging.Formatter):
@@ -76,7 +77,7 @@ class Helper:
         """
         command = ["pandoc", src_path, "-f", "markdown", "-t", "html"]
         try:
-            result = subprocess.run(command, check=True, capture_output=True, text=True)
+            result = subprocess.run(command, check=True, capture_output=True, text=True, encoding="utf-8")
             return result.stdout
         except subprocess.CalledProcessError:
             logger.error(f"Pandoc failed while processing {src_path}")
@@ -224,7 +225,7 @@ class Post:
         :return: True if the header is valid, False otherwise
         """
         logger.debug(f"Processing {self.src_path} ...")
-        with open(self.src_path, "r") as f:
+        with open(self.src_path, mode="r", encoding="utf-8") as f:
             md_data = f.readlines()
 
         # Validate all fields in the header
@@ -256,7 +257,7 @@ class Post:
         self.html_content = Helper.pandoc_md_to_html(self.src_path)
 
         # Load the post template and substitute the placeholders with the actual values
-        with open(os.path.join(self.paths.src_templates_dir_path, "post.html.template"), encoding="utf-8") as f:
+        with open(os.path.join(self.paths.src_templates_dir_path, "post.html.template"), mode="r", encoding="utf-8") as f:
             post_template = f.read()
 
         substitutions = {
@@ -292,7 +293,7 @@ class Page:
         self.html_content = Helper.pandoc_md_to_html(self.src_path)
 
         # Load the page template and substitute the placeholders with the actual values
-        with open(os.path.join(self.paths.src_templates_dir_path, "page.html.template"), encoding="utf-8") as f:
+        with open(os.path.join(self.paths.src_templates_dir_path, "page.html.template"), mode="r", encoding="utf-8") as f:
             page_template = f.read()
 
         substitutions = {
@@ -340,7 +341,7 @@ class TagsPage(Page):
         self.html_content = Helper.pandoc_md_to_html(self.src_path)
 
         # Load the page template and substitute the placeholders with the actual values
-        with open(os.path.join(self.paths.src_templates_dir_path, "page.html.template"), encoding="utf-8") as f:
+        with open(os.path.join(self.paths.src_templates_dir_path, "page.html.template"), mode="r", encoding="utf-8") as f:
             tags_page_template = f.read()
 
         # Get tags from posts, sorted by count and convert them to html
@@ -595,6 +596,9 @@ class Blog:
         Generates the blog, i.e. creates the build directory, copies all files to the build directory, processes all
         posts and pages and generates the rss feed
         """
+        logger.debug("Loading configurations...")
+        self.load_configuration()
+        
         logger.debug("Creating build directories and copying files...")
         self.clean_build_directory()
         self.create_build_directories()
@@ -615,6 +619,30 @@ class Blog:
         self.process_sitemap()
         logger.info("Processing robots...")
         self.process_robots()
+
+    def load_configuration(self)->None:
+        path = "mublog.ini"
+        
+        parser = configparser.ConfigParser()
+        _ = parser.read(path, encoding="utf-8")
+
+        if len(parser.sections()) == 0:
+            logger.error("No configuration sections were loaded")
+            raise FileNotFoundError(path)
+        
+        if "mublog" not in parser:
+            logger.error("mublog configuration section was not found")
+            raise FileNotFoundError(path)
+        
+        section = parser["mublog"]
+
+        self.config.blog_url = section["blog_url"]
+        self.config.blog_title = section["blog_title"]
+        self.config.blog_description = section["blog_description"]
+        self.config.blog_author_name = section["blog_author_name"]
+        self.config.blog_author_mail = section["blog_author_mail"]
+        self.config.post_ignore_prefix = section["post_ignore_prefix"]
+        self.config.blog_author_copyright = section["blog_author_copyright"]
 
     def clean_build_directory(self) -> None:
         """
@@ -664,7 +692,7 @@ class Blog:
             # Validate and generate the post
             post = Post(self.config, self.paths, file_path)
             if post.validate_header():
-                with open(post.dst_path, "w", encoding="utf-8") as f:
+                with open(post.dst_path, mode="w", encoding="utf-8") as f:
                     f.write(post.generate())
                 self.processed_posts += 1
                 self.posts.append(post)
@@ -690,7 +718,7 @@ class Blog:
                 page = Page(self.config, self.paths, file_path)
 
             # Write the generated page to disk
-            with open(page.dst_path, "w", encoding="utf-8") as f:
+            with open(page.dst_path, mode="w", encoding="utf-8") as f:
                 f.write(page.generate())
             self.pages.append(page)
 
@@ -708,11 +736,11 @@ class Blog:
         # Load the JavaScript template
         tags_template_path = os.path.join(self.paths.src_templates_dir_path, "tags.js.template")
         logger.debug(f"Processing {tags_template_path} ...")
-        with open(tags_template_path, encoding="utf-8") as f:
+        with open(tags_template_path, mode="r", encoding="utf-8") as f:
             js_template = f.read()
 
         # Create a mapping of post filenames to tags and substitute the template placeholders with the actual values
-        with open(os.path.join(self.paths.dst_js_dir_path, "tags.js"), "w", encoding="utf-8") as f:
+        with open(os.path.join(self.paths.dst_js_dir_path, "tags.js"), mode="w", encoding="utf-8") as f:
             entries = [f'"{post.filename}": [{", ".join(map(repr, post.tags))}]' for post in self.posts]
             substitutions = {"tag_mapping": "\n" + ",\n".join(entries) + "\n"}
             f.write(Template(js_template).substitute(substitutions))

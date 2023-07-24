@@ -104,6 +104,11 @@ comprehensive table below that explains everything.
     </tbody>
 </table>
 
+## Blog configurations
+
+The author, e-mail address, link, description and any other configuration data are stored in the `mublog.ini` file.
+The script reads from this file to generate the blog so it is a good idea to update this file before you publish.
+
 ## Writing a Post
 
 To write a new blog post, simply create a new markdown file in `src/posts/`.
