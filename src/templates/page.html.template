@@ -18,7 +18,7 @@
     <meta property="og:description" content="${blog_description}" />
     <meta property="og:url" content="${blog_url}${page_title}.html" />
 
-    <link rel="manifest" href="/site.webmanifest">
+    <link rel="manifest" href="/${meta_dir}/site.webmanifest">
 
     <link rel="apple-touch-icon" sizes="180x180" href="/${meta_dir}/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/${meta_dir}/favicon-32x32.png">
