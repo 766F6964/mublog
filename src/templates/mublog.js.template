@@ -2,7 +2,7 @@ const tag_mapping = {
 	${tag_mapping}
 };
 
-let isDarkTheme = false;
+let theme = ${blog_theme};
 
 function get_tag_parameter() {
 	const urlParams = new URLSearchParams(window.location.search);
@@ -27,16 +27,18 @@ function hide_article_listing(filename) {
 }
 function toggle_theme() {
     const body = document.body;
-	if (isDarkTheme) {
+	if (theme == "dark") {
 		body.classList.add("light-theme");
 		body.classList.remove("dark-theme");
 		console.log("Switched to light theme");
-	} else {
+	} else if (theme == "light"){
 		body.classList.add("dark-theme");
 		body.classList.remove("light-theme");
 		console.log("Switched to dark theme");
-	}
-	isDarkTheme = !isDarkTheme;
+	} else {
+        console.log("Theme not set");
+    }
+	theme = theme == "light" ? "dark" : "light";
   }
 
 document.addEventListener('DOMContentLoaded', function () {

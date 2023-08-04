@@ -38,7 +38,7 @@
         ${post_title}
     </title>
 </head>
-<body class="light-theme">
+<body class="${blog_theme}-theme">
 <nav>
     <a href="/index.html" title="home">home</a>
     <a href="/articles.html" title="articles">articles</a>
