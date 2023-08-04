@@ -34,6 +34,7 @@
         ${page_title}
     </title>
 </head>
+<body class="light-theme">
 <nav>
     <a href="/index.html" title="home">home</a>
     <a href="/articles.html" title="articles">articles</a>
@@ -44,6 +45,7 @@
 </nav>
 <main>
 <hr>
+<button id="themeToggleBtn">Toggle Theme</button>
 ${page_content}
 </main>
 <footer>

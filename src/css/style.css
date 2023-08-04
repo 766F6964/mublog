@@ -1,25 +1,35 @@
-:root {
-    --color-blue-lgt: #14263b;
-    --color-blue-mid: #030811;
+.dark-theme{
+    --color-blue-lgt: #0F0F0F;
+    --color-blue-mid: #FFFF00;
+    --color-blue-drk: #0000FF;
+    --color-red-drk: #00FF00;
+    --color-gray-light: #1b1b1b;
+    --color-gray-mid: #00FF00;
+    --color-gray-drk: #1f1f1f;
+    --color-gray-vdark: #AF00A0;
+    --color-gray-charcoal: #3366AA;
+}
+
+.light-theme{
+    --color-blue-lgt: #0F0F0F;
+    --color-blue-mid: #FF0000;
     --color-blue-drk: #ffffff;
-    --color-red-drk: #24333e;
+    --color-red-drk: #00FF00;
     --color-gray-light: #1b1b1b;
     --color-gray-mid: #8B949E;
     --color-gray-drk: #1f1f1f;
     --color-gray-vdark: #e0e0e0;
-    --color-gray-charcoal: #1a1a1a;
-    --color-white: #ffffff;
+    --color-gray-charcoal: #0F0F0F;
 }
 
 html {
     font-size: 20px;
     line-height: 1.5;
-    background-color: var(--color-blue-drk);
     font-family: IBM Plex Mono, monospace;
-    color: var(--color-gray-light);
 }
 
 body {
+    background-color: var(--color-blue-drk);
     margin: 0 auto;
     padding: 0 1.5rem;
     max-width: 900px;
