@@ -441,9 +441,13 @@ class ArticlesPage(Page):
         article_listing = "<article>"
         article_listing += "<ul class=\"articles\">"
         for post in self.posts:
-            article_listing += f'<li id=\"{post.filename}\">'
-            article_listing += f'<b>[{post.date}]</b> '
+            article_listing += f'<li class=\"article-entry\" id=\"{post.filename}\">'
+            article_listing += "<div class=\"article-date\">"
+            article_listing += f'[{post.date}]'
+            article_listing += "</div>"
+            article_listing += "<div class=\"article-title\">"
             article_listing += f'<a href=\"{post.remote_path}\">{post.title}</a>'
+            article_listing += "</div>"
             article_listing += f'</li>'
         article_listing += "</ul>"
         article_listing += "</article>"

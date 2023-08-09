@@ -45,14 +45,6 @@ a:hover {
     background-color: var(--color-link);
 }
 
-.articles a {
-    color: var(--color-text);
-}
-
-.articles a:hover {
-    color: var(--color-page-background);
-    background-color: var(--color-text);
-}
 
 .tags {
     display: flex;
@@ -119,23 +111,38 @@ h3 {
     font-size: 1.3rem
 }
 
-article ul {
-    list-style-type: disc;
-    padding: 5px;
-    text-align: start;
+.articles {
+    padding-left: 2rem;
+    padding-right: 2rem;
 }
 
-article ul li {
-    margin-bottom: 0.5rem;
+.article-entry {
+  display: flex;
+  align-items: center;
 }
 
-article ul li:last-child {
-    margin-bottom: 0;
+.article-date {
+  flex: 0 0 auto;
+  margin-right: 0.8rem;
+  font-weight: bold;
+  color: var(--color-text);
 }
 
-article a {
-    color: var(--color-text);
+.article-title {
+  flex: 1;
 }
+
+.article-title a {
+  text-decoration: none;
+  font-style: normal;
+  color: var(--color-text);
+}
+
+.article-title a:hover {
+    color: var(--color-page-background);
+    background-color: var(--color-text);
+}
+
 
 .block-code {
     background-color: #161B22;
@@ -169,7 +176,6 @@ p {
     color: var(--color-text);
 }
 
-
 table {
     margin: 0 auto;
     overflow-x: auto;
@@ -188,6 +194,8 @@ th {
     font-weight: bold;
     background-color: var(--color-table-header);
 }
+
+
 
 figure {
     margin: 1rem 0;
