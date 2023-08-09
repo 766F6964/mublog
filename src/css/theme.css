@@ -1,29 +1,39 @@
 .dark-theme{
-    --color-page-background: #212121;
-    --color-text: #ffffff;
-    --color-link: #023978;
-    --color-quote-bar: #dddddd;
-    --color-quote-text: #1c1c1c;
-    --color-text-heading: rgba(255, 255, 255, 0.7);
-    --color-text-footer: #ff0000;
-    --color-tag-text: #111111;
-    --color-tag-border: #111111;
-    --color-accent: #dddddd;
+    --color-page-background: #121212;
+    --color-text: #c0c0c0;
+    --color-headings: #b2cffb;
+    --color-link: #6eacf6;
+    --color-quote-bar: #575757;
+    --color-quote-text: #c0c0c0;
+    --color-table-header: #121212;
+    --color-tag-text: #c0c0c0;
+    --color-tag-count: #b2cffb;
+    --color-tag-border: #c0c0c0;
+    --color-tag-background: #121212;
+    --color-tag-background-hover: #282828;
+    --color-tag-text-hover: #b2cffb;
+    --color-article-listing-date: #b2cffb;
+    --color-article-listing-title: #c0c0c0;
+    --color-separator-line: #282828;
+    --color-footer: #575757;
 }
 
 .light-theme{
     --color-page-background: #ffffff;
     --color-text: #000000;
+    --color-headings: #111111;
+    --color-footer: #111111;
     --color-link: #023978;
     --color-quote-bar: #dddddd;
     --color-quote-text: #1c1c1c;
-    --color-text-heading: #111111;
-    --color-text-footer: #111111;
+    --color-table-header: #f4f4f4;
     --color-tag-text: #000000;
+    --color-tag-count: #023978;
     --color-tag-border: #000000;
     --color-tag-background: #ffffff;
-    --color-tag-hover-background: #f4f4f4;
-    --color-tag-hover-text: #023978;
-    --color-table-header: #f4f4f4;
+    --color-tag-background-hover: #f4f4f4;
+    --color-tag-text-hover: #023978;
+    --color-article-listing-date: #222222;
+    --color-article-listing-title: #111111;
     --color-separator-line: #dddddd;
 }

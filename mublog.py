@@ -278,7 +278,11 @@ class Post:
         tags = []
         for tag in self.tags:
             tag_name = urllib.parse.urlencode({"tag": tag})
-            tag_html = f"<div class=\"tag-bubble\" onclick=\"location.href='/articles.html?{tag_name}'\">{tag}</div>"
+            tag_html = f"<div class=\"tag\" onclick=\"location.href='/articles.html?{tag_name}'\">"
+            tag_html += "<div class=\"tag-text\">"
+            tag_html += f"{tag}"
+            tag_html += "</div>"
+            tag_html += "</div>"
             tags.append(tag_html)
         return "<div class=\"tags\">\n" + "\n".join(tags) + "\n</div>"
 
@@ -390,8 +394,10 @@ class TagsPage(Page):
         for tag in sorted_tags:
             tag_count = tag_counts[tag]
             tag_param = urllib.parse.urlencode({"tag": tag})
-            tags += (f'<div class="tag-bubble" onclick="location.href=\'articles.html?{tag_param}\'">'
-                     f"{tag}<span>{tag_count}</span></div>")
+            tags += f"<div class=\"tag\" onclick=\"location.href='articles.html?{tag_param}'\">"
+            tags += f"<div class=\"tag-text\">{tag}</div>"
+            tags += f"<div class=\"tag-count\">{tag_count}</div>"
+            tags += "</div>"
         tags += "</div>"
         return tags
 

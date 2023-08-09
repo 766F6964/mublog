@@ -5,8 +5,6 @@ html {
 }
 
 body {
-    color: #00ff00;
-    background-color: var(--color-page-background);
     margin: 0 auto;
     padding: 0 1.5rem;
     max-width: 900px;
@@ -14,6 +12,8 @@ body {
 	min-height: 100vh;
 	flex-direction: column;
 	display: flex;
+    color: var(--color-text);
+    background-color: var(--color-page-background);
 }
 
 body nav {
@@ -30,8 +30,11 @@ body main {
 footer {
     margin-top: 2rem;
     text-align: center;
-    color: var(--color-text-footer);
     flex-shrink: 0;
+}
+
+footer>p {
+    color: var(--color-footer);
 }
 
 a {
@@ -45,7 +48,6 @@ a:hover {
     background-color: var(--color-link);
 }
 
-
 .tags {
     display: flex;
     flex-wrap: wrap;
@@ -54,8 +56,9 @@ a:hover {
     column-gap: 20px;
 }
 
-.tag-bubble {
-    display: inline-block;
+.tag {
+    display: flex;
+    align-items: center;
     color: white;
     padding: 0.2em 0.5em;
     border-radius: 10px;
@@ -67,12 +70,22 @@ a:hover {
     cursor: pointer;
 }
 
-.tag-bubble:hover {
-    background-color: var(--color-tag-hover-background);
-    color: var(--color-tag-hover-text);
+.tag-count {
+    color: var(--color-tag-count);
+    margin-left: 0.8rem;
 }
-/* TODO: Should probably have a class for the tag-bubble sections */
-.tag-bubble span {
+
+.tag-text {
+    color: var(--color-tag-text);
+}
+
+
+.tag:hover {
+    background-color: var(--color-tag-background-hover);
+    color: var(--color-tag-text-hover);
+}
+
+.tag span {
     padding-left: 0.5rem;
     font-size: 0.9em;
     color: var(--color-text);
@@ -96,7 +109,7 @@ h2,
 h3 {
     text-align: left;
     vertical-align: middle;
-    color: var(--color-text-heading);
+    color: var(--color-headings);
 }
 
 h1 {
@@ -125,7 +138,7 @@ h3 {
   flex: 0 0 auto;
   margin-right: 0.8rem;
   font-weight: bold;
-  color: var(--color-text);
+  color: var(--color-article-listing-date);
 }
 
 .article-title {
@@ -133,9 +146,9 @@ h3 {
 }
 
 .article-title a {
-  text-decoration: none;
+  text-decoration: underline;
   font-style: normal;
-  color: var(--color-text);
+  color: var(--color-article-listing-title);
 }
 
 .article-title a:hover {
