@@ -1,25 +1,27 @@
 .dark-theme{
-    --color-blue-lgt: #0F0F0F;
-    --color-blue-mid: #FFFF00;
-    --color-blue-drk: #121212;
-    --color-red-drk: #00FF00;
-    --color-gray-light: #1b1b1b;
-    --color-gray-mid: #00FF00;
-    --color-gray-drk: #1f1f1f;
-    --color-gray-vdark: #AF00A0;
-    --color-gray-charcoal: #3366AA;
+    --color-page-background: #212121;
+    --color-text: #ffffff;
+    --color-link: #023978;
+    --color-quote-bar: #dddddd;
+    --color-quote-text: #1c1c1c;
+    --color-text-heading: #ffffff;
+    --color-text-footer: #ffffff;
+    --color-tag-text: #111111;
+    --color-tag-border: #111111;
+    --color-accent: #dddddd;
 }
 
 .light-theme{
-    --color-blue-lgt: #0F0F0F;
-    --color-blue-mid: #FF0000;
-    --color-blue-drk: #ffffff;
-    --color-red-drk: #00FF00;
-    --color-gray-light: #1b1b1b;
-    --color-gray-mid: #8B949E;
-    --color-gray-drk: #1f1f1f;
-    --color-gray-vdark: #e0e0e0;
-    --color-gray-charcoal: #0F0F0F;
+    --color-page-background: #ffffff;
+    --color-text: #000000;
+    --color-link: #023978;
+    --color-quote-bar: #dddddd;
+    --color-quote-text: #1c1c1c;
+    --color-text-heading: #111111;
+    --color-text-footer: #111111;
+    --color-tag-text: #111111;
+    --color-tag-border: #111111;
+    --color-accent: #dddddd;
 }
 
 html {
@@ -29,7 +31,7 @@ html {
 }
 
 body {
-    background-color: var(--color-blue-drk);
+    background-color: var(--color-page-background);
     margin: 0 auto;
     padding: 0 1.5rem;
     max-width: 900px;
@@ -37,7 +39,6 @@ body {
 	min-height: 100vh;
 	flex-direction: column;
 	display: flex;
-    flex-direction: column;
 }
 
 
@@ -52,10 +53,6 @@ body main {
     flex: 1 0 auto;
 }
 
-hr {
-  border-top: thin !important;
-}
-
 header {
     text-align: center;
     margin-bottom: 40px;
@@ -67,13 +64,6 @@ header>div {
     display: inline-block;
 }
 
-header .logo {
-    color: var(--color-red-drk);
-    font-weight: bolder;
-    margin-top: 2.5rem;
-    white-space: pre;
-}
-
 header .subtext {
     text-align: right;
 }
@@ -81,21 +71,22 @@ header .subtext {
 a {
     font-style: italic;
     text-decoration: underline;
-    color: var(--color-blue-lgt);
+    color: var(--color-link);
 }
 
 a:hover {
-    color: var(--color-blue-drk);
-    background-color: var(--color-blue-lgt);
+    color: var(--color-page-background);
+    background-color: var(--color-link);
 }
 
 .articles a {
-    color: var(--color-gray-charcoal);
+    color: var(--color-text);
 
 }
 
 .articles a:hover {
-    color: var(--color-blue-drk);
+    color: var(--color-page-background);
+    background-color: var(--color-text);
 }
 
 .tags {
@@ -112,21 +103,21 @@ a:hover {
     padding: 0.2em 0.5em;
     border-radius: 10px;
     border-style: solid;
-    border-color: var(--color-gray-mid);
+    border-color: var(--color-tag-border);
     border-width: 1px;
-    color: var(--color-blue-lgt);
+    color: var(--color-tag-text);
     transition: background-color ease-in-out 100ms;
     cursor: pointer;
 }
 
 .tag-bubble:hover {
-    background-color: var(--color-gray-vdark);
+    background-color: var(--color-accent);
 }
-
+/* TODO: Should probably have a class for the tag-bubble sections */
 .tag-bubble span {
     padding-left: 0.5rem;
     font-size: 0.9em;
-    color: var(--color-gray-mid);
+    color: var(--color-text);
 }
 
 img {
@@ -136,10 +127,10 @@ img {
 }
 
 hr {
+    border-top: thin;
     border: none;
     height: 1px;
-    color: var(--color-blue-mid);
-    background-color: var(--color-blue-mid);
+    background-color: var(--color-accent);
 }
 
 h1,
@@ -147,7 +138,7 @@ h2,
 h3 {
     text-align: left;
     vertical-align: middle;
-    color: var(--color-red-drk);
+    color: var(--color-text-heading);
 }
 
 h1 {
@@ -177,8 +168,7 @@ article ul li:last-child {
 }
 
 article a {
-
-    color: var(--color-red-drk);
+    color: var(--color-text);
 }
 
 .block-code {
@@ -199,14 +189,18 @@ article a {
 }
 
 blockquote {
-    border-left: 10px solid var(--color-blue-mid);
+    border-left: 10px solid var(--color-quote-bar);
     margin: 1.5rem 0;
     padding: 0 1.5rem;
 }
 
 blockquote p {
-    color: var(--color-gray-mid);
+    color: var(--color-quote-text);
     font-style: italic;
+}
+
+p {
+    color: var(--color-text);
 }
 
 th {
@@ -218,14 +212,10 @@ table {
     overflow-x: auto;
 }
 
-table tr:nth-child(2n + 2) td {
-    background-color: var(--color-gray-vdark);
-}
-
 table,
 th,
 td {
-    border: 1px solid var(--color-gray-charcoal);
+    border: 1px solid var(--color-text);
     border-collapse: collapse;
     padding: 0.5rem 0.8rem;
 }
@@ -234,17 +224,10 @@ figure {
     margin: 1rem 0;
 }
 
-
-figure figcaption {
-    margin-top: 0.7rem;
-    text-align: center;
-    color: var(--color-gray-mid);
-}
-
 footer {
     margin-top: 2rem;
     text-align: center;
-    color: var(--color-gray-mid);
+    color: var(--color-text-footer);
     flex-shrink: 0;
 }
 

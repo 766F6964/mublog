@@ -49,6 +49,7 @@
 </nav>
 <main>
 <hr>
+<button id="themeToggleBtn">Toggle Theme</button>
 ${post_content}
 ${post_tags}
 </main>
