@@ -26,7 +26,8 @@
     <link rel="favicon" href="/favicon.ico"/>
 
     <link rel="stylesheet" type="text/css" media="all" href="/${css_dir}/normalize.css">
-    <link rel="stylesheet" type="text/css" media="all" href="/${css_dir}/style.css">
+    <link rel="stylesheet" type="text/css" media="all" href="/${css_dir}/theme.css">
+    <link rel="stylesheet" type="text/css" media="all" href="/${css_dir}/layout.css">
 
     <script src="/${js_dir}/tags.js"></script>
 
@@ -34,6 +35,7 @@
         ${page_title}
     </title>
 </head>
+
 <body class="${blog_theme}-theme">
 <nav>
     <a href="/index.html" title="home">home</a>

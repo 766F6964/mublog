@@ -1,36 +1,11 @@
-.dark-theme{
-    --color-page-background: #212121;
-    --color-text: #ffffff;
-    --color-link: #023978;
-    --color-quote-bar: #dddddd;
-    --color-quote-text: #1c1c1c;
-    --color-text-heading: #ffffff;
-    --color-text-footer: #ffffff;
-    --color-tag-text: #111111;
-    --color-tag-border: #111111;
-    --color-accent: #dddddd;
-}
-
-.light-theme{
-    --color-page-background: #ffffff;
-    --color-text: #000000;
-    --color-link: #023978;
-    --color-quote-bar: #dddddd;
-    --color-quote-text: #1c1c1c;
-    --color-text-heading: #111111;
-    --color-text-footer: #111111;
-    --color-tag-text: #111111;
-    --color-tag-border: #111111;
-    --color-accent: #dddddd;
-}
-
 html {
-    font-size: 20px;
+    font-size: 1.2rem;
     line-height: 1.5;
     font-family: IBM Plex Mono, monospace;
 }
 
 body {
+    color: #00ff00;
     background-color: var(--color-page-background);
     margin: 0 auto;
     padding: 0 1.5rem;
@@ -40,7 +15,6 @@ body {
 	flex-direction: column;
 	display: flex;
 }
-
 
 body nav {
     font-size: 1.2rem;
@@ -53,19 +27,11 @@ body main {
     flex: 1 0 auto;
 }
 
-header {
+footer {
+    margin-top: 2rem;
     text-align: center;
-    margin-bottom: 40px;
-    font-size: 1.3rem;
-}
-
-header>div {
-    margin: 0 auto;
-    display: inline-block;
-}
-
-header .subtext {
-    text-align: right;
+    color: var(--color-text-footer);
+    flex-shrink: 0;
 }
 
 a {
@@ -81,7 +47,6 @@ a:hover {
 
 .articles a {
     color: var(--color-text);
-
 }
 
 .articles a:hover {
@@ -103,15 +68,16 @@ a:hover {
     padding: 0.2em 0.5em;
     border-radius: 10px;
     border-style: solid;
-    border-color: var(--color-tag-border);
     border-width: 1px;
+    border-color: var(--color-tag-border);
     color: var(--color-tag-text);
     transition: background-color ease-in-out 100ms;
     cursor: pointer;
 }
 
 .tag-bubble:hover {
-    background-color: var(--color-accent);
+    background-color: var(--color-tag-hover-background);
+    color: var(--color-tag-hover-text);
 }
 /* TODO: Should probably have a class for the tag-bubble sections */
 .tag-bubble span {
@@ -130,7 +96,7 @@ hr {
     border-top: thin;
     border: none;
     height: 1px;
-    background-color: var(--color-accent);
+    background-color: var(--color-separator-line);
 }
 
 h1,
@@ -203,9 +169,6 @@ p {
     color: var(--color-text);
 }
 
-th {
-    font-weight: bold;
-}
 
 table {
     margin: 0 auto;
@@ -216,25 +179,23 @@ table,
 th,
 td {
     border: 1px solid var(--color-text);
+    color: var(--color-text);
     border-collapse: collapse;
     padding: 0.5rem 0.8rem;
+}
+
+th {
+    font-weight: bold;
+    background-color: var(--color-table-header);
 }
 
 figure {
     margin: 1rem 0;
 }
 
-footer {
-    margin-top: 2rem;
-    text-align: center;
-    color: var(--color-text-footer);
-    flex-shrink: 0;
-}
-
 /*
  * Mobile Styles
  */
-
 @media screen and (max-width: 850px) {
     html {
         font-size: 0.85rem;
@@ -247,72 +208,4 @@ footer {
     h1 {
         font-size: 2rem;
     }
-}
-
-/*
- * HighlightJS Syntax Style
- */
-
-.hljs-comment {
-    color: #999999;
-}
-
-.hljs-keyword,
-.hljs-selector-tag,
-.hljs-meta-keyword,
-.hljs-doctag,
-.hljs-section,
-.hljs-selector-class,
-.hljs-meta,
-.hljs-selector-pseudo,
-.hljs-attr {
-    color: #88aece;
-}
-
-.hljs-attribute {
-    color: v#c59bc1;
-}
-
-.hljs-name,
-.hljs-type,
-.hljs-number,
-.hljs-selector-id,
-.hljs-quote,
-.hljs-template-tag,
-.hljs-built_in,
-.hljs-title,
-.hljs-literal {
-    color: #f08d49;
-}
-
-.hljs-string,
-.hljs-regexp,
-.hljs-symbol,
-.hljs-variable,
-.hljs-template-variable,
-.hljs-link,
-.hljs-selector-attr,
-.hljs-meta-string {
-    color: #b5bd68;
-}
-
-.hljs-bullet,
-.hljs-code {
-    color: #cccccc;
-}
-
-.hljs-deletion {
-    color: #de7176;
-}
-
-.hljs-addition {
-    color: #76c490;
-}
-
-.hljs-emphasis {
-    font-style: italic;
-}
-
-.hljs-strong {
-    font-weight: bold;
 }
