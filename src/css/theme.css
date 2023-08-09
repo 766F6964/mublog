@@ -20,16 +20,16 @@
 
 .light-theme{
     --color-page-background: #ffffff;
-    --color-text: #000000;
+    --color-text: #222222;
     --color-headings: #111111;
     --color-footer: #111111;
     --color-link: #023978;
     --color-quote-bar: #dddddd;
     --color-quote-text: #1c1c1c;
     --color-table-header: #f4f4f4;
-    --color-tag-text: #000000;
+    --color-tag-text: #111111;
     --color-tag-count: #023978;
-    --color-tag-border: #000000;
+    --color-tag-border: #111111;
     --color-tag-background: #ffffff;
     --color-tag-background-hover: #f4f4f4;
     --color-tag-text-hover: #023978;

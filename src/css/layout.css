@@ -59,7 +59,6 @@ a:hover {
 .tag {
     display: flex;
     align-items: center;
-    color: white;
     padding: 0.2em 0.5em;
     border-radius: 10px;
     border-style: solid;
@@ -72,7 +71,7 @@ a:hover {
 
 .tag-count {
     color: var(--color-tag-count);
-    margin-left: 0.8rem;
+    margin-left: 0.6rem;
 }
 
 .tag-text {
