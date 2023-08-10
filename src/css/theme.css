@@ -1,4 +1,4 @@
-.dark-theme{
+.dark {
     --color-page-background: #121212;
     --color-text: #c0c0c0;
     --color-headings: #b2cffb;
@@ -18,7 +18,7 @@
     --color-footer: #575757;
 }
 
-.light-theme{
+.light {
     --color-page-background: #ffffff;
     --color-text: #222222;
     --color-headings: #111111;
