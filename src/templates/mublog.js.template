@@ -26,7 +26,6 @@ function hide_article_listing(filename) {
 	}
 }
 
-
 function toggle_theme() {
     // Check if we have a theme specified in the local storage
     const current_theme = localStorage.getItem('theme');

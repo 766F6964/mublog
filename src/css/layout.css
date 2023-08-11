@@ -29,14 +29,24 @@ body main {
 
 footer {
     margin-top: 2rem;
+    margin-bottom: 0.5rem;
     text-align: center;
     flex-shrink: 0;
 }
 
-footer>p {
+.footer-elements {
+    display: flex;
+}
+
+.footer-copyright {
+    margin-left: 2rem;
+    width: 100%;
     color: var(--color-footer);
 }
 
+.footer-theme-toggle {
+    width: 2rem;
+}
 a {
     font-style: italic;
     text-decoration: underline;
@@ -207,7 +217,20 @@ th {
     background-color: var(--color-table-header);
 }
 
+.theme_btn {
+    border: none;
+    background-color: var(--color-page-background);
+    border-radius: 50%;
+    width: 2rem;
+    height: 2rem;
+    text-align: center;
+    fill: var(--color-text);
+    padding: 0.4rem;
+}
 
+.theme_btn:hover {
+    background-color: var(--color-theme-toggle);
+}
 
 figure {
     margin: 1rem 0;

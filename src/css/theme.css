@@ -16,6 +16,8 @@
     --color-article-listing-title: #c0c0c0;
     --color-separator-line: #282828;
     --color-footer: #575757;
+    --color-theme-toggle: #282828;
+    --color-theme-toggle-hover: #b2cffb;
 }
 
 .light {
@@ -36,4 +38,7 @@
     --color-article-listing-date: #222222;
     --color-article-listing-title: #111111;
     --color-separator-line: #dddddd;
+    --color-theme-toggle: #dddddd;
+    --color-theme-toggle-hover: #f4f4f4;
+
 }
