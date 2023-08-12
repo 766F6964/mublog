@@ -26,7 +26,8 @@
     <link rel="favicon" href="/favicon.ico"/>
 
     <link rel="stylesheet" type="text/css" media="all" href="/${css_dir}/normalize.css">
-    <link rel="stylesheet" type="text/css" media="all" href="/${css_dir}/style.css">
+    <link rel="stylesheet" type="text/css" media="all" href="/${css_dir}/theme.css">
+    <link rel="stylesheet" type="text/css" media="all" href="/${css_dir}/layout.css">
 
     <script src="/${js_dir}/tags.js"></script>
 
@@ -34,6 +35,8 @@
         ${page_title}
     </title>
 </head>
+
+<body class="${blog_theme}">
 <nav>
     <a href="/index.html" title="home">home</a>
     <a href="/articles.html" title="articles">articles</a>
@@ -48,10 +51,19 @@ ${page_content}
 </main>
 <footer>
     <hr>
-    <p>
-        ${author_copyright}
-        <br>
-    </p>
+    <div class="footer-elements">
+        <div class="footer-copyright">
+            ${author_copyright}
+            <br>
+        </div>
+        <div class="footer-theme-toggle">
+            <button class="theme_btn" id="themeToggleBtn">
+                <svg height="100%" viewBox="0 0 16 16" width="100%" xmlns="http://www.w3.org/2000/svg">
+                    <path d="m 8 0 c -4.40625 0 -8 3.59375 -8 8 s 3.59375 8 8 8 s 8 -3.59375 8 -8 s -3.59375 -8 -8 -8 z m 0 1.941406 c 3.359375 0 6.058594 2.699219 6.058594 6.058594 s -2.699219 6.058594 -6.058594 6.058594 z m 0 0" />
+                </svg>
+            </button>
+        </div>
+    </div>
 </footer>
 </body>
 </html>

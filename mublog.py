@@ -51,6 +51,7 @@ class BlogConfig:
         self.blog_author_mail = ""
         self.post_ignore_prefix = ""
         self.blog_author_copyright = ""
+        self.blog_theme = ""
 
 
 class LogFormatter(logging.Formatter):
@@ -122,7 +123,7 @@ class Helper:
         file_name = os.path.basename(src_file_path)
         base_name, _ = os.path.splitext(file_name)
         return os.path.join(dst_dir, base_name + dst_ext)
-    
+
     @staticmethod
     def replace_relative_url_with_abs_url(match: re.Match, base_url: str, folder_name: str) -> str:
         """
@@ -138,7 +139,7 @@ class Helper:
             return urljoin(base_url, match.group(1))
         else:
             return urljoin(base_url, urljoin(folder_name, match.group(1)))
-    
+
     @staticmethod
     def make_urls_absolute(content: str, base_url: str, folder_name: str) -> str:
         """
@@ -147,12 +148,13 @@ class Helper:
         :param base_url: The base url which the other urls come from
         :param folder_name: The name of the folder which sits between the base url and the partial
         :return: The content with all relative urls converted to absolute urls
-        """        
-        if not content:            
+        """
+        if not content:
             return ""
-        
+
         regex_pattern = r'''(?:url\(|<(?:link|a|script|img)[^>]+(?:src|href)\s*=\s*)(?!['"]?(?:data|http|https))['"]?([^'"\)\s>#]+)'''
-        return re.sub(regex_pattern, lambda match: Helper.replace_relative_url_with_abs_url(match, base_url, folder_name), content)
+        return re.sub(regex_pattern,
+                      lambda match: Helper.replace_relative_url_with_abs_url(match, base_url, folder_name), content)
 
 
 class Post:
@@ -276,10 +278,14 @@ class Post:
         tags = []
         for tag in self.tags:
             tag_name = urllib.parse.urlencode({"tag": tag})
-            tag_html = f"<div class=\"tag-bubble\" onclick=\"location.href='/articles.html?{tag_name}'\">{tag}</div>"
+            tag_html = f"<div class=\"tag\" onclick=\"location.href='/articles.html?{tag_name}'\">"
+            tag_html += "<div class=\"tag-text\">"
+            tag_html += f"{tag}"
+            tag_html += "</div>"
+            tag_html += "</div>"
             tags.append(tag_html)
         return "<div class=\"tags\">\n" + "\n".join(tags) + "\n</div>"
-    
+
     def get_tags_as_meta(self) -> str:
         """
         Wraps the tags of the post in header meta tags
@@ -301,13 +307,15 @@ class Post:
         self.html_content = Helper.pandoc_md_to_html(self.src_path)
 
         # Load the post template and substitute the placeholders with the actual values
-        with open(os.path.join(self.paths.src_templates_dir_path, "post.html.template"), mode="r", encoding="utf-8") as f:
+        with open(os.path.join(self.paths.src_templates_dir_path, "post.html.template"), mode="r",
+                  encoding="utf-8") as f:
             post_template = f.read()
 
         substitutions = {
             "blog_title": self.config.blog_title,
             "blog_description": self.config.blog_description,
             "blog_url": self.config.blog_url,
+            "blog_theme": self.config.blog_theme,
             "author_mail": self.config.blog_author_mail,
             "author_copyright": self.config.blog_author_copyright,
             "post_title": self.title,
@@ -346,13 +354,15 @@ class Page:
         self.html_content = Helper.pandoc_md_to_html(self.src_path)
 
         # Load the page template and substitute the placeholders with the actual values
-        with open(os.path.join(self.paths.src_templates_dir_path, "page.html.template"), mode="r", encoding="utf-8") as f:
+        with open(os.path.join(self.paths.src_templates_dir_path, "page.html.template"), mode="r",
+                  encoding="utf-8") as f:
             page_template = f.read()
 
         substitutions = {
             "blog_title": self.config.blog_title,
             "blog_description": self.config.blog_description,
             "blog_url": self.config.blog_url,
+            "blog_theme": self.config.blog_theme,
             "author_mail": self.config.blog_author_mail,
             "author_copyright": self.config.blog_author_copyright,
             "page_title": self.page_title,
@@ -384,8 +394,10 @@ class TagsPage(Page):
         for tag in sorted_tags:
             tag_count = tag_counts[tag]
             tag_param = urllib.parse.urlencode({"tag": tag})
-            tags += (f'<div class="tag-bubble" onclick="location.href=\'articles.html?{tag_param}\'">'
-                     f"{tag}<span>{tag_count}</span></div>")
+            tags += f"<div class=\"tag\" onclick=\"location.href='articles.html?{tag_param}'\">"
+            tags += f"<div class=\"tag-text\">{tag}</div>"
+            tags += f"<div class=\"tag-count\">{tag_count}</div>"
+            tags += "</div>"
         tags += "</div>"
         return tags
 
@@ -398,7 +410,8 @@ class TagsPage(Page):
         self.html_content = Helper.pandoc_md_to_html(self.src_path)
 
         # Load the page template and substitute the placeholders with the actual values
-        with open(os.path.join(self.paths.src_templates_dir_path, "page.html.template"), mode="r", encoding="utf-8") as f:
+        with open(os.path.join(self.paths.src_templates_dir_path, "page.html.template"), mode="r",
+                  encoding="utf-8") as f:
             tags_page_template = f.read()
 
         # Get tags from posts, sorted by count and convert them to html
@@ -408,6 +421,7 @@ class TagsPage(Page):
             "blog_title": self.config.blog_title,
             "blog_description": self.config.blog_description,
             "blog_url": self.config.blog_url,
+            "blog_theme": self.config.blog_theme,
             "author_mail": self.config.blog_author_mail,
             "author_copyright": self.config.blog_author_copyright,
             "page_title": "Tags",
@@ -433,9 +447,13 @@ class ArticlesPage(Page):
         article_listing = "<article>"
         article_listing += "<ul class=\"articles\">"
         for post in self.posts:
-            article_listing += f'<li id=\"{post.filename}\">'
-            article_listing += f'<b>[{post.date}]</b> '
+            article_listing += f'<li class=\"article-entry\" id=\"{post.filename}\">'
+            article_listing += "<div class=\"article-date\">"
+            article_listing += f'[{post.date}]'
+            article_listing += "</div>"
+            article_listing += "<div class=\"article-title\">"
             article_listing += f'<a href=\"{post.remote_path}\">{post.title}</a>'
+            article_listing += "</div>"
             article_listing += f'</li>'
         article_listing += "</ul>"
         article_listing += "</article>"
@@ -460,6 +478,7 @@ class ArticlesPage(Page):
             "blog_title": self.config.blog_title,
             "blog_description": self.config.blog_description,
             "blog_url": self.config.blog_url,
+            "blog_theme": self.config.blog_theme,
             "author_mail": self.config.blog_author_mail,
             "author_copyright": self.config.blog_author_copyright,
             "page_title": "Articles",
@@ -495,7 +514,8 @@ class RSSFeed:
         for post in self.posts:
             post_title = html.escape(post.title)
             post_link = urljoin(self.config.blog_url, post.remote_path)
-            post_content = html.escape(Helper.make_urls_absolute(post.html_content, self.config.blog_url, self.paths.post_dir_name))
+            post_content = html.escape(
+                Helper.make_urls_absolute(post.html_content, self.config.blog_url, self.paths.post_dir_name))
 
             self.feed_data += f"<item>"
             self.feed_data += f"<title>{post_title}</title>"
@@ -613,7 +633,7 @@ class Blog:
         """
         logger.debug("Loading configurations...")
         self.load_configuration()
-        
+
         logger.debug("Creating build directories and copying files...")
         self.clean_build_directory()
         self.create_build_directories()
@@ -635,20 +655,20 @@ class Blog:
         logger.info("Processing robots...")
         self.process_robots()
 
-    def load_configuration(self)->None:
+    def load_configuration(self) -> None:
         path = "mublog.ini"
-        
+
         parser = configparser.ConfigParser()
         _ = parser.read(path, encoding="utf-8")
 
         if len(parser.sections()) == 0:
             logger.error("No configuration sections were loaded")
             raise FileNotFoundError(path)
-        
+
         if "mublog" not in parser:
             logger.error("mublog configuration section was not found")
             raise FileNotFoundError(path)
-        
+
         section = parser["mublog"]
 
         self.config.blog_url = section["blog_url"]
@@ -658,6 +678,7 @@ class Blog:
         self.config.blog_author_mail = section["blog_author_mail"]
         self.config.post_ignore_prefix = section["post_ignore_prefix"]
         self.config.blog_author_copyright = section["blog_author_copyright"]
+        self.config.blog_theme = section["blog_theme"]
 
     def clean_build_directory(self) -> None:
         """
@@ -751,7 +772,7 @@ class Blog:
         Processes all scripts, i.e. generates the tag mapping script
         """
         # Load the JavaScript template
-        tags_template_path = os.path.join(self.paths.src_templates_dir_path, "tags.js.template")
+        tags_template_path = os.path.join(self.paths.src_templates_dir_path, "mublog.js.template")
         logger.debug(f"Processing {tags_template_path} ...")
         with open(tags_template_path, mode="r", encoding="utf-8") as f:
             js_template = f.read()
@@ -759,7 +780,8 @@ class Blog:
         # Create a mapping of post filenames to tags and substitute the template placeholders with the actual values
         with open(os.path.join(self.paths.dst_js_dir_path, "tags.js"), mode="w", encoding="utf-8") as f:
             entries = [f'"{post.filename}": [{", ".join(map(repr, post.tags))}]' for post in self.posts]
-            substitutions = {"tag_mapping": "\n" + ",\n".join(entries) + "\n"}
+            substitutions = {"tag_mapping": "\n" + ",\n".join(entries) + "\n",
+                             "blog_theme": f"\"{self.config.blog_theme}\""}
             f.write(Template(js_template).substitute(substitutions))
 
     def process_favicon(self) -> None:
@@ -777,7 +799,7 @@ class Blog:
         """
         Processes the site's manifest, if present.
         """
-                
+
         manifest_path = os.path.join(self.paths.dst_assets_dir_path, "site.webmanifest")
         manifest_exists = os.path.isfile(manifest_path)
 
