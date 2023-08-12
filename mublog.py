@@ -446,7 +446,7 @@ class ArticlesPage(Page):
         """
         article_listing = "<article>"
         article_listing += "<ul class=\"articles\">"
-        for post in self.posts:
+        for post in sorted(self.posts, key=lambda x: x.date, reverse=True):
             article_listing += f'<li class=\"article-entry\" id=\"{post.filename}\">'
             article_listing += "<div class=\"article-date\">"
             article_listing += f'[{post.date}]'
