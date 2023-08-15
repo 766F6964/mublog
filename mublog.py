@@ -52,6 +52,7 @@ class BlogConfig:
         self.post_ignore_prefix = ""
         self.blog_author_copyright = ""
         self.blog_theme = ""
+        self.blog_theme_can_toggle = ""
 
 
 class LogFormatter(logging.Formatter):
@@ -286,6 +287,16 @@ class Post:
             tags.append(tag_html)
         return "<div class=\"tags\">\n" + "\n".join(tags) + "\n</div>"
 
+    def get_theme_toggle_if_enabled(self):
+        toggle_code = "<button class=\"theme_btn\" id=\"themeToggleBtn\"> \
+                <svg height=\"100%\" viewBox=\"0 0 16 16\" width=\"100%\" xmlns=\"http://www.w3.org/2000/svg\"> \
+                    <path d=\"m 8 0 c -4.40625 0 -8 3.59375 -8 8 s 3.59375 8 8 8 s 8 -3.59375 8 -8 s -3.59375 -8 -8 -8 z m 0 1.941406 c 3.359375 0 6.058594 2.699219 6.058594 6.058594 s -2.699219 6.058594 -6.058594 6.058594 z m 0 0\" /> \
+                </svg> \
+            </button>"
+        if self.config.blog_theme_can_toggle == "true":
+            return toggle_code
+        return ""
+
     def get_tags_as_meta(self) -> str:
         """
         Wraps the tags of the post in header meta tags
@@ -330,6 +341,7 @@ class Post:
             "meta_dir": Helper.strip_top_directory_in_path(self.paths.dst_meta_dir_path),
             "css_dir": Helper.strip_top_directory_in_path(self.paths.dst_css_dir_path),
             "js_dir": Helper.strip_top_directory_in_path(self.paths.dst_js_dir_path),
+            "theme_toggle": self.get_theme_toggle_if_enabled()
         }
         return Template(post_template).substitute(substitutions)
 
@@ -343,6 +355,16 @@ class Page:
         self.dst_path = Helper.post_src_to_dst_path(src_page_path, self.paths.dst_dir_path, ".html")
         self.page_title = os.path.basename(src_page_path).split('.')[0]
         self.html_content = ""
+
+    def get_theme_toggle_if_enabled(self):
+        toggle_code = "<button class=\"theme_btn\" id=\"themeToggleBtn\"> \
+                <svg height=\"100%\" viewBox=\"0 0 16 16\" width=\"100%\" xmlns=\"http://www.w3.org/2000/svg\"> \
+                    <path d=\"m 8 0 c -4.40625 0 -8 3.59375 -8 8 s 3.59375 8 8 8 s 8 -3.59375 8 -8 s -3.59375 -8 -8 -8 z m 0 1.941406 c 3.359375 0 6.058594 2.699219 6.058594 6.058594 s -2.699219 6.058594 -6.058594 6.058594 z m 0 0\" /> \
+                </svg> \
+            </button>"
+        if self.config.blog_theme_can_toggle == "true":
+            return toggle_code
+        return ""
 
     def generate(self) -> str:
         """
@@ -371,6 +393,7 @@ class Page:
             "meta_dir": Helper.strip_top_directory_in_path(self.paths.dst_meta_dir_path),
             "css_dir": Helper.strip_top_directory_in_path(self.paths.dst_css_dir_path),
             "js_dir": Helper.strip_top_directory_in_path(self.paths.dst_js_dir_path),
+            "theme_toggle": self.get_theme_toggle_if_enabled()
         }
         return Template(page_template).substitute(substitutions)
 
@@ -401,6 +424,16 @@ class TagsPage(Page):
         tags += "</div>"
         return tags
 
+    def get_theme_toggle_if_enabled(self):
+        toggle_code = "<button class=\"theme_btn\" id=\"themeToggleBtn\"> \
+                <svg height=\"100%\" viewBox=\"0 0 16 16\" width=\"100%\" xmlns=\"http://www.w3.org/2000/svg\"> \
+                    <path d=\"m 8 0 c -4.40625 0 -8 3.59375 -8 8 s 3.59375 8 8 8 s 8 -3.59375 8 -8 s -3.59375 -8 -8 -8 z m 0 1.941406 c 3.359375 0 6.058594 2.699219 6.058594 6.058594 s -2.699219 6.058594 -6.058594 6.058594 z m 0 0\" /> \
+                </svg> \
+            </button>"
+        if self.config.blog_theme_can_toggle == "true":
+            return toggle_code
+        return ""
+
     def generate(self) -> str:
         """
         Converts the markdown tags-page to html and generates and wraps the html content in the page template
@@ -430,6 +463,7 @@ class TagsPage(Page):
             "meta_dir": Helper.strip_top_directory_in_path(self.paths.dst_meta_dir_path),
             "css_dir": Helper.strip_top_directory_in_path(self.paths.dst_css_dir_path),
             "js_dir": Helper.strip_top_directory_in_path(self.paths.dst_js_dir_path),
+            "theme_toggle": self.get_theme_toggle_if_enabled()
         }
         return Template(tags_page_template).substitute(substitutions)
 
@@ -460,6 +494,16 @@ class ArticlesPage(Page):
 
         return article_listing
 
+    def get_theme_toggle_if_enabled(self):
+        toggle_code = "<button class=\"theme_btn\" id=\"themeToggleBtn\"> \
+                <svg height=\"100%\" viewBox=\"0 0 16 16\" width=\"100%\" xmlns=\"http://www.w3.org/2000/svg\"> \
+                    <path d=\"m 8 0 c -4.40625 0 -8 3.59375 -8 8 s 3.59375 8 8 8 s 8 -3.59375 8 -8 s -3.59375 -8 -8 -8 z m 0 1.941406 c 3.359375 0 6.058594 2.699219 6.058594 6.058594 s -2.699219 6.058594 -6.058594 6.058594 z m 0 0\" /> \
+                </svg> \
+            </button>"
+        if self.config.blog_theme_can_toggle == "true":
+            return toggle_code
+        return ""
+
     def generate(self) -> str:
         """
         Converts the markdown articles-page to html and generates and wraps the html content in the page template
@@ -487,6 +531,7 @@ class ArticlesPage(Page):
             "meta_dir": Helper.strip_top_directory_in_path(self.paths.dst_meta_dir_path),
             "css_dir": Helper.strip_top_directory_in_path(self.paths.dst_css_dir_path),
             "js_dir": Helper.strip_top_directory_in_path(self.paths.dst_js_dir_path),
+            "theme_toggle": self.get_theme_toggle_if_enabled()
         }
         return Template(articles_page_template).substitute(substitutions)
 
@@ -679,6 +724,7 @@ class Blog:
         self.config.post_ignore_prefix = section["post_ignore_prefix"]
         self.config.blog_author_copyright = section["blog_author_copyright"]
         self.config.blog_theme = section["blog_theme"]
+        self.config.blog_theme_can_toggle = section["blog_theme_can_toggle"]
 
     def clean_build_directory(self) -> None:
         """
@@ -781,7 +827,8 @@ class Blog:
         with open(os.path.join(self.paths.dst_js_dir_path, "tags.js"), mode="w", encoding="utf-8") as f:
             entries = [f'"{post.filename}": [{", ".join(map(repr, post.tags))}]' for post in self.posts]
             substitutions = {"tag_mapping": "\n" + ",\n".join(entries) + "\n",
-                             "blog_theme": f"\"{self.config.blog_theme}\""}
+                             "blog_theme": f"\"{self.config.blog_theme}\"",
+                             "theme_can_toggle": f"\"{self.config.blog_theme_can_toggle}\""}
             f.write(Template(js_template).substitute(substitutions))
 
     def process_favicon(self) -> None:
