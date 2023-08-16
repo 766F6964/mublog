@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: ${blog_url}sitemap.xml

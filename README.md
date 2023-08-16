@@ -77,6 +77,12 @@ comprehensive table below that explains everything.
             </td>
         </tr>
         <tr>
+            <td><code>src/meta/</code></td>
+            <td>
+                The <code>src/meta/</code> directory, contains all files that compose some kind of metacharacteristic for the site such as icons.
+            </td>
+        </tr>
+        <tr>
             <td><code>src/posts/</code></td>
             <td>
                 The <code>src/posts/</code> directory contains all your blog posts.
@@ -103,6 +109,11 @@ comprehensive table below that explains everything.
         </tr>
     </tbody>
 </table>
+
+## Blog configurations
+
+The author, e-mail address, link, description and any other configuration data are stored in the `mublog.ini` file.
+The script reads from this file to generate the blog so it is a good idea to update this file before you publish.
 
 ## Writing a Post
 

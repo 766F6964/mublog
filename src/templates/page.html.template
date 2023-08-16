@@ -1,22 +1,49 @@
 <!DOCTYPE html>
-<html>
+<html lang="en-US">
 <head>
     <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="/${css_dir}/normalize.css" type="text/css" media="all">
-    <link rel="stylesheet" href="/${css_dir}/style.css" type="text/css" media="all">
+    <meta name="robots" content="index, archive">
+    <meta name="canonical" content="${blog_url}">
+    
+    <meta name="description" content="${blog_title} - ${blog_description}">
+
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:site_name" content="${blog_title}" />
+
+    <meta property="og:title" content="${page_title}" />
+    <meta property="og:description" content="${blog_description}" />
+    <meta property="og:url" content="${blog_url}${page_title}.html" />
+
+    <link rel="manifest" href="/${meta_dir}/site.webmanifest">
+
+    <link rel="apple-touch-icon" sizes="180x180" href="/${meta_dir}/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/${meta_dir}/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/${meta_dir}/favicon-16x16.png">
+    <link rel="favicon" href="/favicon.ico"/>
+
+    <link rel="stylesheet" type="text/css" media="all" href="/${css_dir}/normalize.css">
+    <link rel="stylesheet" type="text/css" media="all" href="/${css_dir}/theme.css">
+    <link rel="stylesheet" type="text/css" media="all" href="/${css_dir}/layout.css">
+
     <script src="/${js_dir}/tags.js"></script>
+
     <title>
         ${page_title}
     </title>
 </head>
+
+<body class="${blog_theme}">
 <nav>
-    <a href="/index.html">home</a>
-    <a href="/articles.html">articles</a>
-    <a href="/tags.html">tags</a>
-    <a href="mailto:${author_mail}">mail</a>
-    <a href="/feed.xml">rss</a>
-    <a href="/about.html">about</a>
+    <a href="/index.html" title="home">home</a>
+    <a href="/articles.html" title="articles">articles</a>
+    <a href="/tags.html" title="tags">tags</a>
+    <a href="mailto:${author_mail}" title="mail">mail</a>
+    <a href="/feed.xml" title="rss">rss</a>
+    <a href="/about.html" title="about">about</a>
 </nav>
 <main>
 <hr>
@@ -24,11 +51,15 @@ ${page_content}
 </main>
 <footer>
     <hr>
-    <p>
-        ${author_copyright}
-        <br>
-    </p>
+    <div class="footer-elements">
+        <div class="footer-copyright">
+            ${author_copyright}
+            <br>
+        </div>
+        <div class="footer-theme-toggle">
+            ${theme_toggle}
+        </div>
+    </div>
 </footer>
 </body>
-
 </html>

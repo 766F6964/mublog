@@ -6,5 +6,4 @@
   <description>${blog_description}</description>
   ${rss_items}
 </channel>
-
 </rss>
