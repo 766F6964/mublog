@@ -200,15 +200,18 @@ p {
 
 table {
     margin: 0 auto;
+    max-width: 100%;
     overflow-x: auto;
+    display: block;
+    border: none;
+    border-collapse: collapse;
+    width: max-content;
 }
 
-table,
 th,
 td {
     border: 1px solid var(--color-text);
     color: var(--color-text);
-    border-collapse: collapse;
     padding: 0.5rem 0.8rem;
 }
 
