@@ -1,0 +1,31 @@
+// Ideas:
+// - Load plugin files and templates into a hashmap
+// - Perform modifications on the hashmap
+// - Write changes at the very end
+{
+	"module_name": "tags",
+	"module_description": "Allow filtering of posts by tags",
+	"operations": [
+
+		{
+			"file": "page_base.html",
+			"action": "modify",
+		},
+		{
+			"file": "tags.html",
+			"action": "modify",
+			"target": {
+			}
+		},
+		{
+			"file": "tags.js",
+			"action": "copy"
+		},
+		{
+			"file": "tags.css",
+			"action": "add"
+		}
+	],
+	"requires_module": [],
+	"additional_parameters": "Args about tags and stuff"
+}
