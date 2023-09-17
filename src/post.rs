@@ -1,30 +1,29 @@
 use anyhow::{Context, Ok};
-use chrono::{format, prelude::*};
-use std::{
-    fs,
-    io::{BufReader, Lines},
-    iter::Peekable,
-    str::Chars,
-};
-use std::{fs::File, path::Path};
+use std::fs;
+use std::path::Path;
 
 struct Post {
-    title: String,
-    description: String,
-    date: String,
-    tags: Vec<String>,
-    draft: bool,
     content: Vec<u8>,
+    date: String,
+    description: String,
+    draft: bool,
+    tags: Vec<String>,
+    title: String,
 }
 
 pub fn from_file(filepath: &Path) -> anyhow::Result<()> {
     println!("Parsing post from file ...");
-    // 1. Check that the path is valid, and that it is a .md file
+
+    // TODO:
+    // - Check that file extension is .md/.MD
+    // - Check that end marker is present
+    // - After parsing, verify all fields are set.
+    // - Add dedicated methods to parse each field
+    // - Ensure proper error propagation on failure
+
     if filepath.exists() && filepath.is_file() {
-        // Read the file
         let file = fs::read_to_string(filepath)
             .with_context(|| format!("Failed to read file {}", filepath.display()))?;
-        // Parse the file contents to check if the md header is present
         let mut lines = file.lines();
 
         if lines.next().expect("Header has no starting marker") == "---" {
@@ -55,7 +54,5 @@ pub fn from_file(filepath: &Path) -> anyhow::Result<()> {
             }
         }
     }
-    // Check if file exist and is accessible, when that is the case, do validation
-    // Return Option<Post>
     Ok(())
 }
