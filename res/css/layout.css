@@ -1,0 +1,254 @@
+html {
+    font-size: 1.2rem;
+    line-height: 1.5;
+    font-family: IBM Plex Mono, monospace;
+}
+
+body {
+    margin: 0 auto;
+    padding: 0 1.5rem;
+    max-width: 900px;
+    align-content: center;
+	min-height: 100vh;
+	flex-direction: column;
+	display: flex;
+    color: var(--color-text);
+    background-color: var(--color-page-background);
+}
+
+body nav {
+    font-size: 1.2rem;
+    text-align: center;
+    margin-bottom: 30px;
+    margin-top: 30px;
+}
+
+body main {
+    flex: 1 0 auto;
+}
+
+footer {
+    margin-top: 2rem;
+    margin-bottom: 0.5rem;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.footer-elements {
+    display: flex;
+}
+
+.footer-copyright {
+    margin-left: 2rem;
+    width: 100%;
+    color: var(--color-footer);
+}
+
+.footer-theme-toggle {
+    width: 2rem;
+}
+a {
+    font-style: italic;
+    text-decoration: underline;
+    color: var(--color-link);
+}
+
+a:hover {
+    color: var(--color-page-background);
+    background-color: var(--color-link);
+}
+
+.tags {
+    display: flex;
+    flex-wrap: wrap;
+    margin-top: 2rem;
+    row-gap: 10px;
+    column-gap: 20px;
+}
+
+.tag {
+    display: flex;
+    align-items: center;
+    padding: 0.2em 0.5em;
+    border-radius: 10px;
+    border-style: solid;
+    border-width: 1px;
+    border-color: var(--color-tag-border);
+    color: var(--color-tag-text);
+    transition: background-color ease-in-out 100ms;
+    cursor: pointer;
+}
+
+.tag-count {
+    color: var(--color-tag-count);
+    margin-left: 0.6rem;
+}
+
+.tag-text {
+    color: var(--color-tag-text);
+}
+
+
+.tag:hover {
+    background-color: var(--color-tag-background-hover);
+    color: var(--color-tag-text-hover);
+}
+
+.tag span {
+    padding-left: 0.5rem;
+    font-size: 0.9em;
+    color: var(--color-text);
+}
+
+img {
+    margin: 0 auto;
+    border-radius: 5px;
+    width: 100%;
+}
+
+hr {
+    border-top: thin;
+    border: none;
+    height: 1px;
+    background-color: var(--color-separator-line);
+}
+
+h1,
+h2,
+h3 {
+    text-align: left;
+    vertical-align: middle;
+    color: var(--color-headings);
+}
+
+h1 {
+    font-size: 2.3rem
+}
+
+h2 {
+    font-size: 1.7rem
+}
+
+h3 {
+    font-size: 1.3rem
+}
+
+.articles {
+    padding-left: 2rem;
+    padding-right: 2rem;
+}
+
+.article-entry {
+  display: flex;
+  align-items: center;
+}
+
+.article-date {
+  flex: 0 0 auto;
+  margin-right: 0.8rem;
+  font-weight: bold;
+  color: var(--color-article-listing-date);
+}
+
+.article-title {
+  flex: 1;
+}
+
+.article-title a {
+  text-decoration: underline;
+  font-style: normal;
+  color: var(--color-article-listing-title);
+}
+
+.article-title a:hover {
+    color: var(--color-page-background);
+    background-color: var(--color-text);
+}
+
+
+.block-code {
+    background-color: #161B22;
+    border-radius: 5px;
+    display: block;
+    padding: 0.6rem 1rem;
+    overflow-x: auto;
+}
+
+.inline-code {
+    background-color: #2F333A;
+    display: inline;
+    font-size: 0.8rem;
+    line-height: 1.5rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 8px;
+}
+
+blockquote {
+    border-left: 10px solid var(--color-quote-bar);
+    margin: 1.5rem 0;
+    padding: 0 1.5rem;
+}
+
+blockquote p {
+    color: var(--color-quote-text);
+    font-style: italic;
+}
+
+p {
+    color: var(--color-text);
+}
+
+table {
+    margin: 0 auto;
+    overflow-x: auto;
+}
+
+table,
+th,
+td {
+    border: 1px solid var(--color-text);
+    color: var(--color-text);
+    border-collapse: collapse;
+    padding: 0.5rem 0.8rem;
+}
+
+th {
+    font-weight: bold;
+    background-color: var(--color-table-header);
+}
+
+.theme_btn {
+    border: none;
+    background-color: var(--color-page-background);
+    border-radius: 50%;
+    width: 2rem;
+    height: 2rem;
+    text-align: center;
+    fill: var(--color-text);
+    padding: 0.4rem;
+}
+
+.theme_btn:hover {
+    background-color: var(--color-theme-toggle);
+}
+
+figure {
+    margin: 1rem 0;
+}
+
+/*
+ * Mobile Styles
+ */
+@media screen and (max-width: 850px) {
+    html {
+        font-size: 0.85rem;
+    }
+
+    header {
+        font-size: 2.5vw;
+    }
+
+    h1 {
+        font-size: 2rem;
+    }
+}

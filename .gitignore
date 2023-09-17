@@ -11,8 +11,8 @@
 !/src/*.rs
 !/res/posts/*.md
 !/res/css/*.css
-!/src/assets/*.jpg
-!/src/meta/*.ico
-!/src/meta/*.png
-!/src/meta/*.webmanifest
-!/src/patches/*.patch
+!/res/assets/*.jpg
+!/res/meta/*.ico
+!/res/meta/*.png
+!/res/meta/*.webmanifest
+!/res/patches/*.patch
