@@ -1,7 +1,9 @@
 use crate::embedded_resources;
-use anyhow::{Context, Ok};
+use crate::post;
+use anyhow::{Context, Ok, Result};
 use std::fs;
 use std::path::Path;
+use walkdir::WalkDir;
 
 // TODO: Handle blog directory creation better, error non-empty/exist already
 pub fn init(target_path: &Path, blog_dir_name: &str) -> anyhow::Result<()> {
@@ -11,6 +13,7 @@ pub fn init(target_path: &Path, blog_dir_name: &str) -> anyhow::Result<()> {
     let assets_dir = blog_dir.join("assets");
     let patches_dir = blog_dir.join("patches");
     let css_dir = blog_dir.join("css");
+    let config_path = blog_dir.join("mublog.toml");
 
     fs::create_dir(blog_dir.as_path())
         .with_context(|| format!("Failed to create blog directory: {blog_dir:?}"))?;
@@ -46,6 +49,10 @@ pub fn init(target_path: &Path, blog_dir_name: &str) -> anyhow::Result<()> {
         .context("Failed to extract resources from embedded directory 'patches'")?;
     embedded_resources::write_resources(patches_resources, &patches_dir.as_path())?;
 
+    let config_file_resource = embedded_resources::get_resource_file("mublog.toml")
+        .context("Failed to extract config file from embedded resources.")?;
+    embedded_resources::write_resource_file(config_file_resource, &config_path.as_path())?;
+
     Ok(())
 }
 pub fn info(path: &Path) -> anyhow::Result<()> {
@@ -56,9 +63,26 @@ pub fn info(path: &Path) -> anyhow::Result<()> {
             "The current directory is not a mublog environment."
         ))?;
     }
+    count_posts(path)?;
     Ok(())
 }
 
+fn count_posts(path: &Path) -> anyhow::Result<()> {
+    let posts_dir = path.join("posts");
+    let post_dir_entries = WalkDir::new(posts_dir);
+
+    for entry in post_dir_entries
+        .into_iter()
+        .filter_map(|f| f.ok().filter(|f| f.file_type().is_file()))
+    {
+        let a = post::from_file(entry.path());
+    }
+    Ok(())
+}
+
+fn count_pages(path: &Path) {
+    unimplemented!("Count active pages, separate counter for drafts");
+}
 // .mublog.toml
 // Contents:
 // - Configuration options, e.g.

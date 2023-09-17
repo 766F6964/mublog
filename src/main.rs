@@ -8,6 +8,7 @@ use std::env;
 mod blog;
 mod cli;
 mod embedded_resources;
+mod post;
 
 fn main() -> anyhow::Result<()> {
     let cli_args = Cli::parse();
