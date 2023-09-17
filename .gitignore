@@ -7,13 +7,12 @@
 # Include specific files by extension
 !/*.gitignore
 !/*.md
-!/*.sh
-!/*.py
-!/*.conf
-!/src/*.md
-!/src/posts/*.md
-!/src/templates/*.template
-!/src/css/*.css
-!/src/js/*.js
-!/src/assets/*.*
-!/src/meta/*.*
+!/*.toml
+!/src/*.rs
+!/res/posts/*.md
+!/res/css/*.css
+!/src/assets/*.jpg
+!/src/meta/*.ico
+!/src/meta/*.png
+!/src/meta/*.webmanifest
+!/src/patches/*.patch
