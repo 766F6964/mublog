@@ -134,7 +134,17 @@ pub fn parse_date(date: &str) -> anyhow::Result<NaiveDate> {
         .context("The date must be a valid string in YYYY-MM-DD format")?;
     return Ok(parsed_date);
 }
+pub fn parse_tags(tags: &str) -> anyhow::Result<Vec<String>> {
+    let tags_vec: Vec<&str> = tags.split(',').collect();
 
+    if tags_vec.is_empty() || tags_vec.iter().any(|&s| s.is_empty()) {
+        return Err(anyhow::anyhow!(
+            "The tags field requires at least one non-empty value."
+        ));
+    }
+
+    Ok(tags_vec.into_iter().map(|s| s.to_string()).collect())
+}
 pub fn from_file(filepath: &Path) -> anyhow::Result<()> {
     println!("Parsing {}", filepath.display());
     let file = fs::File::open(filepath).context("Failed to open file.")?;
@@ -155,6 +165,7 @@ pub fn from_file(filepath: &Path) -> anyhow::Result<()> {
 mod post_test {
     use crate::post::parse_date;
     use crate::post::parse_description;
+    use crate::post::parse_tags;
     use crate::post::parse_title;
 
     use super::{from_file, parse_header};
@@ -314,6 +325,33 @@ some more data
         assert_eq!(
             parse_date(date).unwrap_err().to_string(),
             "The date must be a valid string in YYYY-MM-DD format"
+        );
+    }
+
+    #[test]
+    fn parse_tags_valid() {
+        let tag_str = "tag1,tag2,tag3";
+        let tags: Vec<String> = parse_tags(tag_str).unwrap();
+        assert_eq!(vec!["tag1", "tag2", "tag3"], tags);
+    }
+
+    #[test]
+    fn parse_tags_no_tags() {
+        let tag_str = "";
+        let tags = parse_tags(tag_str).unwrap_err().to_string();
+        assert_eq!(
+            "The tags field requires at least one non-empty value.",
+            tags
+        );
+    }
+
+    #[test]
+    fn parse_tags_no_empty_tags() {
+        let tag_str = "test1,test2,,test3,test4";
+        let tags = parse_tags(tag_str).unwrap_err().to_string();
+        assert_eq!(
+            "The tags field requires at least one non-empty value.",
+            tags
         );
     }
 }
