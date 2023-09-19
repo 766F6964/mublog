@@ -1,9 +1,26 @@
+// use std::result::Result::Ok;
+
 use crate::embedded_resources;
 use crate::post;
 use anyhow::{Context, Ok};
 use std::fs;
 use std::path::Path;
 use walkdir::WalkDir;
+
+#[derive(Debug, Default)]
+struct BlogInfo {
+    active_posts: u32,
+    draft_posts: u32,
+}
+
+impl BlogInfo {
+    fn new(active_posts: u32, draft_posts: u32) -> Self {
+        Self {
+            active_posts,
+            draft_posts,
+        }
+    }
+}
 
 // TODO: Handle blog directory creation better, error non-empty/exist already
 pub fn init(target_path: &Path, blog_dir_name: &str) -> anyhow::Result<()> {
@@ -16,22 +33,22 @@ pub fn init(target_path: &Path, blog_dir_name: &str) -> anyhow::Result<()> {
     let config_path = blog_dir.join("mublog.toml");
 
     fs::create_dir(blog_dir.as_path())
-        .with_context(|| format!("Failed to create blog directory: {blog_dir:?}"))?;
+        .with_context(|| format!("Failed to create blog directory {blog_dir:?}"))?;
     fs::create_dir(meta_dir.as_path())
-        .with_context(|| format!("Failed to create directory meta/ in directory {blog_dir:?}"))?;
+        .with_context(|| format!("Failed to create directory meta/ in {blog_dir:?}"))?;
     fs::create_dir(posts_dir.as_path())
-        .with_context(|| format!("Failed to create directory posts/ in directory {blog_dir:?}"))?;
+        .with_context(|| format!("Failed to create directory posts/ in {blog_dir:?}"))?;
     fs::create_dir(assets_dir.as_path())
-        .with_context(|| format!("Failed to create directory assets/ in directory {blog_dir:?}"))?;
+        .with_context(|| format!("Failed to create directory assets/ in {blog_dir:?}"))?;
     fs::create_dir(css_dir.as_path())
-        .with_context(|| format!("Failed to create directory css/ in directory {blog_dir:?}"))?;
-    fs::create_dir(patches_dir.as_path()).with_context(|| {
-        format!("Failed to create directory patches/ in directory {blog_dir:?}")
-    })?;
+        .with_context(|| format!("Failed to create directory css/ in {blog_dir:?}"))?;
+    fs::create_dir(patches_dir.as_path())
+        .with_context(|| format!("Failed to create directory patches/ in {blog_dir:?}"))?;
 
     let meta_resources = embedded_resources::get_resources("meta")
         .context("Failed to extract resources from embedded directory 'meta'")?;
-    embedded_resources::write_resources(meta_resources, meta_dir.as_path())?;
+    embedded_resources::write_resources(meta_resources, meta_dir.as_path())
+        .context("Failed to write resources to disk")?;
 
     let assets_resources = embedded_resources::get_resources("assets")
         .context("Failed to extract resources from embedded directory 'assets'")?;
@@ -56,12 +73,9 @@ pub fn init(target_path: &Path, blog_dir_name: &str) -> anyhow::Result<()> {
     Ok(())
 }
 pub fn info(path: &Path) -> anyhow::Result<()> {
-    println!("Obtaining blog site info ...");
     println!("Current path: {}", path.display());
     if !is_blog_directory(path) {
-        return Err(anyhow::anyhow!(
-            "The current directory is not a mublog environment."
-        ))?;
+        anyhow::bail!("The current directory is not a mublog environment.");
     }
     count_posts(path)?;
     Ok(())
@@ -75,7 +89,11 @@ fn count_posts(path: &Path) -> anyhow::Result<()> {
         .into_iter()
         .filter_map(|f| f.ok().filter(|f| f.file_type().is_file()))
     {
-        post::from_file(entry.path()).unwrap();
+        let result = post::from_file(entry.path());
+        if result.is_ok() {
+            let post = result.unwrap();
+            println!("{:#?}", post);
+        }
     }
     Ok(())
 }

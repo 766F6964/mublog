@@ -1,4 +1,4 @@
-use anyhow::Context;
+use anyhow::{bail, Context};
 use include_dir::{include_dir, Dir, File};
 use std::fs;
 use std::path::Path;
@@ -51,13 +51,13 @@ pub fn write_resource_file(resource: &File, dst_path: &Path) -> anyhow::Result<(
 }
 pub fn write_resources(resources: Vec<&File>, dst_dir: &Path) -> anyhow::Result<(), anyhow::Error> {
     if resources.is_empty() {
-        return Err(anyhow::anyhow!("Empty resource vector is not writable"));
+        bail!("Empty resource vector is not writable");
     }
     if !dst_dir.exists() {
         let path_str = dst_dir.to_str();
-        return Err(anyhow::anyhow!(format!(
+        bail!(format!(
             "Can't write embedded resources. Path '{path_str:?}' does not exist."
-        )));
+        ));
     }
     for resource in resources {
         let res_path = resource.path();

@@ -15,25 +15,16 @@ fn main() -> anyhow::Result<()> {
     let working_dir = env::current_dir().context("Failed to obtain current working directory.")?;
 
     match cli_args.command {
-        Commands::Init(init_args) => {
-            blog::init(working_dir.as_path(), &init_args.dir_name)
-                .context("Failed to initialize new blog environment.")?;
-        }
+        Commands::Build => println!("Starting build process ..."),
+        Commands::Init(init_args) => blog::init(working_dir.as_path(), &init_args.dir_name)
+            .context("Failed to initialize new blog environment.")?,
         Commands::Info => {
-            println!("Showing info ...");
-            blog::info(working_dir.as_path())?;
+            blog::info(working_dir.as_path()).context("Failed to load blog information")?
         }
         Commands::New(new_args) => match new_args.command {
-            NewCommands::Post {} => {
-                println!("Creating new post ...");
-            }
-            NewCommands::Page {} => {
-                println!("Creating new page ...");
-            }
+            NewCommands::Post {} => println!("Creating new post ..."),
+            NewCommands::Page {} => println!("Creating new page ..."),
         },
-        Commands::Build => {
-            println!("Starting build process ...");
-        }
     }
 
     Ok(())

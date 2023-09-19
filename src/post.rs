@@ -1,3 +1,4 @@
+use anyhow::ensure;
 use anyhow::{anyhow, bail, Context, Ok, Result};
 use chrono::NaiveDate;
 use std::fs;
@@ -6,8 +7,19 @@ use std::io::BufReader;
 use std::path::Path;
 
 #[derive(Debug, Default)]
-struct Post {
-    content: String,
+pub struct Post {
+    pub header: PostHeader,
+    pub content: String,
+}
+
+impl Post {
+    fn new(header: PostHeader, content: String) -> Self {
+        Self { header, content }
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct PostHeader {
     date: NaiveDate,
     description: String,
     draft: bool,
@@ -15,7 +27,7 @@ struct Post {
     title: String,
 }
 
-fn parse_header(lines: Vec<String>) -> Result<Post> {
+fn parse_header(lines: Vec<String>) -> anyhow::Result<PostHeader> {
     // Ensure minimal length required for header
     if lines.len() < 7 {
         bail!("File contains an incomplete header.");
@@ -32,7 +44,7 @@ fn parse_header(lines: Vec<String>) -> Result<Post> {
     }
 
     // Check header fields
-    let mut post = Post::default();
+    let mut post = PostHeader::default();
 
     for line in &lines[1..6] {
         let (key, value) = line
@@ -47,8 +59,6 @@ fn parse_header(lines: Vec<String>) -> Result<Post> {
             _ => bail!("Unsupported header field: {key}"),
         }
     }
-    post.content = lines[7..].join("\n"); // This might fail...?
-    println!("{:?}", post); // Only for testing
     Ok(post)
 }
 
@@ -92,15 +102,18 @@ pub fn parse_draft(draft: &str) -> anyhow::Result<bool> {
 // - Check that file extension is .md/.MD
 // - Check that end marker is present
 // - After parsing, verify all fields are set.
-// - Add dedicated methods to parse each field
 // - Ensure proper error propagation on failure
-pub fn from_file(filepath: &Path) -> anyhow::Result<()> {
+pub fn from_file(filepath: &Path) -> anyhow::Result<Post> {
     println!("Parsing {}", filepath.display());
+    let path = filepath.display();
     let file = fs::File::open(filepath).context("Failed to open file.")?;
     let reader = BufReader::new(file);
     let lines: Vec<String> = reader.lines().map(|line| line.unwrap()).collect();
-    let _ = parse_header(lines)?;
-    Ok(())
+
+    let header =
+        parse_header(lines).with_context(|| format!("Failed to parse header in {path}"))?;
+    let post = Post::new(header, String::new());
+    anyhow::Ok(post)
 }
 
 #[cfg(test)]
@@ -174,7 +187,7 @@ mod test {
                 .expect("Date conversion should pass")
         );
         assert_eq!(res.draft, false);
-        assert_eq!(res.content, "some more data");
+        // assert_eq!(res.content, "some more data");
     }
 
     #[test]
@@ -194,7 +207,7 @@ mod test {
                 .expect("Date conversion should pass")
         );
         assert_eq!(res.draft, false);
-        assert_eq!(res.content, "");
+        // assert_eq!(res.content, "");
     }
 
     #[test]
