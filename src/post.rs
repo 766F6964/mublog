@@ -1,6 +1,5 @@
-use anyhow::{anyhow, Context, Ok, Result};
+use anyhow::{bail, Context, Ok, Result};
 use chrono::NaiveDate;
-use core::fmt;
 use std::fs;
 use std::io::prelude::*;
 use std::io::{self, BufReader};
@@ -59,25 +58,18 @@ impl Post {}
 fn parse_header(lines: Vec<String>) -> Result<Post> {
     // Ensure minimal length required for header
     if lines.len() < 7 {
-        return Err(anyhow!("File contains an incomplete header."));
+        bail!("File contains an incomplete header.");
     }
 
     // Check the starting marker
     if lines[0].trim() != "---" {
-        return Err(anyhow!("Starting marker missing or formatted incorrectly"))?;
+        bail!("Starting marker missing or formatted incorrectly");
     }
 
     // Check the ending marker
     if lines[6].trim() != "---" {
-        return Err(anyhow!("Ending marker missing or formatted incorrectly"))?;
+        bail!("Ending marker missing or formatted incorrectly");
     }
-    // Initialize fields
-    let mut title = "";
-    let mut description = "";
-    let mut date = "";
-    let mut tags = "";
-    let mut draft = "";
-
     let mut post = Post::new();
 
     for line in &lines[1..6] {
@@ -95,26 +87,24 @@ fn parse_header(lines: Vec<String>) -> Result<Post> {
                 post.date = parse_date(value)?;
             }
             "tags" => {
-                post.tags = vec![value.to_owned()];
+                post.tags = parse_tags(value)?;
             }
             "draft" => {
-                //post.title = value.to_owned();
+                post.draft = parse_draft(value)?;
             }
             _ => {
-                return Err(anyhow!("Unsupported header field: {}", key))?;
+                bail!("Unsupported header field: {}", key);
             }
         }
     }
-    println!("{:?}", post);
+    println!("{:?}", post); // Only for testing
     Ok(post)
 }
 
 pub fn parse_title(mut title: &str) -> anyhow::Result<String> {
     title = title.trim();
     if title.is_empty() {
-        return Err(anyhow!(
-            "The title cannot be empty or consist of only whitespace characters."
-        ));
+        bail!("The title cannot be empty or consist of only whitespace characters.");
     }
     return Ok(title.trim().to_owned());
 }
@@ -122,9 +112,7 @@ pub fn parse_title(mut title: &str) -> anyhow::Result<String> {
 pub fn parse_description(mut description: &str) -> anyhow::Result<String> {
     description = description.trim();
     if description.is_empty() {
-        return Err(anyhow!(
-            "The description cannot be empty or consist of only whitespace characters."
-        ));
+        bail!("The description cannot be empty or consist of only whitespace characters.");
     }
     return Ok(description.trim().to_owned());
 }
@@ -138,26 +126,32 @@ pub fn parse_tags(tags: &str) -> anyhow::Result<Vec<String>> {
     let tags_vec: Vec<&str> = tags.split(',').collect();
 
     if tags_vec.is_empty() || tags_vec.iter().any(|&s| s.is_empty()) {
-        return Err(anyhow::anyhow!(
-            "The tags field requires at least one non-empty value."
-        ));
+        bail!("The tags field requires at least one non-empty value.");
     }
 
     Ok(tags_vec.into_iter().map(|s| s.to_string()).collect())
 }
+
+pub fn parse_draft(draft: &str) -> anyhow::Result<bool> {
+    return match draft.trim() {
+        "true" => Ok(true),
+        "false" => Ok(false),
+        _ => bail!("Draft field must be either 'true' or 'false'."),
+    };
+}
+
+// TODO:
+// - Check that file extension is .md/.MD
+// - Check that end marker is present
+// - After parsing, verify all fields are set.
+// - Add dedicated methods to parse each field
+// - Ensure proper error propagation on failure
 pub fn from_file(filepath: &Path) -> anyhow::Result<()> {
     println!("Parsing {}", filepath.display());
     let file = fs::File::open(filepath).context("Failed to open file.")?;
     let reader = BufReader::new(file);
     let lines: Vec<String> = reader.lines().map(|line| line.unwrap()).collect();
-    println!("parsing now...");
-    _ = parse_header(lines);
-    // TODO:
-    // - Check that file extension is .md/.MD
-    // - Check that end marker is present
-    // - After parsing, verify all fields are set.
-    // - Add dedicated methods to parse each field
-    // - Ensure proper error propagation on failure
+    let _ = parse_header(lines)?;
     Ok(())
 }
 
@@ -165,6 +159,7 @@ pub fn from_file(filepath: &Path) -> anyhow::Result<()> {
 mod post_test {
     use crate::post::parse_date;
     use crate::post::parse_description;
+    use crate::post::parse_draft;
     use crate::post::parse_tags;
     use crate::post::parse_title;
 
@@ -230,15 +225,7 @@ goes here
 
     #[test]
     fn parse_header_unsupported_field() {
-        let expected = "---
-title: test title
-description: test description
-unsupported: test,test2,test3
-date: 2023-01-23
-draft: false
----
-some more data
-"
+        let expected = "---\ntitle: test title\ndescription: test description\nunsupported: test,test2,test3\ndate: 2023-01-23\ndraft: false\n---\nsome more data"
         .lines()
         .map(String::from)
         .collect();
@@ -260,9 +247,8 @@ some more data
         .lines()
         .map(String::from)
         .collect();
-
-        let r = parse_header(expected).ok();
-        // assert_eq!(res.to_string(), "Unsupported header field: unsupported");
+        // TODO: Validate parsed fields properly
+        assert!(parse_header(expected).is_ok());
     }
 
     #[test]
@@ -353,5 +339,22 @@ some more data
             "The tags field requires at least one non-empty value.",
             tags
         );
+    }
+
+    #[test]
+    fn parse_draft_valid() {
+        let draft = "true";
+        let draft2 = "false";
+        let r1 = parse_draft(draft).ok();
+        let r2 = parse_draft(draft2).ok();
+        assert_eq!(r1.unwrap(), true);
+        assert_eq!(r2.unwrap(), false);
+    }
+
+    #[test]
+    fn parse_draft_invalid() {
+        let draft = "test";
+        let draft_res = parse_draft(draft).unwrap_err().to_string();
+        assert_eq!("Draft field must be either 'true' or 'false'.", draft_res);
     }
 }
