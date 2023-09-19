@@ -75,7 +75,7 @@ fn count_posts(path: &Path) -> anyhow::Result<()> {
         .into_iter()
         .filter_map(|f| f.ok().filter(|f| f.file_type().is_file()))
     {
-        let a = post::from_file(entry.path());
+        let a = post::from_file(entry.path()).unwrap();
     }
     Ok(())
 }
