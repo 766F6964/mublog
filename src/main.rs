@@ -16,12 +16,12 @@ fn main() -> anyhow::Result<()> {
 
     match cli_args.command {
         Commands::Init(init_args) => {
-            _ = blog::init(&working_dir.as_path(), &init_args.dir_name)
+            blog::init(working_dir.as_path(), &init_args.dir_name)
                 .context("Failed to initialize new blog environment.")?;
         }
         Commands::Info => {
             println!("Showing info ...");
-            _ = blog::info(&working_dir.as_path())?;
+            blog::info(working_dir.as_path())?;
         }
         Commands::New(new_args) => match new_args.command {
             NewCommands::Post {} => {

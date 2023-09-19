@@ -46,7 +46,7 @@ pub fn write_resource_file(resource: &File, dst_path: &Path) -> anyhow::Result<(
     }
 
     fs::write(dst_path, resource.contents())
-        .with_context(|| format!("Failed to write resource to disk"))?;
+        .with_context(|| "Failed to write resource to disk".to_string())?;
     Ok(())
 }
 pub fn write_resources(resources: Vec<&File>, dst_dir: &Path) -> anyhow::Result<(), anyhow::Error> {

@@ -1,8 +1,8 @@
-use anyhow::{bail, Context, Ok, Result};
+use anyhow::{anyhow, bail, Context, Ok, Result};
 use chrono::NaiveDate;
 use std::fs;
 use std::io::prelude::*;
-use std::io::{self, BufReader};
+use std::io::BufReader;
 use std::path::Path;
 
 struct Header {
@@ -74,27 +74,15 @@ fn parse_header(lines: Vec<String>) -> Result<Post> {
 
     for line in &lines[1..6] {
         let (key, value) = line
-            .split_once(":")
-            .with_context(|| format!("Failed to parse line '{}' into key value pair.", line))?;
+            .split_once(':')
+            .with_context(|| format!("Failed to parse line '{line}' into key value pair."))?;
         match key {
-            "title" => {
-                post.title = parse_title(value)?;
-            }
-            "description" => {
-                post.description = parse_description(value)?;
-            }
-            "date" => {
-                post.date = parse_date(value)?;
-            }
-            "tags" => {
-                post.tags = parse_tags(value)?;
-            }
-            "draft" => {
-                post.draft = parse_draft(value)?;
-            }
-            _ => {
-                bail!("Unsupported header field: {}", key);
-            }
+            "title" => post.title = parse_title(value)?,
+            "description" => post.description = parse_description(value)?,
+            "date" => post.date = parse_date(value)?,
+            "tags" => post.tags = parse_tags(value)?,
+            "draft" => post.draft = parse_draft(value)?,
+            _ => bail!("Unsupported header field: {key}"),
         }
     }
     println!("{:?}", post); // Only for testing
@@ -106,7 +94,7 @@ pub fn parse_title(mut title: &str) -> anyhow::Result<String> {
     if title.is_empty() {
         bail!("The title cannot be empty or consist of only whitespace characters.");
     }
-    return Ok(title.trim().to_owned());
+    Ok(title.to_owned())
 }
 
 pub fn parse_description(mut description: &str) -> anyhow::Result<String> {
@@ -114,13 +102,13 @@ pub fn parse_description(mut description: &str) -> anyhow::Result<String> {
     if description.is_empty() {
         bail!("The description cannot be empty or consist of only whitespace characters.");
     }
-    return Ok(description.trim().to_owned());
+    Ok(description.to_owned())
 }
 
 pub fn parse_date(date: &str) -> anyhow::Result<NaiveDate> {
     let parsed_date = NaiveDate::parse_from_str(date.trim(), "%Y-%m-%d")
         .context("The date must be a valid string in YYYY-MM-DD format")?;
-    return Ok(parsed_date);
+    Ok(parsed_date)
 }
 pub fn parse_tags(tags: &str) -> anyhow::Result<Vec<String>> {
     let tags_vec: Vec<&str> = tags.split(',').collect();
@@ -133,11 +121,10 @@ pub fn parse_tags(tags: &str) -> anyhow::Result<Vec<String>> {
 }
 
 pub fn parse_draft(draft: &str) -> anyhow::Result<bool> {
-    return match draft.trim() {
-        "true" => Ok(true),
-        "false" => Ok(false),
-        _ => bail!("Draft field must be either 'true' or 'false'."),
-    };
+    draft
+        .trim()
+        .parse::<bool>()
+        .map_err(|e| anyhow!("Draft field must be either 'true' or 'false'."))
 }
 
 // TODO:
@@ -156,24 +143,15 @@ pub fn from_file(filepath: &Path) -> anyhow::Result<()> {
 }
 
 #[cfg(test)]
-mod post_test {
-    use crate::post::parse_date;
-    use crate::post::parse_description;
-    use crate::post::parse_draft;
-    use crate::post::parse_tags;
-    use crate::post::parse_title;
-
-    use super::{from_file, parse_header};
+mod test {
+    use super::*;
 
     #[test]
     fn parse_header_incomplete() {
-        let expected = "---
-title: test title
-description: test description
----"
-        .lines()
-        .map(String::from)
-        .collect();
+        let expected = "---\ntitle: test title\ndescription: test description\n---"
+            .lines()
+            .map(String::from)
+            .collect();
 
         let res = parse_header(expected).unwrap_err();
         assert_eq!(res.to_string(), "File contains an incomplete header.");
@@ -181,14 +159,7 @@ description: test description
 
     #[test]
     fn parse_header_missing_start_marker() {
-        let expected = "title: test title
-description: test description
-tags: test,test2,test3
-date: 2023-01-23
-draft: false
----
-more data
-some more text"
+        let expected = "title: test title\ndescription: test description\ntags: test,test2,test3\ndate: 2023-01-23\ndraft: false\n---\nmore data\nsome more text"
             .lines()
             .map(String::from)
             .collect();
@@ -202,16 +173,7 @@ some more text"
 
     #[test]
     fn parse_header_missing_end_marker() {
-        let expected = "---
-title: test title
-description: test description
-tags: test,test2,test3
-date: 2023-01-23
-draft: false
-
-some more data
-goes here
-"
+        let expected = "---\ntitle: test title\ndescription: test description\ntags: test,test2,test3\ndate: 2023-01-23\ndraft: false\nsome more data\ngoes here\n"
         .lines()
         .map(String::from)
         .collect();
@@ -235,15 +197,7 @@ goes here
     }
     #[test]
     fn parse_header_valid() {
-        let expected: Vec<String> = "---
-title: test title
-description: test description
-tags: test,test2,test3
-date: 2023-01-23
-draft: false
----
-some more data
-"
+        let expected: Vec<String> = "---\ntitle: test title\ndescription: test description\ntags: test,test2,test3\ndate: 2023-01-23\ndraft: false\n---\nsome more data"
         .lines()
         .map(String::from)
         .collect();
@@ -259,72 +213,65 @@ some more data
 
     #[test]
     fn parse_title_empty() {
-        let title = "";
+        let title = parse_title("").unwrap_err().to_string();
         assert_eq!(
-            parse_title(title).unwrap_err().to_string(),
+            title,
             "The title cannot be empty or consist of only whitespace characters."
         );
     }
 
     #[test]
     fn parse_title_whitespace() {
-        let title = " \t";
+        let title = parse_title(" \t").unwrap_err().to_string();
         assert_eq!(
-            parse_title(title).unwrap_err().to_string(),
+            title,
             "The title cannot be empty or consist of only whitespace characters."
         );
     }
 
     #[test]
     fn parse_description_valid() {
-        let description = "My description";
-        assert!(parse_description(description).is_ok());
+        assert!(parse_description("My description").is_ok());
     }
 
     #[test]
     fn parse_description_empty() {
-        let description = "";
         assert_eq!(
-            parse_description(description).unwrap_err().to_string(),
+            parse_description("").unwrap_err().to_string(),
             "The description cannot be empty or consist of only whitespace characters."
         );
     }
 
     #[test]
     fn parse_description_whitespace() {
-        let description = " \t";
         assert_eq!(
-            parse_description(description).unwrap_err().to_string(),
+            parse_description(" \r\t").unwrap_err().to_string(),
             "The description cannot be empty or consist of only whitespace characters."
         );
     }
 
     #[test]
     fn parse_date_valid() {
-        let date = "2023-03-17";
-        assert!(parse_date(date).is_ok());
+        assert!(parse_date("2023-03-17").is_ok());
     }
 
     #[test]
     fn parse_date_invalid() {
-        let date = " \t";
         assert_eq!(
-            parse_date(date).unwrap_err().to_string(),
+            parse_date(" \t\r").unwrap_err().to_string(),
             "The date must be a valid string in YYYY-MM-DD format"
         );
     }
 
     #[test]
     fn parse_tags_valid() {
-        let tag_str = "tag1,tag2,tag3";
-        let tags: Vec<String> = parse_tags(tag_str).unwrap();
+        let tags: Vec<String> = parse_tags("tag1,tag2,tag3").unwrap();
         assert_eq!(vec!["tag1", "tag2", "tag3"], tags);
     }
 
     #[test]
     fn parse_tags_no_tags() {
-        let tag_str = "";
-        let tags = parse_tags(tag_str).unwrap_err().to_string();
+        let tags = parse_tags("").unwrap_err().to_string();
         assert_eq!(
             "The tags field requires at least one non-empty value.",
             tags
@@ -333,8 +280,9 @@ some more data
 
     #[test]
     fn parse_tags_no_empty_tags() {
-        let tag_str = "test1,test2,,test3,test4";
-        let tags = parse_tags(tag_str).unwrap_err().to_string();
+        let tags = parse_tags("test1,test2,,test3,test4")
+            .unwrap_err()
+            .to_string();
         assert_eq!(
             "The tags field requires at least one non-empty value.",
             tags
@@ -343,18 +291,15 @@ some more data
 
     #[test]
     fn parse_draft_valid() {
-        let draft = "true";
-        let draft2 = "false";
-        let r1 = parse_draft(draft).ok();
-        let r2 = parse_draft(draft2).ok();
+        let r1 = parse_draft("true").ok();
+        let r2 = parse_draft("false").ok();
         assert_eq!(r1.unwrap(), true);
         assert_eq!(r2.unwrap(), false);
     }
 
     #[test]
     fn parse_draft_invalid() {
-        let draft = "test";
-        let draft_res = parse_draft(draft).unwrap_err().to_string();
+        let draft_res = parse_draft("test").unwrap_err().to_string();
         assert_eq!("Draft field must be either 'true' or 'false'.", draft_res);
     }
 }
