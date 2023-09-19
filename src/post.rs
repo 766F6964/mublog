@@ -5,33 +5,7 @@ use std::io::prelude::*;
 use std::io::BufReader;
 use std::path::Path;
 
-struct Header {
-    date: String,
-    description: String,
-    draft: bool,
-    tags: Vec<String>,
-    title: String,
-}
-
-impl Header {
-    fn new(
-        date: String,
-        description: String,
-        draft: bool,
-        tags: Vec<String>,
-        title: String,
-    ) -> Self {
-        Self {
-            date,
-            description,
-            draft,
-            tags,
-            title,
-        }
-    }
-}
-
-#[derive(Debug)]
+#[derive(Debug, Default)]
 struct Post {
     content: String,
     date: NaiveDate,
@@ -40,20 +14,6 @@ struct Post {
     tags: Vec<String>,
     title: String,
 }
-impl Post {
-    fn new() -> Self {
-        Self {
-            content: String::new(),
-            date: NaiveDate::default(),
-            description: String::new(),
-            draft: false,
-            tags: vec![],
-            title: String::new(),
-        }
-    }
-}
-
-impl Post {}
 
 fn parse_header(lines: Vec<String>) -> Result<Post> {
     // Ensure minimal length required for header
@@ -61,16 +21,18 @@ fn parse_header(lines: Vec<String>) -> Result<Post> {
         bail!("File contains an incomplete header.");
     }
 
-    // Check the starting marker
+    // Check starting marker presence
     if lines[0].trim() != "---" {
         bail!("Starting marker missing or formatted incorrectly");
     }
 
-    // Check the ending marker
+    // Check ending marker presence
     if lines[6].trim() != "---" {
         bail!("Ending marker missing or formatted incorrectly");
     }
-    let mut post = Post::new();
+
+    // Check header fields
+    let mut post = Post::default();
 
     for line in &lines[1..6] {
         let (key, value) = line
@@ -85,6 +47,7 @@ fn parse_header(lines: Vec<String>) -> Result<Post> {
             _ => bail!("Unsupported header field: {key}"),
         }
     }
+    post.content = lines[7..].join("\n"); // This might fail...?
     println!("{:?}", post); // Only for testing
     Ok(post)
 }
@@ -111,12 +74,10 @@ pub fn parse_date(date: &str) -> anyhow::Result<NaiveDate> {
     Ok(parsed_date)
 }
 pub fn parse_tags(tags: &str) -> anyhow::Result<Vec<String>> {
-    let tags_vec: Vec<&str> = tags.split(',').collect();
-
+    let tags_vec: Vec<&str> = tags.trim().split(',').collect();
     if tags_vec.is_empty() || tags_vec.iter().any(|&s| s.is_empty()) {
         bail!("The tags field requires at least one non-empty value.");
     }
-
     Ok(tags_vec.into_iter().map(|s| s.to_string()).collect())
 }
 
@@ -124,7 +85,7 @@ pub fn parse_draft(draft: &str) -> anyhow::Result<bool> {
     draft
         .trim()
         .parse::<bool>()
-        .map_err(|e| anyhow!("Draft field must be either 'true' or 'false'."))
+        .map_err(|_| anyhow!("Draft field must be either 'true' or 'false'."))
 }
 
 // TODO:
@@ -195,14 +156,45 @@ mod test {
         let res = parse_header(expected).unwrap_err();
         assert_eq!(res.to_string(), "Unsupported header field: unsupported");
     }
+
     #[test]
-    fn parse_header_valid() {
+    fn parse_header_valid_with_content() {
         let expected: Vec<String> = "---\ntitle: test title\ndescription: test description\ntags: test,test2,test3\ndate: 2023-01-23\ndraft: false\n---\nsome more data"
         .lines()
         .map(String::from)
         .collect();
-        // TODO: Validate parsed fields properly
-        assert!(parse_header(expected).is_ok());
+
+        let res = parse_header(expected).expect("Header should be valid"); // TODO: Validate parsed fields properly
+        assert_eq!(res.title, "test title");
+        assert_eq!(res.description, "test description");
+        assert_eq!(res.tags, vec!["test", "test2", "test3"]);
+        assert_eq!(
+            res.date,
+            NaiveDate::parse_from_str("2023-01-23", "%Y-%m-%d")
+                .expect("Date conversion should pass")
+        );
+        assert_eq!(res.draft, false);
+        assert_eq!(res.content, "some more data");
+    }
+
+    #[test]
+    fn parse_header_valid_no_content() {
+        let expected: Vec<String> = "---\ntitle: test title\ndescription: test description\ntags: test,test2,test3\ndate: 2023-01-23\ndraft: false\n---"
+        .lines()
+        .map(String::from)
+        .collect();
+
+        let res = parse_header(expected).expect("Header should be valid"); // TODO: Validate parsed fields properly
+        assert_eq!(res.title, "test title");
+        assert_eq!(res.description, "test description");
+        assert_eq!(res.tags, vec!["test", "test2", "test3"]);
+        assert_eq!(
+            res.date,
+            NaiveDate::parse_from_str("2023-01-23", "%Y-%m-%d")
+                .expect("Date conversion should pass")
+        );
+        assert_eq!(res.draft, false);
+        assert_eq!(res.content, "");
     }
 
     #[test]
