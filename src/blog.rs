@@ -1,10 +1,29 @@
 use crate::embedded_resources;
 use crate::post;
+use crate::post::Post;
+use crate::post::PostHeader;
 use crate::utils;
+use anyhow::anyhow;
 use anyhow::bail;
-use anyhow::{Context, Ok};
+use anyhow::Context;
+use anyhow::Result;
+use chrono::Local;
+use chrono::NaiveDate;
 use colored::*;
+use inquire::formatter::DEFAULT_DATE_FORMATTER;
+use inquire::validator;
+use inquire::validator::StringValidator;
+use inquire::validator::Validation;
+use inquire::validator::ValueRequiredValidator;
+use inquire::Confirm;
+use inquire::CustomType;
+use inquire::CustomUserError;
+use inquire::DateSelect;
+use inquire::Text;
 use std::fs;
+use std::io;
+use std::io::Empty;
+use std::io::Write;
 use std::path::Path;
 use walkdir::WalkDir;
 
@@ -80,6 +99,105 @@ pub fn info(path: &Path) -> anyhow::Result<()> {
     Ok(())
 }
 
+#[derive(Clone)]
+pub struct EmptyOrWhitespaceValidator {
+    message: String,
+}
+
+impl Default for EmptyOrWhitespaceValidator {
+    fn default() -> Self {
+        Self {
+            message: "Value must consist of printable characters".to_owned(),
+        }
+    }
+}
+
+impl StringValidator for EmptyOrWhitespaceValidator {
+    fn validate(&self, input: &str) -> Result<Validation, CustomUserError> {
+        Ok(if input.trim().is_empty() {
+            Validation::Invalid(self.message.as_str().into())
+        } else {
+            Validation::Valid
+        })
+    }
+}
+
+#[derive(Clone)]
+pub struct CommaListValidator {
+    message: String,
+}
+
+impl Default for CommaListValidator {
+    fn default() -> Self {
+        Self {
+            message: "Requires comma-separated, non-empty values.".to_owned(),
+        }
+    }
+}
+
+impl StringValidator for CommaListValidator {
+    fn validate(&self, input: &str) -> Result<Validation, CustomUserError> {
+        let values: Vec<&str> = input.split(',').collect();
+        Ok(
+            if values.len() == 0 || values.into_iter().any(|s| s.trim().is_empty()) {
+                Validation::Invalid(self.message.as_str().into())
+            } else {
+                Validation::Valid
+            },
+        )
+    }
+}
+
+pub fn create_post() -> anyhow::Result<()> {
+    let title = Text::new("Title")
+        .with_placeholder("Default Title")
+        .with_default("Default Title")
+        .with_validator(EmptyOrWhitespaceValidator::default())
+        .prompt()?;
+    let description = Text::new("Description")
+        .with_placeholder("Default Description")
+        .with_default("Default Description")
+        .with_validator(EmptyOrWhitespaceValidator::default())
+        .prompt()?;
+    let date = CustomType::<NaiveDate>::new("Publication Date")
+        .with_placeholder("yyyy-mm-dd")
+        .with_parser(&|i| NaiveDate::parse_from_str(i, "%Y-%m-%d").map_err(|_e| ()))
+        .with_formatter(DEFAULT_DATE_FORMATTER)
+        .with_error_message("Please type a valid date.")
+        .with_default(Local::now().date_naive())
+        .prompt()?;
+    let tags: Vec<String> = Text::new("Tags")
+        .with_placeholder("A comma-separated list of tags that match the posts topic")
+        .with_default("creativity,writing,technology")
+        .with_validator(CommaListValidator::default())
+        .prompt()?
+        .split(',')
+        .map(|s| s.to_string())
+        .collect();
+    let draft = Confirm::new("Draft")
+        .with_default(false)
+        .with_placeholder("Specify if the post is a draft (y/n)")
+        .with_parser(&|ans| match ans {
+            "y" | "yes" => Ok(true),
+            "n" | "no" => Ok(false),
+            _ => Err(()),
+        })
+        .prompt()?;
+
+    let post = Post {
+        header: PostHeader {
+            title,
+            description,
+            date,
+            tags,
+            draft,
+        },
+        content: String::new(),
+    };
+    println!("{post:#?}");
+
+    Ok(())
+}
 fn count_posts(path: &Path) -> anyhow::Result<()> {
     let posts_dir = path.join("posts");
     let post_dir_entries = WalkDir::new(posts_dir);

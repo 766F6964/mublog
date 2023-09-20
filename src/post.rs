@@ -12,18 +12,35 @@ pub struct Post {
 }
 
 impl Post {
-    fn new(header: PostHeader, content: String) -> Self {
+    pub fn new(header: PostHeader, content: String) -> Self {
         Self { header, content }
     }
 }
 
 #[derive(Debug, Default)]
 pub struct PostHeader {
-    pub date: NaiveDate,
-    pub description: String,
-    pub draft: bool,
-    pub tags: Vec<String>,
     pub title: String,
+    pub description: String,
+    pub date: NaiveDate,
+    pub tags: Vec<String>,
+    pub draft: bool,
+}
+impl PostHeader {
+    pub fn new(
+        date: NaiveDate,
+        description: String,
+        draft: bool,
+        tags: Vec<String>,
+        title: String,
+    ) -> Self {
+        Self {
+            date,
+            description,
+            draft,
+            tags,
+            title,
+        }
+    }
 }
 
 fn parse_header(lines: Vec<String>) -> anyhow::Result<PostHeader> {
@@ -82,6 +99,7 @@ pub fn parse_date(date: &str) -> anyhow::Result<NaiveDate> {
         .context("The date must be a valid string in YYYY-MM-DD format")?;
     Ok(parsed_date)
 }
+
 pub fn parse_tags(tags: &str) -> anyhow::Result<Vec<String>> {
     let tags_vec: Vec<&str> = tags.trim().split(',').collect();
     if tags_vec.is_empty() || tags_vec.iter().any(|&s| s.is_empty()) {
