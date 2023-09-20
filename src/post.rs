@@ -1,5 +1,4 @@
-use anyhow::ensure;
-use anyhow::{anyhow, bail, Context, Ok, Result};
+use anyhow::{anyhow, bail, Context, Ok};
 use chrono::NaiveDate;
 use std::fs;
 use std::io::prelude::*;
@@ -8,8 +7,8 @@ use std::path::Path;
 
 #[derive(Debug, Default)]
 pub struct Post {
-    pub header: PostHeader,
     pub content: String,
+    pub header: PostHeader,
 }
 
 impl Post {
@@ -20,11 +19,11 @@ impl Post {
 
 #[derive(Debug, Default)]
 pub struct PostHeader {
-    date: NaiveDate,
-    description: String,
-    draft: bool,
-    tags: Vec<String>,
-    title: String,
+    pub date: NaiveDate,
+    pub description: String,
+    pub draft: bool,
+    pub tags: Vec<String>,
+    pub title: String,
 }
 
 fn parse_header(lines: Vec<String>) -> anyhow::Result<PostHeader> {
@@ -104,7 +103,6 @@ pub fn parse_draft(draft: &str) -> anyhow::Result<bool> {
 // - After parsing, verify all fields are set.
 // - Ensure proper error propagation on failure
 pub fn from_file(filepath: &Path) -> anyhow::Result<Post> {
-    println!("Parsing {}", filepath.display());
     let path = filepath.display();
     let file = fs::File::open(filepath).context("Failed to open file.")?;
     let reader = BufReader::new(file);

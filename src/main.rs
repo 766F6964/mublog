@@ -9,6 +9,7 @@ mod blog;
 mod cli;
 mod embedded_resources;
 mod post;
+mod utils;
 
 fn main() -> anyhow::Result<()> {
     let cli_args = Cli::parse();

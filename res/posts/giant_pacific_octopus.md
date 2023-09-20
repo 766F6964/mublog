@@ -3,6 +3,7 @@ title: The Giant Pacific Octopus
 description: Fascinating facts about giant pacific octopus
 date: 2012-08-11
 tags: marine predators,giant pacific octopus,aquatic wildlife
+draft: false
 ---
 # Overview
 

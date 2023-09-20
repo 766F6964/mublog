@@ -1,8 +1,9 @@
-// use std::result::Result::Ok;
-
 use crate::embedded_resources;
 use crate::post;
+use crate::utils;
+use anyhow::bail;
 use anyhow::{Context, Ok};
+use colored::*;
 use std::fs;
 use std::path::Path;
 use walkdir::WalkDir;
@@ -22,7 +23,6 @@ impl BlogInfo {
     }
 }
 
-// TODO: Handle blog directory creation better, error non-empty/exist already
 pub fn init(target_path: &Path, blog_dir_name: &str) -> anyhow::Result<()> {
     let blog_dir = target_path.join(blog_dir_name);
     let meta_dir = blog_dir.join("meta");
@@ -73,9 +73,8 @@ pub fn init(target_path: &Path, blog_dir_name: &str) -> anyhow::Result<()> {
     Ok(())
 }
 pub fn info(path: &Path) -> anyhow::Result<()> {
-    println!("Current path: {}", path.display());
     if !is_blog_directory(path) {
-        anyhow::bail!("The current directory is not a mublog environment.");
+        bail!("The current directory is not a mublog environment.");
     }
     count_posts(path)?;
     Ok(())
@@ -84,7 +83,13 @@ pub fn info(path: &Path) -> anyhow::Result<()> {
 fn count_posts(path: &Path) -> anyhow::Result<()> {
     let posts_dir = path.join("posts");
     let post_dir_entries = WalkDir::new(posts_dir);
-
+    let mut info = BlogInfo::new(0, 0);
+    println!(
+        "{0: <40}  {1: <10}  {2: <10}",
+        "Post Title".bold(),
+        "Date".bold(),
+        "Draft".bold()
+    );
     for entry in post_dir_entries
         .into_iter()
         .filter_map(|f| f.ok().filter(|f| f.file_type().is_file()))
@@ -92,9 +97,24 @@ fn count_posts(path: &Path) -> anyhow::Result<()> {
         let result = post::from_file(entry.path());
         if result.is_ok() {
             let post = result.unwrap();
-            println!("{:#?}", post);
+            if post.header.draft == true {
+                info.draft_posts += 1;
+            } else {
+                info.active_posts += 1;
+            }
+            println!(
+                "{0: <40}  {1: <10}  {2: <10}",
+                utils::trunc_with_dots(post.header.title, 40),
+                post.header.date,
+                post.header.draft
+            );
         }
     }
+    println!("");
+    println!("{} Posts Total", info.active_posts + info.draft_posts);
+    println!("  {} Active Posts", info.active_posts);
+    println!("  {} Drafts Posts", info.draft_posts);
+
     Ok(())
 }
 
