@@ -15,4 +15,5 @@
 !/res/meta/*.ico
 !/res/meta/*.png
 !/res/meta/*.webmanifest
+!/res/*.toml
 !/res/patches/*.patch
