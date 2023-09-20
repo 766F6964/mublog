@@ -1,3 +1,6 @@
+#![warn(clippy::pedantic)]
+#![warn(clippy::nursery)]
+
 use crate::cli::Cli;
 use crate::cli::Commands;
 use crate::cli::NewCommands;
@@ -23,7 +26,7 @@ fn main() -> anyhow::Result<()> {
             blog::info(working_dir.as_path()).context("Failed to load blog information")?
         }
         Commands::New(new_args) => match new_args.command {
-            NewCommands::Post {} => blog::create_post()?,
+            NewCommands::Post {} => blog::create_post(&working_dir)?,
             NewCommands::Page {} => println!("Creating new page ..."),
         },
     }

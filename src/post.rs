@@ -13,7 +13,7 @@ pub struct Post {
 
 impl Post {
     pub fn new(header: PostHeader, content: String) -> Self {
-        Self { header, content }
+        Self { content, header }
     }
 }
 
@@ -33,13 +33,7 @@ impl PostHeader {
         tags: Vec<String>,
         title: String,
     ) -> Self {
-        Self {
-            date,
-            description,
-            draft,
-            tags,
-            title,
-        }
+        Self { title, description, date, tags, draft }
     }
 }
 
@@ -105,7 +99,7 @@ pub fn parse_tags(tags: &str) -> anyhow::Result<Vec<String>> {
     if tags_vec.is_empty() || tags_vec.iter().any(|&s| s.is_empty()) {
         bail!("The tags field requires at least one non-empty value.");
     }
-    Ok(tags_vec.into_iter().map(|s| s.to_string()).collect())
+    Ok(tags_vec.into_iter().map(std::string::ToString::to_string).collect())
 }
 
 pub fn parse_draft(draft: &str) -> anyhow::Result<bool> {
@@ -124,7 +118,7 @@ pub fn from_file(filepath: &Path) -> anyhow::Result<Post> {
     let path = filepath.display();
     let file = fs::File::open(filepath).context("Failed to open file.")?;
     let reader = BufReader::new(file);
-    let lines: Vec<String> = reader.lines().map(|line| line.unwrap()).collect();
+    let lines: Vec<String> = reader.lines().map(std::result::Result::unwrap).collect();
 
     let header =
         parse_header(lines).with_context(|| format!("Failed to parse header in {path}"))?;

@@ -9,7 +9,7 @@ pub fn get_resources(dir_path: &str) -> anyhow::Result<Vec<&File>, anyhow::Error
     let mut files = vec![];
     let resources = EMBEDDED_RES
         .get_dir(dir_path)
-        .with_context(|| format!("Failed to locate embedded resource {}", dir_path))
+        .with_context(|| format!("Failed to locate embedded resource {dir_path}"))
         .unwrap();
 
     for file in resources.files() {
@@ -28,7 +28,7 @@ pub fn get_resources(dir_path: &str) -> anyhow::Result<Vec<&File>, anyhow::Error
 pub fn get_resource_file(file_name: &str) -> anyhow::Result<&File, anyhow::Error> {
     let resource = EMBEDDED_RES
         .get_file(file_name)
-        .with_context(|| format!("Failed to locate embedded resource {}", file_name))
+        .with_context(|| format!("Failed to locate embedded resource {file_name}"))
         .unwrap();
 
     Ok(resource)

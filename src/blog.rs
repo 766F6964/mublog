@@ -3,27 +3,25 @@ use crate::post;
 use crate::post::Post;
 use crate::post::PostHeader;
 use crate::utils;
-use anyhow::anyhow;
+
 use anyhow::bail;
 use anyhow::Context;
 use anyhow::Result;
 use chrono::Local;
 use chrono::NaiveDate;
-use colored::*;
+use colored::Colorize;
 use inquire::formatter::DEFAULT_DATE_FORMATTER;
-use inquire::validator;
+
 use inquire::validator::StringValidator;
 use inquire::validator::Validation;
-use inquire::validator::ValueRequiredValidator;
+
 use inquire::Confirm;
 use inquire::CustomType;
 use inquire::CustomUserError;
-use inquire::DateSelect;
+
 use inquire::Text;
 use std::fs;
-use std::io;
-use std::io::Empty;
-use std::io::Write;
+
 use std::path::Path;
 use walkdir::WalkDir;
 
@@ -139,7 +137,7 @@ impl StringValidator for CommaListValidator {
     fn validate(&self, input: &str) -> Result<Validation, CustomUserError> {
         let values: Vec<&str> = input.split(',').collect();
         Ok(
-            if values.len() == 0 || values.into_iter().any(|s| s.trim().is_empty()) {
+            if values.is_empty() || values.into_iter().any(|s| s.trim().is_empty()) {
                 Validation::Invalid(self.message.as_str().into())
             } else {
                 Validation::Valid
@@ -148,7 +146,7 @@ impl StringValidator for CommaListValidator {
     }
 }
 
-pub fn create_post() -> anyhow::Result<()> {
+pub fn create_post(post_dir: &Path) -> anyhow::Result<()> {
     let title = Text::new("Title")
         .with_placeholder("Default Title")
         .with_default("Default Title")
@@ -172,7 +170,7 @@ pub fn create_post() -> anyhow::Result<()> {
         .with_validator(CommaListValidator::default())
         .prompt()?
         .split(',')
-        .map(|s| s.to_string())
+        .map(std::string::ToString::to_string)
         .collect();
     let draft = Confirm::new("Draft")
         .with_default(false)
@@ -196,6 +194,12 @@ pub fn create_post() -> anyhow::Result<()> {
     };
     println!("{post:#?}");
 
+    let posts_dir = post_dir.join("posts");
+    let valid_filename = utils::derive_unique_filename(post.header.title, posts_dir.as_path())?;
+    println!("Filename: {valid_filename}");
+    //fs::write(posts_dir.join(post.header.title), )
+
+    // fs::write(, )
     Ok(())
 }
 fn count_posts(path: &Path) -> anyhow::Result<()> {
@@ -215,7 +219,7 @@ fn count_posts(path: &Path) -> anyhow::Result<()> {
         let result = post::from_file(entry.path());
         if result.is_ok() {
             let post = result.unwrap();
-            if post.header.draft == true {
+            if post.header.draft {
                 info.draft_posts += 1;
             } else {
                 info.active_posts += 1;
@@ -228,7 +232,7 @@ fn count_posts(path: &Path) -> anyhow::Result<()> {
             );
         }
     }
-    println!("");
+    println!();
     println!("{} Posts Total", info.active_posts + info.draft_posts);
     println!("  {} Active Posts", info.active_posts);
     println!("  {} Drafts Posts", info.draft_posts);
