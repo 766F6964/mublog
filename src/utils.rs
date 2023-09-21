@@ -2,15 +2,19 @@ use std::path::Path;
 
 use anyhow::bail;
 
-pub fn trunc_with_dots(input: String, max_length: usize) -> String {
-    if input.len() <= max_length {
-        return input; // No need to truncate
+pub trait TruncWithDots {
+    fn trunc_with_dots(&self, max_length: usize) -> String;
+}
+
+impl TruncWithDots for String {
+    fn trunc_with_dots(&self, max_length: usize) -> String {
+        if self.len() <= max_length {
+            return self.clone();
+        }
+        let truncated = &self[..max_length - 3];
+        let result = format!("{}...", truncated);
+        result
     }
-
-    let truncated = &input[..max_length - 3]; // Leave room for "..."
-    let result = format!("{truncated}...");
-
-    result
 }
 
 pub fn derive_unique_filename(title: String, directory: &Path) -> anyhow::Result<String> {
@@ -41,15 +45,5 @@ pub fn derive_unique_filename(title: String, directory: &Path) -> anyhow::Result
         }
     }
 
-    bail!("Unable to find a unique filename.")
+    bail!("Failed to derive a unique filename for the given title.")
 }
-
-// fn main() {
-//     let title = "My File Title".to_string();
-//     let directory = Path::new("/path/to/your/directory");
-
-//     match derive_unique_filename(title, directory) {
-//         Ok(unique_filename) => println!("Unique filename: {}", unique_filename),
-//         Err(err) => println!("Error: {}", err),
-//     }
-// }

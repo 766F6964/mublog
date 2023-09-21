@@ -3,7 +3,7 @@ use crate::post;
 use crate::post::Post;
 use crate::post::PostHeader;
 use crate::utils;
-
+use crate::utils::TruncWithDots;
 use anyhow::bail;
 use anyhow::Context;
 use anyhow::Result;
@@ -11,17 +11,13 @@ use chrono::Local;
 use chrono::NaiveDate;
 use colored::Colorize;
 use inquire::formatter::DEFAULT_DATE_FORMATTER;
-
 use inquire::validator::StringValidator;
 use inquire::validator::Validation;
-
 use inquire::Confirm;
 use inquire::CustomType;
 use inquire::CustomUserError;
-
 use inquire::Text;
 use std::fs;
-
 use std::path::Path;
 use walkdir::WalkDir;
 
@@ -89,11 +85,65 @@ pub fn init(target_path: &Path, blog_dir_name: &str) -> anyhow::Result<()> {
 
     Ok(())
 }
+
 pub fn info(path: &Path) -> anyhow::Result<()> {
     if !is_blog_directory(path) {
         bail!("The current directory is not a mublog environment.");
     }
-    count_posts(path)?;
+    let posts_dir = path.join("posts");
+    let post_dir_entries = WalkDir::new(posts_dir);
+
+    let title_alignment = 30;
+    let date_alignment = 12;
+    let draft_alignment = 12;
+
+    // Print header
+    println!(
+        "{0: <title_alignment$}  {1: >date_alignment$}  {2: >draft_alignment$}",
+        "Post Title".bold(),
+        "Date".bold(),
+        "Draft".bold(),
+        title_alignment = title_alignment,
+        date_alignment = date_alignment,
+        draft_alignment = draft_alignment,
+    );
+    // Print separator line
+    println!(
+        "{}",
+        "—".repeat(title_alignment + date_alignment + draft_alignment + 4)
+    );
+    let mut info = BlogInfo::new(0, 0);
+    for entry in post_dir_entries
+        .into_iter()
+        .filter_map(|f| f.ok().filter(|f| f.file_type().is_file()))
+    {
+        if let Ok(post) = post::from_file(entry.path()) {
+            if post.header.draft {
+                info.draft_posts += 1;
+            } else {
+                info.active_posts += 1;
+            }
+            // Print row of data
+            println!(
+                "{0: <title_alignment$}  {1: >date_alignment$}  {2: >draft_alignment$}",
+                post.header.title.trunc_with_dots(title_alignment),
+                post.header.date.to_string(),
+                post.header.draft.to_string(),
+                title_alignment = title_alignment,
+                date_alignment = date_alignment,
+                draft_alignment = draft_alignment,
+            );
+        }
+    }
+    // Print general statistics
+    println!("");
+    println!("Statistics:");
+    println!(
+        "  {} Posts ({} Finalized, {} Drafts)",
+        info.active_posts + info.draft_posts,
+        info.active_posts,
+        info.draft_posts
+    );
     Ok(())
 }
 
@@ -197,45 +247,10 @@ pub fn create_post(post_dir: &Path) -> anyhow::Result<()> {
     let posts_dir = post_dir.join("posts");
     let valid_filename = utils::derive_unique_filename(post.header.title, posts_dir.as_path())?;
     println!("Filename: {valid_filename}");
-    fs::write(posts_dir.join(valid_filename), "TEST")?;
-
-    // fs::write(, )
-    Ok(())
-}
-fn count_posts(path: &Path) -> anyhow::Result<()> {
-    let posts_dir = path.join("posts");
-    let post_dir_entries = WalkDir::new(posts_dir);
-    let mut info = BlogInfo::new(0, 0);
-    println!(
-        "{0: <40}  {1: <10}  {2: <10}",
-        "Post Title".bold(),
-        "Date".bold(),
-        "Draft".bold()
-    );
-    for entry in post_dir_entries
-        .into_iter()
-        .filter_map(|f| f.ok().filter(|f| f.file_type().is_file()))
-    {
-        let result = post::from_file(entry.path());
-        if result.is_ok() {
-            let post = result.unwrap();
-            if post.header.draft {
-                info.draft_posts += 1;
-            } else {
-                info.active_posts += 1;
-            }
-            println!(
-                "{0: <40}  {1: <10}  {2: <10}",
-                utils::trunc_with_dots(post.header.title, 40),
-                post.header.date,
-                post.header.draft
-            );
-        }
-    }
-    println!();
-    println!("{} Posts Total", info.active_posts + info.draft_posts);
-    println!("  {} Active Posts", info.active_posts);
-    println!("  {} Drafts Posts", info.draft_posts);
+    fs::write(
+        posts_dir.join(valid_filename),
+        "The content of the post goes here...",
+    )?;
 
     Ok(())
 }
