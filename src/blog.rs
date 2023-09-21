@@ -197,7 +197,7 @@ pub fn create_post(post_dir: &Path) -> anyhow::Result<()> {
     let posts_dir = post_dir.join("posts");
     let valid_filename = utils::derive_unique_filename(post.header.title, posts_dir.as_path())?;
     println!("Filename: {valid_filename}");
-    //fs::write(posts_dir.join(post.header.title), )
+    fs::write(posts_dir.join(valid_filename), "TEST")?;
 
     // fs::write(, )
     Ok(())

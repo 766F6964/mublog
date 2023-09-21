@@ -14,12 +14,17 @@ pub fn trunc_with_dots(input: String, max_length: usize) -> String {
 }
 
 pub fn derive_unique_filename(title: String, directory: &Path) -> anyhow::Result<String> {
-    let mut filename = title.replace(" ", "_").replace(".", "_").to_lowercase();
-    filename.push_str(".md");
-    let file_path = directory.join(&filename);
+    let ext = ".md";
+    let stripped_title = title
+        .trim()
+        .replace(" ", "_")
+        .replace(".", "_")
+        .to_lowercase();
+    let filename = format!("{}{}", stripped_title, ext);
+    let file_path = directory.join(filename);
 
     if !file_path.exists() {
-        return Ok(filename);
+        return Ok(format!("{}{}", stripped_title, ext));
     }
 
     for i in 0..=128 {
@@ -28,7 +33,7 @@ pub fn derive_unique_filename(title: String, directory: &Path) -> anyhow::Result
         } else {
             format!("_{}", i)
         };
-        let suffixed_filename = format!("{}{}", filename, suffix);
+        let suffixed_filename = format!("{}{}{}", stripped_title, suffix, ext);
         let suffixed_file_path = directory.join(&suffixed_filename);
 
         if !suffixed_file_path.exists() {
