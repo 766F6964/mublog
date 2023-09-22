@@ -1,7 +1,6 @@
 use crate::embedded_resources;
 use crate::post;
 use crate::post::Post;
-use crate::post::PostHeader;
 
 use crate::utils::TruncWithDots;
 use anyhow::bail;
@@ -201,7 +200,7 @@ impl StringValidator for CommaListValidator {
     }
 }
 
-pub fn create_post(post_dir: &Path) -> anyhow::Result<()> {
+pub fn create(post_dir: &Path) -> anyhow::Result<()> {
     let posts_dir = post_dir.join("posts");
     let mut post = Post::default();
     post.header.title = Text::new("Title")

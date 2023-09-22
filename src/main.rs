@@ -27,7 +27,7 @@ fn main() -> anyhow::Result<()> {
             blog::info(working_dir.as_path()).context("Failed to load blog information")?;
         }
         Commands::New(new_args) => match new_args.command {
-            NewCommands::Post {} => blog::create_post(&working_dir)?,
+            NewCommands::Post {} => blog::create(&working_dir)?,
             NewCommands::Page {} => println!("Creating new page ..."),
         },
     }

@@ -1,9 +1,11 @@
 use anyhow::{anyhow, bail, Context, Ok};
 use chrono::NaiveDate;
-use std::fs;
-use std::io::prelude::*;
-use std::io::BufReader;
-use std::path::Path;
+
+use std::{
+    borrow::{self, ToOwned},
+    collections::{self, HashSet},
+    io::prelude::*,
+};
 
 #[derive(Debug, Default)]
 pub struct Post {
@@ -42,41 +44,6 @@ impl PostHeader {
             draft,
         }
     }
-}
-
-fn parse_header(lines: Vec<String>) -> anyhow::Result<PostHeader> {
-    // Ensure minimal length required for header
-    if lines.len() < 7 {
-        bail!("File contains an incomplete header.");
-    }
-
-    // Check starting marker presence
-    if lines[0].trim() != "---" {
-        bail!("Starting marker missing or formatted incorrectly");
-    }
-
-    // Check ending marker presence
-    if lines[6].trim() != "---" {
-        bail!("Ending marker missing or formatted incorrectly");
-    }
-
-    // Check header fields
-    let mut post = PostHeader::default();
-
-    for line in &lines[1..6] {
-        let (key, value) = line
-            .split_once(':')
-            .with_context(|| format!("Failed to parse line '{line}' into key value pair."))?;
-        match key {
-            "title" => post.title = parse_title(value)?,
-            "description" => post.description = parse_description(value)?,
-            "date" => post.date = parse_date(value)?,
-            "tags" => post.tags = parse_tags(value)?,
-            "draft" => post.draft = parse_draft(value)?,
-            _ => bail!("Unsupported header field: {key}"),
-        }
-    }
-    Ok(post)
 }
 
 pub fn parse_title(mut title: &str) -> anyhow::Result<String> {
@@ -120,10 +87,50 @@ pub fn parse_draft(draft: &str) -> anyhow::Result<bool> {
 }
 
 pub fn parse_from_string(data: String) -> anyhow::Result<Post> {
-    let header_data = data.lines().map(|s| s.to_owned()).collect();
-    let header = parse_header(header_data).context("Failed to parse post header")?;
-    let post = Post::new(header, String::new());
-    anyhow::Ok(post)
+    let lines: Vec<String> = data.lines().map(ToOwned::to_owned).collect();
+
+    // Check minimal length required to contain header
+    if lines.len() < 7 {
+        bail!("File contains an incomplete header.");
+    }
+
+    // Check starting marker presence
+    if lines[0].trim() != "---" {
+        bail!("Starting marker missing or formatted incorrectly");
+    }
+
+    // Check ending marker presence
+    if lines[6].trim() != "---" {
+        bail!("Ending marker missing or formatted incorrectly");
+    }
+
+    // Check header fields presence
+    let mut post = Post::default();
+    let mut processed_fields: HashSet<String> = collections::HashSet::new();
+
+    for line in &lines[1..6] {
+        let (key, value) = line
+            .split_once(':')
+            .with_context(|| format!("Failed to parse line '{line}' into key value pair."))?;
+
+        // Check each field only exist exactly once
+        if !processed_fields.insert(key.to_owned()) {
+            bail!("Failed to parse header, duplicate field found: {key}");
+        }
+
+        match key {
+            "title" => post.header.title = parse_title(value)?,
+            "description" => post.header.description = parse_description(value)?,
+            "date" => post.header.date = parse_date(value)?,
+            "tags" => post.header.tags = parse_tags(value)?,
+            "draft" => post.header.draft = parse_draft(value)?,
+            _ => bail!("Unsupported header field: {key}"),
+        }
+    }
+    if lines.len() > 6 {
+        post.content = lines[7..].join("\n");
+    }
+    Ok(post)
 }
 
 pub fn parse_to_string(post: Post) -> String {
@@ -131,9 +138,9 @@ pub fn parse_to_string(post: Post) -> String {
         "---\ntitle: {}\ndescription: {}\ndate: {}\ntags: {}\ndraft: {}\n---\n{}",
         post.header.title,
         post.header.description,
-        post.header.date.to_string(),
+        post.header.date,
         post.header.tags.join(","),
-        post.header.draft.to_string(),
+        post.header.draft,
         post.content
     );
     post_str
@@ -145,23 +152,25 @@ mod test {
 
     #[test]
     fn parse_header_incomplete() {
-        let expected = "---\ntitle: test title\ndescription: test description\n---"
-            .lines()
-            .map(String::from)
-            .collect();
-
-        let res = parse_header(expected).unwrap_err();
+        let expected = "---\ntitle: test title\ndescription: test description\n---".to_owned();
+        let res = parse_from_string(expected).unwrap_err();
         assert_eq!(res.to_string(), "File contains an incomplete header.");
     }
 
     #[test]
-    fn parse_header_missing_start_marker() {
-        let expected = "title: test title\ndescription: test description\ntags: test,test2,test3\ndate: 2023-01-23\ndraft: false\n---\nmore data\nsome more text"
-            .lines()
-            .map(String::from)
-            .collect();
+    fn parse_header_duplicate_fields() {
+        let expected = "---\ntitle: test\ndescription: dulicate1\ntags: test,test2,test3\ndescription: duplicate2\ndraft: false\n---\nSome more text".to_owned();
+        let res = parse_from_string(expected).unwrap_err();
+        assert_eq!(
+            res.to_string(),
+            "Failed to parse header, duplicate field found: description"
+        );
+    }
 
-        let res = parse_header(expected).unwrap_err();
+    #[test]
+    fn parse_header_missing_start_marker() {
+        let expected = "title: test title\ndescription: test description\ntags: test,test2,test3\ndate: 2023-01-23\ndraft: false\n---\nmore data\nsome more text".to_owned();
+        let res = parse_from_string(expected).unwrap_err();
         assert_eq!(
             res.to_string(),
             "Starting marker missing or formatted incorrectly"
@@ -170,12 +179,8 @@ mod test {
 
     #[test]
     fn parse_header_missing_end_marker() {
-        let expected = "---\ntitle: test title\ndescription: test description\ntags: test,test2,test3\ndate: 2023-01-23\ndraft: false\nsome more data\ngoes here\n"
-        .lines()
-        .map(String::from)
-        .collect();
-
-        let res = parse_header(expected).unwrap_err();
+        let expected = "---\ntitle: test title\ndescription: test description\ntags: test,test2,test3\ndate: 2023-01-23\ndraft: false\nsome more data\ngoes here\n".to_owned();
+        let res = parse_from_string(expected).unwrap_err();
         assert_eq!(
             res.to_string(),
             "Ending marker missing or formatted incorrectly"
@@ -184,53 +189,41 @@ mod test {
 
     #[test]
     fn parse_header_unsupported_field() {
-        let expected = "---\ntitle: test title\ndescription: test description\nunsupported: test,test2,test3\ndate: 2023-01-23\ndraft: false\n---\nsome more data"
-        .lines()
-        .map(String::from)
-        .collect();
-
-        let res = parse_header(expected).unwrap_err();
+        let expected = "---\ntitle: test title\ndescription: test description\nunsupported: test,test2,test3\ndate: 2023-01-23\ndraft: false\n---\nsome more data".to_owned();
+        let res = parse_from_string(expected).unwrap_err();
         assert_eq!(res.to_string(), "Unsupported header field: unsupported");
     }
 
     #[test]
-    fn parse_header_valid_with_content() {
-        let expected: Vec<String> = "---\ntitle: test title\ndescription: test description\ntags: test,test2,test3\ndate: 2023-01-23\ndraft: false\n---\nsome more data"
-        .lines()
-        .map(String::from)
-        .collect();
-
-        let res = parse_header(expected).expect("Header should be valid"); // TODO: Validate parsed fields properly
-        assert_eq!(res.title, "test title");
-        assert_eq!(res.description, "test description");
-        assert_eq!(res.tags, vec!["test", "test2", "test3"]);
+    fn parse_valid_with_content() {
+        let expected = "---\ntitle: test title\ndescription: test description\ntags: test,test2,test3\ndate: 2023-01-23\ndraft: false\n---\nSome Text\nMore Text".to_owned();
+        let res = parse_from_string(expected).expect("Header should be valid"); // TODO: Validate parsed fields properly
+        assert_eq!(res.header.title, "test title");
+        assert_eq!(res.header.description, "test description");
+        assert_eq!(res.header.tags, vec!["test", "test2", "test3"]);
         assert_eq!(
-            res.date,
+            res.header.date,
             NaiveDate::parse_from_str("2023-01-23", "%Y-%m-%d")
                 .expect("Date conversion should pass")
         );
-        assert_eq!(res.draft, false);
-        // assert_eq!(res.content, "some more data");
+        assert_eq!(res.header.draft, false);
+        assert_eq!(res.content, "Some Text\nMore Text");
     }
 
     #[test]
-    fn parse_header_valid_no_content() {
-        let expected: Vec<String> = "---\ntitle: test title\ndescription: test description\ntags: test,test2,test3\ndate: 2023-01-23\ndraft: false\n---"
-        .lines()
-        .map(String::from)
-        .collect();
-
-        let res = parse_header(expected).expect("Header should be valid"); // TODO: Validate parsed fields properly
-        assert_eq!(res.title, "test title");
-        assert_eq!(res.description, "test description");
-        assert_eq!(res.tags, vec!["test", "test2", "test3"]);
+    fn parse_valid_no_content() {
+        let expected = "---\ntitle: test title\ndescription: test description\ntags: test,test2,test3\ndate: 2023-01-23\ndraft: false\n---".to_owned();
+        let res = parse_from_string(expected).expect("Header should be valid"); // TODO: Validate parsed fields properly
+        assert_eq!(res.header.title, "test title");
+        assert_eq!(res.header.description, "test description");
+        assert_eq!(res.header.tags, vec!["test", "test2", "test3"]);
         assert_eq!(
-            res.date,
+            res.header.date,
             NaiveDate::parse_from_str("2023-01-23", "%Y-%m-%d")
                 .expect("Date conversion should pass")
         );
-        assert_eq!(res.draft, false);
-        // assert_eq!(res.content, "");
+        assert_eq!(res.header.draft, false);
+        assert_eq!(res.content, "");
     }
 
     #[test]
