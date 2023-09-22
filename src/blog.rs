@@ -117,7 +117,12 @@ pub fn info(path: &Path) -> anyhow::Result<()> {
         .into_iter()
         .filter_map(|f| f.ok().filter(|f| f.file_type().is_file()))
     {
-        if let Ok(post) = post::parse_from_string(entry.path()) {
+        let path = entry.path();
+        let filename = entry.file_name();
+        let data = fs::read_to_string(path)
+            .with_context(|| format!("Failed to read post {filename:?} from disk."))?;
+
+        if let Ok(post) = post::parse_from_string(data) {
             if post.header.draft {
                 info.draft_posts += 1;
             } else {

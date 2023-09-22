@@ -119,22 +119,9 @@ pub fn parse_draft(draft: &str) -> anyhow::Result<bool> {
         .map_err(|_| anyhow!("Draft field must be either 'true' or 'false'."))
 }
 
-// TODO:
-// - Check that file extension is .md/.MD
-// - Check that end marker is present
-// - After parsing, verify all fields are set.
-// - Ensure proper error propagation on failure
-// TODO:
-// - Better function names such as parse_to and parse_from ?
-// - Make it take a File as Param, not a Path
-pub fn parse_from_string(filepath: &Path) -> anyhow::Result<Post> {
-    let path = filepath.display();
-    let file = fs::File::open(filepath).context("Failed to open file.")?;
-    let reader = BufReader::new(file);
-    let lines: Vec<String> = reader.lines().map(std::result::Result::unwrap).collect();
-
-    let header =
-        parse_header(lines).with_context(|| format!("Failed to parse header in {path}"))?;
+pub fn parse_from_string(data: String) -> anyhow::Result<Post> {
+    let header_data = data.lines().map(|s| s.to_owned()).collect();
+    let header = parse_header(header_data).context("Failed to parse post header")?;
     let post = Post::new(header, String::new());
     anyhow::Ok(post)
 }

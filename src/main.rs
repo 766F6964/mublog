@@ -18,6 +18,7 @@ fn main() -> anyhow::Result<()> {
     let cli_args = Cli::parse();
     let working_dir = env::current_dir().context("Failed to obtain current working directory.")?;
 
+    // TODO: Implement a deploy command, that pushes to a remote specified in the config file.
     match cli_args.command {
         Commands::Build => println!("Starting build process ..."),
         Commands::Init(init_args) => blog::init(working_dir.as_path(), &init_args.dir_name)
