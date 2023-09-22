@@ -2,7 +2,7 @@ use crate::embedded_resources;
 use crate::post;
 use crate::post::Post;
 use crate::post::PostHeader;
-use crate::utils;
+
 use crate::utils::TruncWithDots;
 use anyhow::bail;
 use anyhow::Context;
@@ -117,7 +117,7 @@ pub fn info(path: &Path) -> anyhow::Result<()> {
         .into_iter()
         .filter_map(|f| f.ok().filter(|f| f.file_type().is_file()))
     {
-        if let Ok(post) = post::from_file(entry.path()) {
+        if let Ok(post) = post::parse_from_string(entry.path()) {
             if post.header.draft {
                 info.draft_posts += 1;
             } else {
@@ -136,7 +136,7 @@ pub fn info(path: &Path) -> anyhow::Result<()> {
         }
     }
     // Print general statistics
-    println!("");
+    println!();
     println!("Statistics:");
     println!(
         "  {} Posts ({} Finalized, {} Drafts)",
@@ -197,24 +197,26 @@ impl StringValidator for CommaListValidator {
 }
 
 pub fn create_post(post_dir: &Path) -> anyhow::Result<()> {
-    let title = Text::new("Title")
+    let posts_dir = post_dir.join("posts");
+    let mut post = Post::default();
+    post.header.title = Text::new("Title")
         .with_placeholder("Default Title")
         .with_default("Default Title")
         .with_validator(EmptyOrWhitespaceValidator::default())
         .prompt()?;
-    let description = Text::new("Description")
+    post.header.description = Text::new("Description")
         .with_placeholder("Default Description")
         .with_default("Default Description")
         .with_validator(EmptyOrWhitespaceValidator::default())
         .prompt()?;
-    let date = CustomType::<NaiveDate>::new("Publication Date")
+    post.header.date = CustomType::<NaiveDate>::new("Publication Date")
         .with_placeholder("yyyy-mm-dd")
         .with_parser(&|i| NaiveDate::parse_from_str(i, "%Y-%m-%d").map_err(|_e| ()))
         .with_formatter(DEFAULT_DATE_FORMATTER)
         .with_error_message("Please type a valid date.")
         .with_default(Local::now().date_naive())
         .prompt()?;
-    let tags: Vec<String> = Text::new("Tags")
+    post.header.tags = Text::new("Tags")
         .with_placeholder("A comma-separated list of tags that match the posts topic")
         .with_default("creativity,writing,technology")
         .with_validator(CommaListValidator::default())
@@ -222,7 +224,7 @@ pub fn create_post(post_dir: &Path) -> anyhow::Result<()> {
         .split(',')
         .map(std::string::ToString::to_string)
         .collect();
-    let draft = Confirm::new("Draft")
+    post.header.draft = Confirm::new("Draft")
         .with_default(false)
         .with_placeholder("Specify if the post is a draft (y/n)")
         .with_parser(&|ans| match ans {
@@ -232,32 +234,17 @@ pub fn create_post(post_dir: &Path) -> anyhow::Result<()> {
         })
         .prompt()?;
 
-    let post = Post {
-        header: PostHeader {
-            title,
-            description,
-            date,
-            tags,
-            draft,
-        },
-        content: String::new(),
-    };
     println!("{post:#?}");
 
-    let posts_dir = post_dir.join("posts");
-    let valid_filename = utils::derive_unique_filename(post.header.title, posts_dir.as_path())?;
-    println!("Filename: {valid_filename}");
-    fs::write(
-        posts_dir.join(valid_filename),
-        "The content of the post goes here...",
-    )?;
+    let filename = post
+        .header
+        .title
+        .derive_unique_filename(posts_dir.as_path())?;
+    fs::write(posts_dir.join(filename), post::parse_to_string(post))?;
 
     Ok(())
 }
 
-fn count_pages(_path: &Path) {
-    unimplemented!("Count active pages, separate counter for drafts");
-}
 // .mublog.toml
 // Contents:
 // - Configuration options, e.g.

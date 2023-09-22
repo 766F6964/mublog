@@ -23,7 +23,7 @@ fn main() -> anyhow::Result<()> {
         Commands::Init(init_args) => blog::init(working_dir.as_path(), &init_args.dir_name)
             .context("Failed to initialize new blog environment.")?,
         Commands::Info => {
-            blog::info(working_dir.as_path()).context("Failed to load blog information")?
+            blog::info(working_dir.as_path()).context("Failed to load blog information")?;
         }
         Commands::New(new_args) => match new_args.command {
             NewCommands::Post {} => blog::create_post(&working_dir)?,

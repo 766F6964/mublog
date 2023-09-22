@@ -25,6 +25,7 @@ pub struct PostHeader {
     pub tags: Vec<String>,
     pub draft: bool,
 }
+
 impl PostHeader {
     pub fn new(
         date: NaiveDate,
@@ -33,7 +34,13 @@ impl PostHeader {
         tags: Vec<String>,
         title: String,
     ) -> Self {
-        Self { title, description, date, tags, draft }
+        Self {
+            title,
+            description,
+            date,
+            tags,
+            draft,
+        }
     }
 }
 
@@ -99,7 +106,10 @@ pub fn parse_tags(tags: &str) -> anyhow::Result<Vec<String>> {
     if tags_vec.is_empty() || tags_vec.iter().any(|&s| s.is_empty()) {
         bail!("The tags field requires at least one non-empty value.");
     }
-    Ok(tags_vec.into_iter().map(std::string::ToString::to_string).collect())
+    Ok(tags_vec
+        .into_iter()
+        .map(std::string::ToString::to_string)
+        .collect())
 }
 
 pub fn parse_draft(draft: &str) -> anyhow::Result<bool> {
@@ -114,7 +124,10 @@ pub fn parse_draft(draft: &str) -> anyhow::Result<bool> {
 // - Check that end marker is present
 // - After parsing, verify all fields are set.
 // - Ensure proper error propagation on failure
-pub fn from_file(filepath: &Path) -> anyhow::Result<Post> {
+// TODO:
+// - Better function names such as parse_to and parse_from ?
+// - Make it take a File as Param, not a Path
+pub fn parse_from_string(filepath: &Path) -> anyhow::Result<Post> {
     let path = filepath.display();
     let file = fs::File::open(filepath).context("Failed to open file.")?;
     let reader = BufReader::new(file);
@@ -124,6 +137,19 @@ pub fn from_file(filepath: &Path) -> anyhow::Result<Post> {
         parse_header(lines).with_context(|| format!("Failed to parse header in {path}"))?;
     let post = Post::new(header, String::new());
     anyhow::Ok(post)
+}
+
+pub fn parse_to_string(post: Post) -> String {
+    let post_str = format!(
+        "---\ntitle: {}\ndescription: {}\ndate: {}\ntags: {}\ndraft: {}\n---\n{}",
+        post.header.title,
+        post.header.description,
+        post.header.date.to_string(),
+        post.header.tags.join(","),
+        post.header.draft.to_string(),
+        post.content
+    );
+    post_str
 }
 
 #[cfg(test)]
