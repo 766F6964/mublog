@@ -1,7 +1,7 @@
 use crate::embedded_resources;
 use crate::post;
+use crate::post::get_posts;
 use crate::post::Post;
-
 use crate::utils::TruncWithDots;
 use anyhow::bail;
 use anyhow::Context;
@@ -32,6 +32,54 @@ impl BlogInfo {
             active_posts,
             draft_posts,
         }
+    }
+}
+
+#[derive(Clone)]
+pub struct EmptyOrWhitespaceValidator {
+    message: String,
+}
+
+#[derive(Clone)]
+pub struct CommaListValidator {
+    message: String,
+}
+
+impl Default for EmptyOrWhitespaceValidator {
+    fn default() -> Self {
+        Self {
+            message: "Value must consist of printable characters".to_owned(),
+        }
+    }
+}
+
+impl Default for CommaListValidator {
+    fn default() -> Self {
+        Self {
+            message: "Requires comma-separated, non-empty values.".to_owned(),
+        }
+    }
+}
+impl StringValidator for EmptyOrWhitespaceValidator {
+    fn validate(&self, input: &str) -> Result<Validation, CustomUserError> {
+        Ok(if input.trim().is_empty() {
+            Validation::Invalid(self.message.as_str().into())
+        } else {
+            Validation::Valid
+        })
+    }
+}
+
+impl StringValidator for CommaListValidator {
+    fn validate(&self, input: &str) -> Result<Validation, CustomUserError> {
+        let values: Vec<&str> = input.split(',').collect();
+        Ok(
+            if values.is_empty() || values.into_iter().any(|s| s.trim().is_empty()) {
+                Validation::Invalid(self.message.as_str().into())
+            } else {
+                Validation::Valid
+            },
+        )
     }
 }
 
@@ -82,6 +130,39 @@ pub fn init(target_path: &Path, blog_dir_name: &str) -> anyhow::Result<()> {
         .context("Failed to extract config file from embedded resources.")?;
     embedded_resources::write_resource_file(config_file_resource, config_path.as_path())?;
 
+    Ok(())
+}
+
+pub fn build(path: &Path) -> anyhow::Result<()> {
+    if !is_blog_directory(path) {
+        bail!("The current directory is not a mublog environment.");
+    }
+
+    // Setup build directory
+    let build_dir = path.join("build");
+    fs::create_dir(build_dir.as_path())
+        .with_context(|| format!("Failed to create build directory {build_dir:?}"))?;
+
+    // Create subdirectories in build dir
+    let posts_dir = build_dir.as_path().join("posts");
+    let assets_dir = build_dir.as_path().join("assets");
+    let css_dir = build_dir.as_path().join("css");
+
+    fs::create_dir(posts_dir.as_path())
+        .with_context(|| format!("Failed to create build/posts directory {posts_dir:?}"))?;
+    fs::create_dir(assets_dir.as_path())
+        .with_context(|| format!("Failed to create build/assets directory {assets_dir:?}"))?;
+    fs::create_dir(css_dir.as_path())
+        .with_context(|| format!("Failed to create build/css directory {css_dir:?}"))?;
+
+    // Get a vector of all posts in the given directory
+    let posts_dir = path.join("posts");
+    for post in get_posts(&posts_dir)? {
+        // TODO: Convert each post from markdown to html and write to output directory
+        println!("{post:#?}");
+    }
+
+    // TODO: Introduce some sort of context that gives access to posts, pages, plugins etc to make accessing things more convinient
     Ok(())
 }
 
@@ -151,55 +232,6 @@ pub fn info(path: &Path) -> anyhow::Result<()> {
     Ok(())
 }
 
-#[derive(Clone)]
-pub struct EmptyOrWhitespaceValidator {
-    message: String,
-}
-
-impl Default for EmptyOrWhitespaceValidator {
-    fn default() -> Self {
-        Self {
-            message: "Value must consist of printable characters".to_owned(),
-        }
-    }
-}
-
-impl StringValidator for EmptyOrWhitespaceValidator {
-    fn validate(&self, input: &str) -> Result<Validation, CustomUserError> {
-        Ok(if input.trim().is_empty() {
-            Validation::Invalid(self.message.as_str().into())
-        } else {
-            Validation::Valid
-        })
-    }
-}
-
-#[derive(Clone)]
-pub struct CommaListValidator {
-    message: String,
-}
-
-impl Default for CommaListValidator {
-    fn default() -> Self {
-        Self {
-            message: "Requires comma-separated, non-empty values.".to_owned(),
-        }
-    }
-}
-
-impl StringValidator for CommaListValidator {
-    fn validate(&self, input: &str) -> Result<Validation, CustomUserError> {
-        let values: Vec<&str> = input.split(',').collect();
-        Ok(
-            if values.is_empty() || values.into_iter().any(|s| s.trim().is_empty()) {
-                Validation::Invalid(self.message.as_str().into())
-            } else {
-                Validation::Valid
-            },
-        )
-    }
-}
-
 pub fn create(post_dir: &Path) -> anyhow::Result<()> {
     let posts_dir = post_dir.join("posts");
     let mut post = Post::default();
@@ -249,13 +281,7 @@ pub fn create(post_dir: &Path) -> anyhow::Result<()> {
     Ok(())
 }
 
-// .mublog.toml
-// Contents:
-// - Configuration options, e.g.
-//   - Enabled plugins
-//   - Blog settings, e.g. author name, copyright year etc
-
-pub fn is_blog_directory(path: &Path) -> bool {
+fn is_blog_directory(path: &Path) -> bool {
     if path.is_dir() {
         let blog_meta_file = path.join("mublog.toml");
         let posts_dir = path.join("posts");
@@ -280,4 +306,21 @@ pub fn is_blog_directory(path: &Path) -> bool {
         }
     }
     false
+}
+
+fn posts_from_directory(posts_dir: &Path) -> Result<Vec<Post>> {
+    println!("Scanning for existing posts ...");
+
+    let post_dir_entries = WalkDir::new(posts_dir);
+
+    for entry in post_dir_entries
+        .into_iter()
+        .filter_map(|f| f.ok().filter(|f| f.file_type().is_file()))
+    {
+        let path = entry.path();
+        let filename = entry.file_name();
+        let _data = fs::read_to_string(path)
+            .with_context(|| format!("Failed to read post {filename:?} from disk."))?;
+    }
+    Ok(vec![])
 }

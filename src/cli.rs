@@ -20,6 +20,8 @@ pub enum Commands {
     Info,
     /// Builds the blog into a static blog site
     Build,
+    /// Deploys the blog to a specified remote
+    Deploy,
 }
 
 #[derive(Debug, Subcommand)]

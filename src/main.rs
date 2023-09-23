@@ -14,13 +14,15 @@ mod embedded_resources;
 mod post;
 mod utils;
 
+// TODO: Add blog config options such as enabled plugins, author name, copyright year etc
+
 fn main() -> anyhow::Result<()> {
     let cli_args = Cli::parse();
     let working_dir = env::current_dir().context("Failed to obtain current working directory.")?;
 
-    // TODO: Implement a deploy command, that pushes to a remote specified in the config file.
     match cli_args.command {
-        Commands::Build => println!("Starting build process ..."),
+        Commands::Deploy => todo!("Deploying blog to specified remote ..."),
+        Commands::Build => blog::build(working_dir.as_path())?,
         Commands::Init(init_args) => blog::init(working_dir.as_path(), &init_args.dir_name)
             .context("Failed to initialize new blog environment.")?,
         Commands::Info => {
@@ -28,7 +30,7 @@ fn main() -> anyhow::Result<()> {
         }
         Commands::New(new_args) => match new_args.command {
             NewCommands::Post {} => blog::create(&working_dir)?,
-            NewCommands::Page {} => println!("Creating new page ..."),
+            NewCommands::Page {} => todo!("Creating a new blog page"),
         },
     }
 

@@ -1,10 +1,14 @@
-use anyhow::{anyhow, bail, Context, Ok};
+use anyhow::{anyhow, bail, Context};
 use chrono::NaiveDate;
+use walkdir::WalkDir;
 
+use std::io::prelude::*;
 use std::{
-    borrow::{self, ToOwned},
+    borrow::ToOwned,
     collections::{self, HashSet},
-    io::prelude::*,
+    ffi::OsStr,
+    fs,
+    path::Path,
 };
 
 #[derive(Debug, Default)]
@@ -144,6 +148,22 @@ pub fn parse_to_string(post: Post) -> String {
         post.content
     );
     post_str
+}
+
+pub fn get_posts(posts_dir: &Path) -> anyhow::Result<Vec<Post>> {
+    let entries = WalkDir::new(posts_dir);
+    let mut posts = vec![];
+    for entry in entries.into_iter().filter_map(std::result::Result::ok) {
+        let post_path = entry.path();
+        if post_path.extension().and_then(OsStr::to_str) == Some("md") {
+            if let Ok(contents) = fs::read_to_string(post_path) {
+                if let Ok(post) = parse_from_string(contents) {
+                    posts.push(post);
+                }
+            }
+        }
+    }
+    Ok(posts)
 }
 
 #[cfg(test)]
