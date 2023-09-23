@@ -137,6 +137,9 @@ pub fn build(path: &Path) -> anyhow::Result<()> {
     if !is_blog_directory(path) {
         bail!("The current directory is not a mublog environment.");
     }
+    // TODO: Introduce some sort of context that gives access to posts, pages, plugins etc to make accessing things more convinient
+    // TODO: Move setup of build environment into separate function.
+    // TODO: If setup of build env fails, immediately propagate the error, and abort.
 
     // Setup build directory
     let build_dir = path.join("build");
@@ -158,11 +161,21 @@ pub fn build(path: &Path) -> anyhow::Result<()> {
     // Get a vector of all posts in the given directory
     let posts_dir = path.join("posts");
     for post in get_posts(&posts_dir)? {
-        // TODO: Convert each post from markdown to html and write to output directory
-        println!("{post:#?}");
+        let build_post_dir = build_dir.join("posts");
+        match post.header.title.derive_unique_filename(&posts_dir) {
+            Ok(filename) => {
+                // TODO: The conversion process should be in a separate function, to configure conversion process
+                let content_html = markdown::to_html(&post.content);
+                let html_filename = filename.replace(".md", ".html");
+                _ = fs::write(build_post_dir.join(html_filename).as_path(), content_html);
+                println!("Converted post '{}' to HTML.", post.header.title);
+            }
+            Err(e) => {
+                bail!("Failed to convert post file: '{}'", post.header.title);
+            }
+        };
     }
-
-    // TODO: Introduce some sort of context that gives access to posts, pages, plugins etc to make accessing things more convinient
+    println!("Build process completed.");
     Ok(())
 }
 
