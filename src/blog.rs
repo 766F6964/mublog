@@ -1,6 +1,5 @@
 use crate::embedded_resources;
 use crate::post;
-use crate::post::get_posts;
 use crate::post::Post;
 use crate::utils;
 use crate::utils::TruncWithDots;
@@ -39,35 +38,41 @@ impl BlogInfo {
 }
 
 #[derive(Debug, Default)]
-pub struct BuildContext {
+pub struct BlogContext {
     posts: Vec<Post>,
+    config_file: PathBuf,
+    base_dir: PathBuf,
 
-    blog_dir: PathBuf,
     build_dir: PathBuf,
     build_posts_dir: PathBuf,
     build_assets_dir: PathBuf,
     build_css_dir: PathBuf,
+    build_meta_dir: PathBuf,
 
-    src_posts_dir: PathBuf,
-    src_assets_dir: PathBuf,
-    src_css_dir: PathBuf,
+    posts_dir: PathBuf,
+    assets_dir: PathBuf,
+    css_dir: PathBuf,
+    meta_dir: PathBuf,
 }
 
-impl BuildContext {
-    pub fn from_path(base_path: &Path) -> Result<BuildContext> {
+impl BlogContext {
+    pub fn from_path(base_path: &Path) -> Result<BlogContext> {
         if !is_blog_directory(base_path) {
             bail!("The current directory is not a mublog environment.");
         }
-        Ok(BuildContext {
+        Ok(BlogContext {
             posts: vec![],
-            blog_dir: base_path.to_path_buf(),
+            config_file: base_path.join("mublog.toml"),
+            base_dir: base_path.to_path_buf(),
             build_dir: base_path.join("build"),
             build_assets_dir: base_path.join("build").join("assets"),
             build_css_dir: base_path.join("build").join("css"),
             build_posts_dir: base_path.join("build").join("posts"),
-            src_assets_dir: base_path.join("assets"),
-            src_css_dir: base_path.join("css"),
-            src_posts_dir: base_path.join("posts"),
+            build_meta_dir: base_path.join("build").join("meta"),
+            assets_dir: base_path.join("assets"),
+            css_dir: base_path.join("css"),
+            posts_dir: base_path.join("posts"),
+            meta_dir: base_path.join("meta"),
         })
     }
 }
@@ -121,72 +126,55 @@ impl StringValidator for CommaListValidator {
 }
 
 pub fn init(target_path: &Path, blog_dir_name: &str) -> anyhow::Result<()> {
+    if is_blog_directory(target_path) {
+        bail!("Can't initialize blog environment in existing blog environment");
+    }
+
     let blog_dir = target_path.join(blog_dir_name);
+    let config_file = blog_dir.join("mublog.toml");
+    let assets_dir = blog_dir.join("assets");
+    let css_dir = blog_dir.join("css");
     let meta_dir = blog_dir.join("meta");
     let posts_dir = blog_dir.join("posts");
-    let assets_dir = blog_dir.join("assets");
-    let patches_dir = blog_dir.join("patches");
-    let css_dir = blog_dir.join("css");
-    let config_path = blog_dir.join("mublog.toml");
 
-    fs::create_dir(blog_dir.as_path())
-        .with_context(|| format!("Failed to create blog directory {blog_dir:?}"))?;
-    fs::create_dir(meta_dir.as_path())
-        .with_context(|| format!("Failed to create directory meta/ in {blog_dir:?}"))?;
-    fs::create_dir(posts_dir.as_path())
-        .with_context(|| format!("Failed to create directory posts/ in {blog_dir:?}"))?;
-    fs::create_dir(assets_dir.as_path())
-        .with_context(|| format!("Failed to create directory assets/ in {blog_dir:?}"))?;
-    fs::create_dir(css_dir.as_path())
-        .with_context(|| format!("Failed to create directory css/ in {blog_dir:?}"))?;
-    fs::create_dir(patches_dir.as_path())
-        .with_context(|| format!("Failed to create directory patches/ in {blog_dir:?}"))?;
-
-    let meta_resources = embedded_resources::get_resources("meta")
-        .context("Failed to extract resources from embedded directory 'meta'")?;
-    embedded_resources::write_resources(meta_resources, meta_dir.as_path())
-        .context("Failed to write resources to disk")?;
+    fs::create_dir(blog_dir.clone()).context("Failed to create blog directory")?;
+    fs::create_dir(assets_dir.clone()).context("Failed to create blog/assets directory")?;
+    fs::create_dir(css_dir.clone()).context("Failed to create blog/css/ directory")?;
+    fs::create_dir(meta_dir.clone()).context("Failed to create blog/meta directory")?;
+    fs::create_dir(posts_dir.clone()).context("Failed to create blog/posts directory")?;
 
     let assets_resources = embedded_resources::get_resources("assets")
         .context("Failed to extract resources from embedded directory 'assets'")?;
-    embedded_resources::write_resources(assets_resources, assets_dir.as_path())?;
-
-    let posts_resources = embedded_resources::get_resources("posts")
-        .context("Failed to extract resources from embedded directory 'posts'")?;
-    embedded_resources::write_resources(posts_resources, posts_dir.as_path())?;
+    embedded_resources::write_resources(assets_resources, &assets_dir)?;
 
     let css_resources = embedded_resources::get_resources("css")
         .context("Failed to extract resources from embedded directory 'css'")?;
-    embedded_resources::write_resources(css_resources, css_dir.as_path())?;
+    embedded_resources::write_resources(css_resources, &css_dir)?;
 
-    let patches_resources = embedded_resources::get_resources("patches")
-        .context("Failed to extract resources from embedded directory 'patches'")?;
-    embedded_resources::write_resources(patches_resources, patches_dir.as_path())?;
+    let meta_resources = embedded_resources::get_resources("meta")
+        .context("Failed to extract resources from embedded directory 'meta'")?;
+    embedded_resources::write_resources(meta_resources, &meta_dir)
+        .context("Failed to write resources to disk")?;
+
+    let posts_resources = embedded_resources::get_resources("posts")
+        .context("Failed to extract resources from embedded directory 'posts'")?;
+    embedded_resources::write_resources(posts_resources, &posts_dir)?;
 
     let config_file_resource = embedded_resources::get_resource_file("mublog.toml")
         .context("Failed to extract config file from embedded resources.")?;
-    embedded_resources::write_resource_file(config_file_resource, config_path.as_path())?;
+    embedded_resources::write_resource_file(config_file_resource, &config_file)?;
 
     Ok(())
 }
 
 pub fn build(path: &Path) -> anyhow::Result<()> {
-    let mut context =
-        BuildContext::from_path(path).context("Failed to initialize build context")?;
-
     // TODO: Introduce some sort of context that gives access to posts, pages, plugins etc to make accessing things more convinient
     // TODO: Move setup of build environment into separate function.
     // TODO: If setup of build env fails, immediately propagate the error, and abort.
     // TODO: Maybe have some sort of build-context?
 
-    // Possible pipeline (pseudocode)
-    // 1. setup_build_config(path)?; // Defines what plugins are enabled etc
-    // 2. prepare_build_env(path)?;  // Creates build dir/subdirs
-    // MAYBE NOT NEEDED: 3. prepare_build();           // Processes the files as described in the config (enabling of features, patching etc). Also copy files.
-    // 3. run_build();               // Start markdown to html conversion process with the configuration params set before
-    // 4. run_cleanup();           // Not sure if needed yet
+    let mut context = BlogContext::from_path(path).context("Failed to initialize build context")?;
 
-    // let build_post_dir = build_dir.join("posts");
     setup_build_config(&context).context("Failed to configure build environment")?;
     prepare_build_env(&mut context).context("Failed to prepare build environment")?;
     start_build(context).context("Failed to build blog")?;
@@ -195,7 +183,7 @@ pub fn build(path: &Path) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn start_build(context: BuildContext) -> Result<()> {
+fn start_build(context: BlogContext) -> Result<()> {
     // Get a vector of all posts in the given directory
     for post in context.posts {
         let filename =
@@ -219,25 +207,25 @@ fn start_build(context: BuildContext) -> Result<()> {
     Ok(())
 }
 
-fn setup_build_config(context: &BuildContext) -> Result<()> {
+fn setup_build_config(context: &BlogContext) -> Result<()> {
     // TODO: Read config from mublog.toml, and specify what plugins to enable etc
     println!("Configuring build ...");
     Ok(())
 }
 
-fn prepare_build_env(context: &mut BuildContext) -> Result<()> {
+fn prepare_build_env(context: &mut BlogContext) -> Result<()> {
     // Delete previous build environment, if present
     if let Ok(_) = fs::metadata(context.build_dir.as_path()) {
         fs::remove_dir_all(context.build_dir.as_path())
             .context("Failed to remove existing build environment.")?;
     }
     // Check source directories exist
-    utils::is_valid_dir(&context.src_assets_dir)
-        .context("Assets directory not found or inaccessible.")?;
-    utils::is_valid_dir(&context.src_css_dir)
-        .context("CSS directory not found or inaccessible.")?;
-    utils::is_valid_dir(&context.src_posts_dir)
-        .context("Posts directory not found or inaccessible.")?;
+    utils::is_valid_dir(&context.assets_dir)
+        .context("Assets directory could not be found or is inaccessible.")?;
+    utils::is_valid_dir(&context.css_dir)
+        .context("CSS directory could not be found or is inaccessible.")?;
+    utils::is_valid_dir(&context.posts_dir)
+        .context("Posts directory could not be found or is inaccessible.")?;
 
     // Setup build directory and subdirectories
     fs::create_dir(context.build_dir.as_path())
@@ -249,16 +237,12 @@ fn prepare_build_env(context: &mut BuildContext) -> Result<()> {
     fs::create_dir(context.build_assets_dir.as_path())
         .with_context(|| format!("Failed to create directory {:?}", context.build_assets_dir))?;
 
-    context.posts = post::get_posts(&context.src_posts_dir);
+    context.posts = post::get_posts(&context.posts_dir);
     Ok(())
 }
 
 pub fn info(path: &Path) -> anyhow::Result<()> {
-    if !is_blog_directory(path) {
-        bail!("The current directory is not a mublog environment.");
-    }
-    let posts_dir = path.join("posts");
-    let post_dir_entries = WalkDir::new(posts_dir);
+    let context = BlogContext::from_path(path).context("Failed to initialize info context")?;
 
     let title_alignment = 30;
     let date_alignment = 12;
@@ -274,54 +258,45 @@ pub fn info(path: &Path) -> anyhow::Result<()> {
         date_alignment = date_alignment,
         draft_alignment = draft_alignment,
     );
+
     // Print separator line
     println!(
         "{}",
         "—".repeat(title_alignment + date_alignment + draft_alignment + 4)
     );
-    let mut info = BlogInfo::new(0, 0);
-    for entry in post_dir_entries
-        .into_iter()
-        .filter_map(|f| f.ok().filter(|f| f.file_type().is_file()))
-    {
-        let path = entry.path();
-        let filename = entry.file_name();
-        let data = fs::read_to_string(path)
-            .with_context(|| format!("Failed to read post {filename:?} from disk."))?;
 
-        if let Ok(post) = post::parse_from_string(data) {
-            if post.header.draft {
-                info.draft_posts += 1;
-            } else {
-                info.active_posts += 1;
-            }
-            // Print row of data
-            println!(
-                "{0: <title_alignment$}  {1: >date_alignment$}  {2: >draft_alignment$}",
-                post.header.title.trunc_with_dots(title_alignment),
-                post.header.date.to_string(),
-                post.header.draft.to_string(),
-                title_alignment = title_alignment,
-                date_alignment = date_alignment,
-                draft_alignment = draft_alignment,
-            );
-        }
+    let posts = post::get_posts(&context.posts_dir);
+    let draft_post_count = posts.iter().filter(|post| post.header.draft).count();
+    let finalized_post_count = posts.iter().filter(|post| !post.header.draft).count();
+
+    for post in posts {
+        println!(
+            "{0: <title_alignment$}  {1: >date_alignment$}  {2: >draft_alignment$}",
+            post.header.title.trunc_with_dots(title_alignment),
+            post.header.date.to_string(),
+            post.header.draft.to_string(),
+            title_alignment = title_alignment,
+            date_alignment = date_alignment,
+            draft_alignment = draft_alignment,
+        );
     }
+
     // Print general statistics
     println!();
     println!("Statistics:");
     println!(
         "  {} Posts ({} Finalized, {} Drafts)",
-        info.active_posts + info.draft_posts,
-        info.active_posts,
-        info.draft_posts
+        finalized_post_count + draft_post_count,
+        finalized_post_count,
+        draft_post_count
     );
     Ok(())
 }
 
-pub fn create(post_dir: &Path) -> anyhow::Result<()> {
-    let posts_dir = post_dir.join("posts");
+pub fn create(path: &Path) -> anyhow::Result<()> {
+    let context = BlogContext::from_path(path).context("Failed to initialize info context")?;
     let mut post = Post::default();
+
     post.header.title = Text::new("Title")
         .with_placeholder("Default Title")
         .with_default("Default Title")
@@ -357,11 +332,10 @@ pub fn create(post_dir: &Path) -> anyhow::Result<()> {
         })
         .prompt()?;
 
-    println!("{post:#?}");
-    // TODO: use from_path to initialize a context instead, and use vars from context
-    let filename = utils::derive_filename(&post.header.title, ".html", &posts_dir)?;
-    fs::write(posts_dir.join(filename), post::parse_to_string(post))?;
+    let filename = utils::derive_filename(&post.header.title, ".md", &context.posts_dir)?;
+    let contents = post::parse_to_string(post);
 
+    fs::write(&context.posts_dir.join(filename), contents)?;
     Ok(())
 }
 
@@ -372,7 +346,6 @@ fn is_blog_directory(path: &Path) -> bool {
         let meta_dir = path.join("meta");
         let css_dir = path.join("css");
         let assets_dir = path.join("assets");
-        let patches_dir = path.join("patches");
         if blog_meta_file.exists()
             && blog_meta_file.is_file()
             && posts_dir.exists()
@@ -383,8 +356,6 @@ fn is_blog_directory(path: &Path) -> bool {
             && css_dir.is_dir()
             && assets_dir.exists()
             && assets_dir.is_dir()
-            && patches_dir.exists()
-            && patches_dir.is_dir()
         {
             return true;
         }
