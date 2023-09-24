@@ -150,7 +150,7 @@ pub fn parse_to_string(post: Post) -> String {
     post_str
 }
 
-pub fn get_posts(posts_dir: &Path) -> anyhow::Result<Vec<Post>> {
+pub fn get_posts(posts_dir: &Path) -> Vec<Post> {
     let entries = WalkDir::new(posts_dir);
     let mut posts = vec![];
     for entry in entries.into_iter().filter_map(std::result::Result::ok) {
@@ -163,7 +163,7 @@ pub fn get_posts(posts_dir: &Path) -> anyhow::Result<Vec<Post>> {
             }
         }
     }
-    Ok(posts)
+    posts
 }
 
 #[cfg(test)]

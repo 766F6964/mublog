@@ -2,6 +2,7 @@ use crate::embedded_resources;
 use crate::post;
 use crate::post::get_posts;
 use crate::post::Post;
+use crate::utils;
 use crate::utils::TruncWithDots;
 use anyhow::bail;
 use anyhow::Context;
@@ -17,7 +18,9 @@ use inquire::CustomType;
 use inquire::CustomUserError;
 use inquire::Text;
 use std::fs;
+use std::hash::BuildHasherDefault;
 use std::path::Path;
+use std::path::PathBuf;
 use walkdir::WalkDir;
 
 #[derive(Debug, Default)]
@@ -32,6 +35,40 @@ impl BlogInfo {
             active_posts,
             draft_posts,
         }
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct BuildContext {
+    posts: Vec<Post>,
+
+    blog_dir: PathBuf,
+    build_dir: PathBuf,
+    build_posts_dir: PathBuf,
+    build_assets_dir: PathBuf,
+    build_css_dir: PathBuf,
+
+    src_posts_dir: PathBuf,
+    src_assets_dir: PathBuf,
+    src_css_dir: PathBuf,
+}
+
+impl BuildContext {
+    pub fn from_path(base_path: &Path) -> Result<BuildContext> {
+        if !is_blog_directory(base_path) {
+            bail!("The current directory is not a mublog environment.");
+        }
+        Ok(BuildContext {
+            posts: vec![],
+            blog_dir: base_path.to_path_buf(),
+            build_dir: base_path.join("build"),
+            build_assets_dir: base_path.join("build").join("assets"),
+            build_css_dir: base_path.join("build").join("css"),
+            build_posts_dir: base_path.join("build").join("posts"),
+            src_assets_dir: base_path.join("assets"),
+            src_css_dir: base_path.join("css"),
+            src_posts_dir: base_path.join("posts"),
+        })
     }
 }
 
@@ -134,40 +171,44 @@ pub fn init(target_path: &Path, blog_dir_name: &str) -> anyhow::Result<()> {
 }
 
 pub fn build(path: &Path) -> anyhow::Result<()> {
-    if !is_blog_directory(path) {
-        bail!("The current directory is not a mublog environment.");
-    }
+    let mut context =
+        BuildContext::from_path(path).context("Failed to initialize build context")?;
+
     // TODO: Introduce some sort of context that gives access to posts, pages, plugins etc to make accessing things more convinient
     // TODO: Move setup of build environment into separate function.
     // TODO: If setup of build env fails, immediately propagate the error, and abort.
+    // TODO: Maybe have some sort of build-context?
 
-    // Setup build directory
-    let build_dir = path.join("build");
-    fs::create_dir(build_dir.as_path())
-        .with_context(|| format!("Failed to create build directory {build_dir:?}"))?;
+    // Possible pipeline (pseudocode)
+    // 1. setup_build_config(path)?; // Defines what plugins are enabled etc
+    // 2. prepare_build_env(path)?;  // Creates build dir/subdirs
+    // MAYBE NOT NEEDED: 3. prepare_build();           // Processes the files as described in the config (enabling of features, patching etc). Also copy files.
+    // 3. run_build();               // Start markdown to html conversion process with the configuration params set before
+    // 4. run_cleanup();           // Not sure if needed yet
 
-    // Create subdirectories in build dir
-    let posts_dir = build_dir.as_path().join("posts");
-    let assets_dir = build_dir.as_path().join("assets");
-    let css_dir = build_dir.as_path().join("css");
+    // let build_post_dir = build_dir.join("posts");
+    setup_build_config(&context).context("Failed to configure build environment")?;
+    prepare_build_env(&mut context).context("Failed to prepare build environment")?;
+    start_build(context).context("Failed to build blog")?;
 
-    fs::create_dir(posts_dir.as_path())
-        .with_context(|| format!("Failed to create build/posts directory {posts_dir:?}"))?;
-    fs::create_dir(assets_dir.as_path())
-        .with_context(|| format!("Failed to create build/assets directory {assets_dir:?}"))?;
-    fs::create_dir(css_dir.as_path())
-        .with_context(|| format!("Failed to create build/css directory {css_dir:?}"))?;
+    println!("Build process completed.");
+    Ok(())
+}
 
+fn start_build(context: BuildContext) -> Result<()> {
     // Get a vector of all posts in the given directory
-    let posts_dir = path.join("posts");
-    for post in get_posts(&posts_dir)? {
-        let build_post_dir = build_dir.join("posts");
-        match post.header.title.derive_unique_filename(&posts_dir) {
+    for post in context.posts {
+        let filename =
+            utils::derive_filename(&post.header.title, ".html", &context.build_posts_dir);
+        match filename {
             Ok(filename) => {
                 // TODO: The conversion process should be in a separate function, to configure conversion process
                 let content_html = markdown::to_html(&post.content);
                 let html_filename = filename.replace(".md", ".html");
-                _ = fs::write(build_post_dir.join(html_filename).as_path(), content_html);
+                _ = fs::write(
+                    context.build_posts_dir.join(html_filename).as_path(),
+                    content_html,
+                )?;
                 println!("Converted post '{}' to HTML.", post.header.title);
             }
             Err(e) => {
@@ -175,7 +216,40 @@ pub fn build(path: &Path) -> anyhow::Result<()> {
             }
         };
     }
-    println!("Build process completed.");
+    Ok(())
+}
+
+fn setup_build_config(context: &BuildContext) -> Result<()> {
+    // TODO: Read config from mublog.toml, and specify what plugins to enable etc
+    println!("Configuring build ...");
+    Ok(())
+}
+
+fn prepare_build_env(context: &mut BuildContext) -> Result<()> {
+    // Delete previous build environment, if present
+    if let Ok(_) = fs::metadata(context.build_dir.as_path()) {
+        fs::remove_dir_all(context.build_dir.as_path())
+            .context("Failed to remove existing build environment.")?;
+    }
+    // Check source directories exist
+    utils::is_valid_dir(&context.src_assets_dir)
+        .context("Assets directory not found or inaccessible.")?;
+    utils::is_valid_dir(&context.src_css_dir)
+        .context("CSS directory not found or inaccessible.")?;
+    utils::is_valid_dir(&context.src_posts_dir)
+        .context("Posts directory not found or inaccessible.")?;
+
+    // Setup build directory and subdirectories
+    fs::create_dir(context.build_dir.as_path())
+        .with_context(|| format!("Failed to create directory {:?}", context.build_dir))?;
+    fs::create_dir(context.build_posts_dir.as_path())
+        .with_context(|| format!("Failed to create directory {:?}", context.build_posts_dir))?;
+    fs::create_dir(context.build_css_dir.as_path())
+        .with_context(|| format!("Failed to create directory {:?}", context.build_css_dir))?;
+    fs::create_dir(context.build_assets_dir.as_path())
+        .with_context(|| format!("Failed to create directory {:?}", context.build_assets_dir))?;
+
+    context.posts = post::get_posts(&context.src_posts_dir);
     Ok(())
 }
 
@@ -284,11 +358,8 @@ pub fn create(post_dir: &Path) -> anyhow::Result<()> {
         .prompt()?;
 
     println!("{post:#?}");
-
-    let filename = post
-        .header
-        .title
-        .derive_unique_filename(posts_dir.as_path())?;
+    // TODO: use from_path to initialize a context instead, and use vars from context
+    let filename = utils::derive_filename(&post.header.title, ".html", &posts_dir)?;
     fs::write(posts_dir.join(filename), post::parse_to_string(post))?;
 
     Ok(())
@@ -319,21 +390,4 @@ fn is_blog_directory(path: &Path) -> bool {
         }
     }
     false
-}
-
-fn posts_from_directory(posts_dir: &Path) -> Result<Vec<Post>> {
-    println!("Scanning for existing posts ...");
-
-    let post_dir_entries = WalkDir::new(posts_dir);
-
-    for entry in post_dir_entries
-        .into_iter()
-        .filter_map(|f| f.ok().filter(|f| f.file_type().is_file()))
-    {
-        let path = entry.path();
-        let filename = entry.file_name();
-        let _data = fs::read_to_string(path)
-            .with_context(|| format!("Failed to read post {filename:?} from disk."))?;
-    }
-    Ok(vec![])
 }
