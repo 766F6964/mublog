@@ -17,10 +17,9 @@ use inquire::CustomType;
 use inquire::CustomUserError;
 use inquire::Text;
 use std::fs;
-use std::hash::BuildHasherDefault;
+
 use std::path::Path;
 use std::path::PathBuf;
-use walkdir::WalkDir;
 
 #[derive(Debug, Default)]
 struct BlogInfo {
@@ -56,11 +55,11 @@ pub struct BlogContext {
 }
 
 impl BlogContext {
-    pub fn from_path(base_path: &Path) -> Result<BlogContext> {
+    pub fn from_path(base_path: &Path) -> Result<Self> {
         if !is_blog_directory(base_path) {
             bail!("The current directory is not a mublog environment.");
         }
-        Ok(BlogContext {
+        Ok(Self {
             posts: vec![],
             config_file: base_path.join("mublog.toml"),
             base_dir: base_path.to_path_buf(),
@@ -137,7 +136,7 @@ pub fn init(target_path: &Path, blog_dir_name: &str) -> anyhow::Result<()> {
     let meta_dir = blog_dir.join("meta");
     let posts_dir = blog_dir.join("posts");
 
-    fs::create_dir(blog_dir.clone()).context("Failed to create blog directory")?;
+    fs::create_dir(blog_dir).context("Failed to create blog directory")?;
     fs::create_dir(assets_dir.clone()).context("Failed to create blog/assets directory")?;
     fs::create_dir(css_dir.clone()).context("Failed to create blog/css/ directory")?;
     fs::create_dir(meta_dir.clone()).context("Failed to create blog/meta directory")?;
@@ -168,11 +167,6 @@ pub fn init(target_path: &Path, blog_dir_name: &str) -> anyhow::Result<()> {
 }
 
 pub fn build(path: &Path) -> anyhow::Result<()> {
-    // TODO: Introduce some sort of context that gives access to posts, pages, plugins etc to make accessing things more convinient
-    // TODO: Move setup of build environment into separate function.
-    // TODO: If setup of build env fails, immediately propagate the error, and abort.
-    // TODO: Maybe have some sort of build-context?
-
     let mut context = BlogContext::from_path(path).context("Failed to initialize build context")?;
 
     setup_build_config(&context).context("Failed to configure build environment")?;
@@ -193,13 +187,13 @@ fn start_build(context: BlogContext) -> Result<()> {
                 // TODO: The conversion process should be in a separate function, to configure conversion process
                 let content_html = markdown::to_html(&post.content);
                 let html_filename = filename.replace(".md", ".html");
-                _ = fs::write(
+                fs::write(
                     context.build_posts_dir.join(html_filename).as_path(),
                     content_html,
                 )?;
                 println!("Converted post '{}' to HTML.", post.header.title);
             }
-            Err(e) => {
+            Err(_e) => {
                 bail!("Failed to convert post file: '{}'", post.header.title);
             }
         };
@@ -207,7 +201,7 @@ fn start_build(context: BlogContext) -> Result<()> {
     Ok(())
 }
 
-fn setup_build_config(context: &BlogContext) -> Result<()> {
+fn setup_build_config(_context: &BlogContext) -> Result<()> {
     // TODO: Read config from mublog.toml, and specify what plugins to enable etc
     println!("Configuring build ...");
     Ok(())
@@ -215,7 +209,7 @@ fn setup_build_config(context: &BlogContext) -> Result<()> {
 
 fn prepare_build_env(context: &mut BlogContext) -> Result<()> {
     // Delete previous build environment, if present
-    if let Ok(_) = fs::metadata(context.build_dir.as_path()) {
+    if fs::metadata(context.build_dir.as_path()).is_ok() {
         fs::remove_dir_all(context.build_dir.as_path())
             .context("Failed to remove existing build environment.")?;
     }
@@ -335,7 +329,7 @@ pub fn create(path: &Path) -> anyhow::Result<()> {
     let filename = utils::derive_filename(&post.header.title, ".md", &context.posts_dir)?;
     let contents = post::parse_to_string(post);
 
-    fs::write(&context.posts_dir.join(filename), contents)?;
+    fs::write(context.posts_dir.join(filename), contents)?;
     Ok(())
 }
 

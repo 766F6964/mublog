@@ -28,7 +28,7 @@ pub fn derive_filename(title: &str, ext: &str, posts_dir: &Path) -> anyhow::Resu
     }
 
     for i in 0..=128 {
-        let suffix = if i == 0 { format!("") } else { format!("{i}") };
+        let suffix = if i == 0 { String::new() } else { format!("{i}") };
         let suffixed_filename = format!("{stripped_title}{suffix}{ext}");
         let suffixed_file_path = posts_dir.join(&suffixed_filename);
 

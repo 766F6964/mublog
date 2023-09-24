@@ -1,15 +1,14 @@
-use anyhow::{anyhow, bail, Context};
+use anyhow::anyhow;
+use anyhow::bail;
+use anyhow::Context;
 use chrono::NaiveDate;
+use std::borrow::ToOwned;
+use std::collections;
+use std::collections::HashSet;
+use std::ffi::OsStr;
+use std::fs;
+use std::path::Path;
 use walkdir::WalkDir;
-
-use std::io::prelude::*;
-use std::{
-    borrow::ToOwned,
-    collections::{self, HashSet},
-    ffi::OsStr,
-    fs,
-    path::Path,
-};
 
 #[derive(Debug, Default)]
 pub struct Post {
