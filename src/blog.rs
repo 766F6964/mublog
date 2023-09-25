@@ -185,22 +185,32 @@ fn start_build(context: BlogContext) -> Result<()> {
     // Get a vector of all posts in the given directory
     for post in context.posts {
         let filename =
-            utils::derive_filename(&post.header.title, ".html", &context.build_posts_dir);
-        match filename {
-            Ok(filename) => {
-                // TODO: The conversion process should be in a separate function, to configure conversion process
-                let content_html = markdown::to_html(&post.content);
-                let html_filename = filename.replace(".md", ".html");
-                fs::write(
-                    context.build_posts_dir.join(html_filename).as_path(),
-                    content_html,
-                )?;
-                println!("Converted post '{}' to HTML.", post.header.title);
-            }
-            Err(_e) => {
-                bail!("Failed to convert post file: '{}'", post.header.title);
-            }
+            utils::derive_filename(&post.header.title, ".html", &context.build_posts_dir)
+                .context("Failed to derive a unique filename for page.")?;
+
+        let content_html = markdown::to_html(&post.content);
+        let html_filename = filename.replace(".md", ".html");
+        fs::write(
+            context.build_posts_dir.join(html_filename).as_path(),
+            content_html,
+        )?;
+        println!("Successfully built post '{}'", post.header.title);
+    }
+    for page in context.pages {
+        let page_filename = if page.index == true {
+            utils::derive_filename("index", ".html", &context.base_dir)
+                .context("Failed to derive a unique filename for page.")?
+        } else {
+            utils::derive_filename(&page.title, ".html", &context.base_dir)
+                .context("Failed to derive a unique filename for page.")?
         };
+        let content_html = markdown::to_html(&page.content);
+        let html_filename = page_filename.replace(".md", ".html");
+        fs::write(
+            context.build_dir.join(html_filename).as_path(),
+            content_html,
+        )?;
+        println!("Successfully built page '{}'", page.title);
     }
     Ok(())
 }
@@ -236,6 +246,7 @@ fn prepare_build_env(context: &mut BlogContext) -> Result<()> {
         .with_context(|| format!("Failed to create directory {:?}", context.build_assets_dir))?;
 
     context.posts = post::get_posts(&context.posts_dir);
+    context.pages = page::get_pages(&context.base_dir);
     Ok(())
 }
 
