@@ -11,9 +11,9 @@ use std::env;
 mod blog;
 mod cli;
 mod embedded_resources;
+mod page;
 mod post;
 mod utils;
-
 // TODO: Add blog config options such as enabled plugins, author name, copyright year etc
 
 fn main() -> anyhow::Result<()> {

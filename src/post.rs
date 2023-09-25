@@ -22,6 +22,7 @@ impl Post {
     }
 }
 
+// TODO: Maybe Post and PostHeader should be merged into a single struct
 #[derive(Debug, Default)]
 pub struct PostHeader {
     pub title: String,
@@ -31,6 +32,7 @@ pub struct PostHeader {
     pub draft: bool,
 }
 
+// TODO: We might not need a new initializer.false
 impl PostHeader {
     pub fn new(
         date: NaiveDate,
