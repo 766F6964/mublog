@@ -7,10 +7,18 @@ use std::collections::HashSet;
 
 #[derive(Debug, Default)]
 pub struct Page {
-    content: String,
-    draft: bool,
-    index: bool,
-    title: String,
+    pub content: String,
+    pub draft: bool,
+    pub index: bool,
+    pub title: String,
+}
+
+pub fn parse_to_string(page: Page) -> String {
+    let page_str = format!(
+        "---\ntitle: {}\ndraft: {}\nindex: {}\n---\n{}",
+        page.title, page.draft, page.index, page.content
+    );
+    page_str
 }
 
 pub fn parse_from_string(data: String) -> Result<Page> {
@@ -114,12 +122,22 @@ mod test {
     }
 
     #[test]
-    fn parse_page_valid() {
+    fn parse_page_valid_with_content() {
         let exp = "---\ntitle: my page\ndraft: false\nindex: true\n---\nhello".to_owned();
         let res = parse_from_string(exp).expect("Page should be valid");
         assert_eq!(res.title, "my page");
         assert_eq!(res.draft, false);
         assert_eq!(res.index, true);
         assert_eq!(res.content, "hello");
+    }
+
+    #[test]
+    fn parse_page_valid_without_content() {
+        let exp = "---\ntitle: my page\ndraft: false\nindex: true\n---\n".to_owned();
+        let res = parse_from_string(exp).expect("Page should be valid");
+        assert_eq!(res.title, "my page");
+        assert_eq!(res.draft, false);
+        assert_eq!(res.index, true);
+        assert_eq!(res.content, String::new());
     }
 }

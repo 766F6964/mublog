@@ -1,4 +1,6 @@
 use crate::embedded_resources;
+use crate::page;
+use crate::page::Page;
 use crate::post;
 use crate::post::Post;
 use crate::utils;
@@ -39,6 +41,7 @@ impl BlogInfo {
 #[derive(Debug, Default)]
 pub struct BlogContext {
     posts: Vec<Post>,
+    pages: Vec<Page>,
     config_file: PathBuf,
     base_dir: PathBuf,
 
@@ -61,6 +64,7 @@ impl BlogContext {
         }
         Ok(Self {
             posts: vec![],
+            pages: vec![],
             config_file: base_path.join("mublog.toml"),
             base_dir: base_path.to_path_buf(),
             build_dir: base_path.join("build"),
@@ -287,8 +291,8 @@ pub fn info(path: &Path) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub fn create(path: &Path) -> anyhow::Result<()> {
-    let context = BlogContext::from_path(path).context("Failed to initialize info context")?;
+pub fn create_post(path: &Path) -> anyhow::Result<()> {
+    let context = BlogContext::from_path(path).context("Failed to initialize context")?;
     let mut post = Post::default();
 
     post.header.title = Text::new("Title")
@@ -333,6 +337,41 @@ pub fn create(path: &Path) -> anyhow::Result<()> {
     Ok(())
 }
 
+pub fn create_page(path: &Path) -> anyhow::Result<()> {
+    let context = BlogContext::from_path(path).context("Failed to initialize context")?;
+    let mut page = Page::default();
+
+    page.title = Text::new("Page Title")
+        .with_placeholder("Default Title")
+        .with_default("Default Title")
+        .with_validator(EmptyOrWhitespaceValidator::default())
+        .prompt()?;
+    page.draft = Confirm::new("Draft")
+        .with_default(false)
+        .with_placeholder("Specify if the post is a draft (y/n)")
+        .with_parser(&|ans| match ans {
+            "y" | "yes" => Ok(true),
+            "n" | "no" => Ok(false),
+            _ => Err(()),
+        })
+        .prompt()?;
+    page.index = Confirm::new("Is Index Page")
+        .with_default(false)
+        .with_placeholder("Specify if page is landing page (y/n)")
+        .with_parser(&|ans| match ans {
+            "y" | "yes" => Ok(true),
+            "n" | "no" => Ok(false),
+            _ => Err(()),
+        })
+        .prompt()?;
+
+    let filename = utils::derive_filename(&page.title, ".md", &context.base_dir)?;
+    let contents = page::parse_to_string(page);
+
+    fs::write(context.base_dir.join(filename), contents)?;
+
+    Ok(())
+}
 fn is_blog_directory(path: &Path) -> bool {
     if path.is_dir() {
         let blog_meta_file = path.join("mublog.toml");
