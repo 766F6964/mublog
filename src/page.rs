@@ -4,6 +4,10 @@ use anyhow::Context;
 use anyhow::Result;
 use std::collections;
 use std::collections::HashSet;
+use std::ffi::OsStr;
+use std::fs;
+use std::path::Path;
+use walkdir::WalkDir;
 
 #[derive(Debug, Default)]
 pub struct Page {
@@ -13,7 +17,23 @@ pub struct Page {
     pub title: String,
 }
 
-pub fn parse_to_string(page: Page) -> String {
+pub fn get_pages(base_dir: &Path) -> Vec<Page> {
+    let entries = WalkDir::new(base_dir);
+    let mut pages = vec![];
+    for entry in entries.into_iter().filter_map(std::result::Result::ok) {
+        let page_path = entry.path();
+        if page_path.extension().and_then(OsStr::to_str) == Some("md") {
+            if let Ok(contents) = fs::read_to_string(page_path) {
+                if let Ok(page) = parse_from_string(&contents) {
+                    pages.push(page);
+                }
+            }
+        }
+    }
+    pages
+}
+
+pub fn parse_to_string(page: &Page) -> String {
     let page_str = format!(
         "---\ntitle: {}\ndraft: {}\nindex: {}\n---\n{}",
         page.title, page.draft, page.index, page.content
@@ -21,7 +41,7 @@ pub fn parse_to_string(page: Page) -> String {
     page_str
 }
 
-pub fn parse_from_string(data: String) -> Result<Page> {
+pub fn parse_from_string(data: &str) -> Result<Page> {
     let lines: Vec<String> = data.lines().map(ToOwned::to_owned).collect();
 
     // Check minimal length required to contain header
@@ -95,35 +115,35 @@ mod test {
 
     #[test]
     fn parse_page_header_incomplete() {
-        let exp = "---\ntitle: test title\n---".to_owned();
+        let exp = "---\ntitle: test title\n---";
         let res = parse_from_string(exp).unwrap_err().to_string();
         assert_eq!(res, "Page header is incomplete");
     }
 
     #[test]
     fn parse_page_header_missing_start_marker() {
-        let exp = "title: test\ndraft: false\nindex: false\n---\nHello World".to_owned();
+        let exp = "title: test\ndraft: false\nindex: false\n---\nHello World";
         let res = parse_from_string(exp).unwrap_err().to_string();
         assert_eq!(res, "Page start marker missing or formatted incorrectly");
     }
 
     #[test]
     fn parse_page_header_missing_end_marker() {
-        let exp = "---\ntitle: test\ndraft: false\nindex: false\nHello World".to_owned();
+        let exp = "---\ntitle: test\ndraft: false\nindex: false\nHello World";
         let res = parse_from_string(exp).unwrap_err().to_string();
         assert_eq!(res, "Page end marker missing or formatted incorrectly");
     }
 
     #[test]
     fn parse_page_header_duplicate_fields() {
-        let exp = "---\ntitle: test\ndraft: false\ndraft: true\n---\nHello World".to_owned();
+        let exp = "---\ntitle: test\ndraft: false\ndraft: true\n---\nHello World";
         let res = parse_from_string(exp).unwrap_err().to_string();
         assert_eq!(res, "Duplicate page header field found: 'draft'");
     }
 
     #[test]
     fn parse_page_valid_with_content() {
-        let exp = "---\ntitle: my page\ndraft: false\nindex: true\n---\nhello".to_owned();
+        let exp = "---\ntitle: my page\ndraft: false\nindex: true\n---\nhello";
         let res = parse_from_string(exp).expect("Page should be valid");
         assert_eq!(res.title, "my page");
         assert_eq!(res.draft, false);
@@ -133,7 +153,7 @@ mod test {
 
     #[test]
     fn parse_page_valid_without_content() {
-        let exp = "---\ntitle: my page\ndraft: false\nindex: true\n---\n".to_owned();
+        let exp = "---\ntitle: my page\ndraft: false\nindex: true\n---\n";
         let res = parse_from_string(exp).expect("Page should be valid");
         assert_eq!(res.title, "my page");
         assert_eq!(res.draft, false);

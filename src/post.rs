@@ -16,12 +16,6 @@ pub struct Post {
     pub header: PostHeader,
 }
 
-impl Post {
-    pub fn new(header: PostHeader, content: String) -> Self {
-        Self { content, header }
-    }
-}
-
 // TODO: Maybe Post and PostHeader should be merged into a single struct
 #[derive(Debug, Default)]
 pub struct PostHeader {
@@ -30,25 +24,6 @@ pub struct PostHeader {
     pub date: NaiveDate,
     pub tags: Vec<String>,
     pub draft: bool,
-}
-
-// TODO: We might not need a new initializer.false
-impl PostHeader {
-    pub fn new(
-        date: NaiveDate,
-        description: String,
-        draft: bool,
-        tags: Vec<String>,
-        title: String,
-    ) -> Self {
-        Self {
-            title,
-            description,
-            date,
-            tags,
-            draft,
-        }
-    }
 }
 
 pub fn parse_title(mut title: &str) -> anyhow::Result<String> {
@@ -91,7 +66,7 @@ pub fn parse_draft(draft: &str) -> anyhow::Result<bool> {
         .map_err(|_| anyhow!("Draft field must be either 'true' or 'false'."))
 }
 
-pub fn parse_from_string(data: String) -> anyhow::Result<Post> {
+pub fn parse_from_string(data: &str) -> anyhow::Result<Post> {
     let lines: Vec<String> = data.lines().map(ToOwned::to_owned).collect();
 
     // Check minimal length required to contain header
@@ -138,7 +113,7 @@ pub fn parse_from_string(data: String) -> anyhow::Result<Post> {
     Ok(post)
 }
 
-pub fn parse_to_string(post: Post) -> String {
+pub fn parse_to_string(post: &Post) -> String {
     let post_str = format!(
         "---\ntitle: {}\ndescription: {}\ndate: {}\ntags: {}\ndraft: {}\n---\n{}",
         post.header.title,
@@ -158,7 +133,7 @@ pub fn get_posts(posts_dir: &Path) -> Vec<Post> {
         let post_path = entry.path();
         if post_path.extension().and_then(OsStr::to_str) == Some("md") {
             if let Ok(contents) = fs::read_to_string(post_path) {
-                if let Ok(post) = parse_from_string(contents) {
+                if let Ok(post) = parse_from_string(&contents) {
                     posts.push(post);
                 }
             }
@@ -166,7 +141,6 @@ pub fn get_posts(posts_dir: &Path) -> Vec<Post> {
     }
     posts
 }
-
 #[cfg(test)]
 mod test {
     use super::*;
@@ -174,14 +148,14 @@ mod test {
     #[test]
     fn parse_header_incomplete() {
         let expected = "---\ntitle: test title\ndescription: test description\n---".to_owned();
-        let res = parse_from_string(expected).unwrap_err();
+        let res = parse_from_string(&expected).unwrap_err();
         assert_eq!(res.to_string(), "File contains an incomplete header.");
     }
 
     #[test]
     fn parse_header_duplicate_fields() {
         let expected = "---\ntitle: test\ndescription: dulicate1\ntags: test,test2,test3\ndescription: duplicate2\ndraft: false\n---\nSome more text".to_owned();
-        let res = parse_from_string(expected).unwrap_err();
+        let res = parse_from_string(&expected).unwrap_err();
         assert_eq!(
             res.to_string(),
             "Failed to parse header, duplicate field found: description"
@@ -191,7 +165,7 @@ mod test {
     #[test]
     fn parse_header_missing_start_marker() {
         let expected = "title: test title\ndescription: test description\ntags: test,test2,test3\ndate: 2023-01-23\ndraft: false\n---\nmore data\nsome more text".to_owned();
-        let res = parse_from_string(expected).unwrap_err();
+        let res = parse_from_string(&expected).unwrap_err();
         assert_eq!(
             res.to_string(),
             "Starting marker missing or formatted incorrectly"
@@ -201,7 +175,7 @@ mod test {
     #[test]
     fn parse_header_missing_end_marker() {
         let expected = "---\ntitle: test title\ndescription: test description\ntags: test,test2,test3\ndate: 2023-01-23\ndraft: false\nsome more data\ngoes here\n".to_owned();
-        let res = parse_from_string(expected).unwrap_err();
+        let res = parse_from_string(&expected).unwrap_err();
         assert_eq!(
             res.to_string(),
             "Ending marker missing or formatted incorrectly"
@@ -211,14 +185,14 @@ mod test {
     #[test]
     fn parse_header_unsupported_field() {
         let expected = "---\ntitle: test title\ndescription: test description\nunsupported: test,test2,test3\ndate: 2023-01-23\ndraft: false\n---\nsome more data".to_owned();
-        let res = parse_from_string(expected).unwrap_err();
+        let res = parse_from_string(&expected).unwrap_err();
         assert_eq!(res.to_string(), "Unsupported header field: unsupported");
     }
 
     #[test]
     fn parse_valid_with_content() {
         let expected = "---\ntitle: test title\ndescription: test description\ntags: test,test2,test3\ndate: 2023-01-23\ndraft: false\n---\nSome Text\nMore Text".to_owned();
-        let res = parse_from_string(expected).expect("Header should be valid"); // TODO: Validate parsed fields properly
+        let res = parse_from_string(&expected).expect("Header should be valid"); // TODO: Validate parsed fields properly
         assert_eq!(res.header.title, "test title");
         assert_eq!(res.header.description, "test description");
         assert_eq!(res.header.tags, vec!["test", "test2", "test3"]);
@@ -234,7 +208,7 @@ mod test {
     #[test]
     fn parse_valid_no_content() {
         let expected = "---\ntitle: test title\ndescription: test description\ntags: test,test2,test3\ndate: 2023-01-23\ndraft: false\n---".to_owned();
-        let res = parse_from_string(expected).expect("Header should be valid"); // TODO: Validate parsed fields properly
+        let res = parse_from_string(&expected).expect("Header should be valid"); // TODO: Validate parsed fields properly
         assert_eq!(res.header.title, "test title");
         assert_eq!(res.header.description, "test description");
         assert_eq!(res.header.tags, vec!["test", "test2", "test3"]);

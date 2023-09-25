@@ -245,6 +245,7 @@ pub fn info(path: &Path) -> anyhow::Result<()> {
     let title_alignment = 30;
     let date_alignment = 12;
     let draft_alignment = 12;
+    let page_type_alignment = 12;
 
     // Print header
     println!(
@@ -278,7 +279,35 @@ pub fn info(path: &Path) -> anyhow::Result<()> {
             draft_alignment = draft_alignment,
         );
     }
+    println!();
+    // Print header
+    println!(
+        "{0: <title_alignment$}  {1: >date_alignment$}  {2: >draft_alignment$}",
+        "Page Title".bold(),
+        "Draft".bold(),
+        "Index".bold(),
+        title_alignment = title_alignment,
+        date_alignment = date_alignment,
+        draft_alignment = draft_alignment,
+    );
+    // Print separator line
+    println!(
+        "{}",
+        "—".repeat(title_alignment + page_type_alignment + draft_alignment + 4)
+    );
 
+    let pages = page::get_pages(&context.base_dir);
+    for page in pages {
+        println!(
+            "{0: <title_alignment$}  {1: >date_alignment$}  {2: >draft_alignment$}",
+            page.title.trunc_with_dots(title_alignment),
+            page.draft.to_string(),
+            page.index.to_string(),
+            title_alignment = title_alignment,
+            date_alignment = date_alignment,
+            draft_alignment = draft_alignment,
+        );
+    }
     // Print general statistics
     println!();
     println!("Statistics:");
@@ -331,7 +360,7 @@ pub fn create_post(path: &Path) -> anyhow::Result<()> {
         .prompt()?;
 
     let filename = utils::derive_filename(&post.header.title, ".md", &context.posts_dir)?;
-    let contents = post::parse_to_string(post);
+    let contents = post::parse_to_string(&post);
 
     fs::write(context.posts_dir.join(filename), contents)?;
     Ok(())
@@ -366,7 +395,7 @@ pub fn create_page(path: &Path) -> anyhow::Result<()> {
         .prompt()?;
 
     let filename = utils::derive_filename(&page.title, ".md", &context.base_dir)?;
-    let contents = page::parse_to_string(page);
+    let contents = page::parse_to_string(&page);
 
     fs::write(context.base_dir.join(filename), contents)?;
 
