@@ -308,6 +308,9 @@ pub fn info(path: &Path) -> anyhow::Result<()> {
     );
 
     let pages = page::get_pages(&context.base_dir);
+    let draft_page_count = pages.iter().filter(|page| page.draft).count();
+    let finalized_page_count = pages.iter().filter(|page| !page.draft).count();
+
     for page in pages {
         println!(
             "{0: <title_alignment$}  {1: >date_alignment$}  {2: >draft_alignment$}",
@@ -321,12 +324,22 @@ pub fn info(path: &Path) -> anyhow::Result<()> {
     }
     // Print general statistics
     println!();
-    println!("Statistics:");
+    println!("{}", "Statistics:".bold());
+    println!(
+        "{}",
+        "—".repeat(title_alignment + date_alignment + draft_alignment + 4)
+    );
     println!(
         "  {} Posts ({} Finalized, {} Drafts)",
         finalized_post_count + draft_post_count,
         finalized_post_count,
         draft_post_count
+    );
+    println!(
+        "  {} Pages ({} Finalized, {} Drafts)",
+        finalized_page_count + draft_page_count,
+        finalized_page_count,
+        draft_page_count
     );
     Ok(())
 }
