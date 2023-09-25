@@ -6,14 +6,14 @@ use std::collections;
 use std::collections::HashSet;
 
 #[derive(Debug, Default)]
-struct Page {
+pub struct Page {
     content: String,
     draft: bool,
     index: bool,
     title: String,
 }
 
-pub fn parse_from_string(data: String) -> Result<()> {
+pub fn parse_from_string(data: String) -> Result<Page> {
     let lines: Vec<String> = data.lines().map(ToOwned::to_owned).collect();
 
     // Check minimal length required to contain header
@@ -46,17 +46,17 @@ pub fn parse_from_string(data: String) -> Result<()> {
         }
         match key {
             "draft" => page.draft = parse_draft(value)?,
-            "index" => page.draft = parse_index(value)?,
+            "index" => page.index = parse_index(value)?,
             "title" => page.title = parse_title(value)?,
             _ => bail!("Unsupported page header field: '{key}'"),
         }
     }
 
     // Read remaining content
-    if lines.len() > 3 {
-        page.content = lines[4..].join("\n");
+    if lines.len() > 4 {
+        page.content = lines[5..].join("\n");
     }
-    Ok(())
+    Ok(page)
 }
 
 fn parse_index(index: &str) -> Result<bool> {
@@ -111,5 +111,15 @@ mod test {
         let exp = "---\ntitle: test\ndraft: false\ndraft: true\n---\nHello World".to_owned();
         let res = parse_from_string(exp).unwrap_err().to_string();
         assert_eq!(res, "Duplicate page header field found: 'draft'");
+    }
+
+    #[test]
+    fn parse_page_valid() {
+        let exp = "---\ntitle: my page\ndraft: false\nindex: true\n---\nhello".to_owned();
+        let res = parse_from_string(exp).expect("Page should be valid");
+        assert_eq!(res.title, "my page");
+        assert_eq!(res.draft, false);
+        assert_eq!(res.index, true);
+        assert_eq!(res.content, "hello");
     }
 }
