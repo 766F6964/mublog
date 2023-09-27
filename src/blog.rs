@@ -222,10 +222,7 @@ fn setup_build_config(context: &BlogContext) -> Result<()> {
 
     let config =
         config::parse_config(&context.config_file).context("Failed to parse mublog.conf")?;
-    println!("Blog Author: {}", config.blog_author);
-    println!("Blog Copyright: {}", config.blog_copyright_year);
-    println!("Blog E-Mail: {}", config.blog_email);
-    println!("Blog Features: {:?}", config.features);
+    println!("{config:#?}");
     Ok(())
 }
 

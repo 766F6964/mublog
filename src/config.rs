@@ -1,11 +1,10 @@
 use anyhow::Context;
+use anyhow::Ok;
 use anyhow::Result;
 use serde::Deserialize;
-use std::collections::hash_map::ValuesMut;
 use std::fs;
 use std::path::PathBuf;
 use toml::from_str;
-use toml::map::Map;
 use toml::Table;
 use toml::Value;
 
@@ -22,30 +21,13 @@ pub fn parse_config(config_path: &PathBuf) -> Result<Config> {
     let table: Table = from_str(&cfg_str).context("Failed to parse mublog.conf file")?;
 
     // Parse General Section
-    let cfg_general = table.get("general").context("Table 'general' not found")?;
+    let table = table.get("general").context("Table 'general' not found")?;
 
-    let blog_author = cfg_general
-        .get("blog_author")
-        .context("Field 'blog_author' not found in section 'general'")?
-        .as_str()
-        .context("Field 'blog_author' is not of type string")?
-        .to_owned();
+    let blog_author = get_config_string(&table, "blog_author", "general")?;
+    let blog_copyright_year = get_config_integer(&table, "blog_copyright_year", "general")?;
+    let blog_email = get_config_string(&table, "blog_email", "general")?;
+    let features = get_config_string_array(&table, "features", "general")?;
 
-    let blog_copyright_year = cfg_general
-        .get("blog_copyright_year")
-        .context("Field 'blog_copyright_year' not found in section 'general'")?
-        .as_integer()
-        .context("Field 'blog_copyright_year' is not of type integer")?
-        .to_owned();
-
-    let blog_email = cfg_general
-        .get("blog_email")
-        .context("Field 'blog_email' not found in section 'general'")?
-        .as_str()
-        .context("Field 'blog_email' is not of type string")?
-        .to_owned();
-
-    let features = get_features(&cfg_general)?;
     let cfg = Config {
         blog_author,
         blog_copyright_year,
@@ -56,55 +38,45 @@ pub fn parse_config(config_path: &PathBuf) -> Result<Config> {
     Ok(cfg)
 }
 
-fn get_features(cfg_general: &Value) -> Result<Vec<String>> {
-    cfg_general
-        .get("features")
-        .context("No field 'features' in [general]")?
+fn get_config_string(table: &Value, fieldname: &str, tablename: &str) -> Result<String> {
+    let res = table
+        .get(format!("{fieldname}"))
+        .context(format!(
+            "Field '{fieldname}' not found in table '{tablename}'"
+        ))?
+        .as_str()
+        .context(format!("Field '{fieldname}' is not of type string"))?
+        .to_owned();
+    Ok(res)
+}
+
+fn get_config_integer(table: &Value, fieldname: &str, tablename: &str) -> Result<i64> {
+    let res = table
+        .get(format!("{fieldname}"))
+        .context(format!(
+            "Field '{fieldname}' not found in table '{tablename}'"
+        ))?
+        .as_integer()
+        .context(format!("Field '{fieldname}' is not of type integer"))?
+        .to_owned();
+    Ok(res)
+}
+
+fn get_config_string_array(table: &Value, fieldname: &str, tablename: &str) -> Result<Vec<String>> {
+    table
+        .get(format!("{fieldname}"))
+        .context(format!(
+            "Field '{fieldname}' not found in table '{tablename}'"
+        ))?
         .as_array()
-        .context("Field 'features' is not of type array")?
+        .context(format!("Field '{fieldname}' is not of type array"))?
         .iter()
         .map(|s| {
             Ok(s.as_str()
-                .context("Failed to convert array value to string")?
+                .context(format!(
+                    "Array elements of field '{fieldname}' are not of type string"
+                ))?
                 .to_owned())
         })
         .collect::<anyhow::Result<Vec<String>>>()
-}
-
-// TODO: Add a read_config_string method
-// TODO: Add a read_config_integer method
-
-fn get_blog_author(cfg_general: &toml::Table) -> Result<String> {
-    Ok(cfg_general
-        .get("blog_author")
-        .context("No field 'blog_author' in [general]")?
-        .to_string())
-}
-
-fn get_blog_copyright_year(cfg_general: &toml::Table) -> Result<u32> {
-    Ok(cfg_general
-        .get("blog_copyright_year")
-        .context("No field 'blog_copyright_year' in [general]")?
-        .as_integer()
-        .unwrap() as u32)
-}
-
-fn get_blog_email(cfg_general: &toml::Table) -> Result<String> {
-    Ok(cfg_general
-        .get("blog_email")
-        .context("No field 'blog_email' in [general]")?
-        .as_str()
-        .unwrap()
-        .to_string())
-}
-
-fn get_blog_features(cfg_general: &toml::Table) -> Result<Vec<String>> {
-    Ok(cfg_general
-        .get("features")
-        .context("No field 'features' in [general]")?
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|x| x.as_str().unwrap().to_string())
-        .collect())
 }
