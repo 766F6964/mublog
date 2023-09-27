@@ -1,3 +1,4 @@
+use crate::config;
 use crate::embedded_resources;
 use crate::page;
 use crate::page::Page;
@@ -215,9 +216,16 @@ fn start_build(context: BlogContext) -> Result<()> {
     Ok(())
 }
 
-fn setup_build_config(_context: &BlogContext) -> Result<()> {
+fn setup_build_config(context: &BlogContext) -> Result<()> {
     // TODO: Read config from mublog.toml, and specify what plugins to enable etc
     println!("Configuring build ...");
+
+    let config =
+        config::parse_config(&context.config_file).context("Failed to parse mublog.conf")?;
+    println!("Blog Author: {}", config.blog_author);
+    println!("Blog Copyright: {}", config.blog_copyright_year);
+    println!("Blog E-Mail: {}", config.blog_email);
+    println!("Blog Features: {:?}", config.features);
     Ok(())
 }
 

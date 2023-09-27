@@ -14,6 +14,8 @@ include_dir = "0.7.3"
 walkdir = "2.4.0"
 inquire = { version = "0.6.2", features = ["date", "editor"] }
 markdown = "1.0.0-alpha.14"
+toml = "0.8.1"
+serde = { version = "1.0.188", features = ["derive"] }
 
 [profile.release]
 opt-level = "z"
