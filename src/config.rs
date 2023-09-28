@@ -20,7 +20,7 @@ pub struct Config {
     pub blog_author: String,
     pub blog_copyright_year: i64,
     pub blog_email: String,
-    pub features: Vec<String>,
+    pub features: Vec<Feature>,
 }
 
 pub fn parse_config(config_path: &PathBuf) -> Result<Config> {
@@ -31,10 +31,24 @@ pub fn parse_config(config_path: &PathBuf) -> Result<Config> {
         blog_author: conf_get_string(&document, "general", "blog_author")?,
         blog_copyright_year: conf_get_integer(&document, "general", "blog_copyright_year")?,
         blog_email: conf_get_string(&document, "general", "blog_email")?,
-        features: conf_get_string_array(&document, "general", "features")?,
+        features: conf_get_features(&document)?,
     };
 
     Ok(cfg)
+}
+
+pub fn conf_get_features(doc: &Document) -> anyhow::Result<Vec<Feature>> {
+    Ok(conf_get_string_array(doc, "general", "features")?
+        .iter()
+        .map(|s| {
+            Ok(match s.as_str() {
+                "navbar" => Feature::Navbar,
+                "tags" => Feature::Tags,
+                "postlisting" => Feature::Postlisting,
+                _ => bail!("Invalid feature '{s}'"),
+            })
+        })
+        .collect::<Result<Vec<Feature>>>()?)
 }
 
 pub fn conf_get_string(doc: &Document, table: &str, key: &str) -> anyhow::Result<String> {

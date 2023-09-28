@@ -25,21 +25,6 @@ use std::path::Path;
 use std::path::PathBuf;
 
 #[derive(Debug, Default)]
-struct BlogInfo {
-    active_posts: u32,
-    draft_posts: u32,
-}
-
-impl BlogInfo {
-    fn new(active_posts: u32, draft_posts: u32) -> Self {
-        Self {
-            active_posts,
-            draft_posts,
-        }
-    }
-}
-
-#[derive(Debug, Default)]
 pub struct BlogContext {
     posts: Vec<Post>,
     pages: Vec<Page>,
@@ -198,7 +183,7 @@ fn start_build(context: BlogContext) -> Result<()> {
         println!("Successfully built post '{}'", post.header.title);
     }
     for page in context.pages {
-        let page_filename = if page.index == true {
+        let page_filename = if page.index {
             utils::derive_filename("index", ".html", &context.base_dir)
                 .context("Failed to derive a unique filename for page.")?
         } else {
