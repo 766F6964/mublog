@@ -8,12 +8,19 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use toml_edit::Document;
 
+#[derive(Debug, Deserialize)]
+pub enum Feature {
+    Navbar,
+    Tags,
+    Postlisting,
+}
+
 #[derive(Debug, Default, Deserialize)]
 pub struct Config {
     pub blog_author: String,
     pub blog_copyright_year: i64,
     pub blog_email: String,
-    // general: General,
+    pub features: Vec<String>,
 }
 
 pub fn parse_config(config_path: &PathBuf) -> Result<Config> {
@@ -24,7 +31,7 @@ pub fn parse_config(config_path: &PathBuf) -> Result<Config> {
         blog_author: conf_get_string(&document, "general", "blog_author")?,
         blog_copyright_year: conf_get_integer(&document, "general", "blog_copyright_year")?,
         blog_email: conf_get_string(&document, "general", "blog_email")?,
-        // blog_author: conf_get_string(&document, "general", "blog_author")?,
+        features: conf_get_string_array(&document, "general", "features")?,
     };
 
     Ok(cfg)
@@ -37,6 +44,36 @@ pub fn conf_get_string(doc: &Document, table: &str, key: &str) -> anyhow::Result
                 Some(v) => match v.as_str() {
                     Some(v) => Ok(v.to_owned()),
                     None => bail!("Key '{key}' in table '{table}' is not of type string"),
+                },
+                None => bail!("Config does not contain key '{key}' in table '{table}'"),
+            },
+            None => bail!("Config does not contain table '{table}'"),
+        },
+        None => bail!("Config does not contain table '{table}'"),
+    }
+}
+
+pub fn conf_get_string_array(
+    doc: &Document,
+    table: &str,
+    key: &str,
+) -> anyhow::Result<Vec<String>> {
+    match doc.get(table) {
+        Some(t) => match t.as_table() {
+            Some(t) => match t.get(key) {
+                Some(v) => match v.as_array() {
+                    Some(array) => {
+                        let mut strings = Vec::new();
+                        for element in array {
+                            if !element.is_str() {
+                                bail!("Element in array '{key}' in table '{table}' is not of type string");
+                            } else {
+                                strings.push(element.as_str().unwrap().to_owned());
+                            }
+                        }
+                        Ok(strings)
+                    }
+                    None => bail!("Key '{key}' in table '{table}' is not of type array"),
                 },
                 None => bail!("Config does not contain key '{key}' in table '{table}'"),
             },
@@ -80,6 +117,8 @@ pub fn conf_get_bool(doc: &Document, table: &str, key: &str) -> anyhow::Result<b
 
 #[cfg(test)]
 mod test {
+    use crate::config::conf_get_string_array;
+
     use super::*;
 
     #[test]
@@ -201,6 +240,58 @@ mod test {
         assert_eq!(
             value.unwrap_err().to_string(),
             "Key 'test' in table 'general' is not of type bool"
+        );
+    }
+
+    #[test]
+    fn conf_get_string_array_valid() {
+        let document = Document::from_str("[general]\ntest = [\"A\",\"B\",\"C\"]").unwrap();
+        let value = conf_get_string_array(&document, "general", "test");
+        assert!(value.is_ok());
+        assert_eq!(value.unwrap(), ["A", "B", "C"]);
+    }
+
+    #[test]
+    fn conf_get_string_array_table_does_not_exist() {
+        let document = Document::from_str("[general]\ntest = 123").unwrap();
+        let value = conf_get_string_array(&document, "table1", "test");
+        assert!(value.is_err());
+        assert_eq!(
+            value.unwrap_err().to_string(),
+            "Config does not contain table 'table1'"
+        );
+    }
+
+    #[test]
+    fn conf_get_string_array_key_does_not_exist() {
+        let document = Document::from_str("[general]\ntest = 123").unwrap();
+        let value = conf_get_string_array(&document, "general", "key1");
+        assert!(value.is_err());
+        assert_eq!(
+            value.unwrap_err().to_string(),
+            "Config does not contain key 'key1' in table 'general'"
+        );
+    }
+
+    #[test]
+    fn conf_get_string_array_key_is_wrong_type() {
+        let document = Document::from_str("[general]\ntest = 123").unwrap();
+        let value = conf_get_string_array(&document, "general", "test");
+        assert!(value.is_err());
+        assert_eq!(
+            value.unwrap_err().to_string(),
+            "Key 'test' in table 'general' is not of type array"
+        );
+    }
+
+    #[test]
+    fn conf_get_string_array_array_elem_is_wrong_type() {
+        let document = Document::from_str("[general]\ntest = [\"A\", \"B\", 12]").unwrap();
+        let value = conf_get_string_array(&document, "general", "test");
+        assert!(value.is_err());
+        assert_eq!(
+            value.unwrap_err().to_string(),
+            "Element in array 'test' in table 'general' is not of type string"
         );
     }
 }
