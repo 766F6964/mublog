@@ -11,6 +11,7 @@ use crate::stages::ConvertPostsStage;
 use crate::stages::CreateBuildDirectoriesStage;
 use crate::stages::WrapPostsStage;
 use crate::stages::WritePagesStage;
+use crate::stages::WritePostsStage;
 use crate::utils;
 use crate::utils::TruncWithDots;
 use anyhow::bail;
@@ -174,6 +175,7 @@ pub fn build(path: &Path) -> anyhow::Result<()> {
     pipeline.add_stage(ConvertPagesStage);
     pipeline.add_stage(WrapPostsStage);
     pipeline.add_stage(WritePagesStage);
+    pipeline.add_stage(WritePostsStage);
 
     // pipeline.add_feature::<NavbarFeature>();
 
