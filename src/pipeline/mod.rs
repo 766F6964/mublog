@@ -2,6 +2,8 @@ pub mod feature;
 pub mod feature_registry;
 pub mod pipeline_stage;
 pub mod pipeline_stage_lifetime;
+use anyhow::Ok;
+
 use crate::blog::BlogContext;
 use crate::pipeline::pipeline_stage_lifetime::PipelineStageLifetime;
 use std::any::{Any, TypeId};
@@ -35,25 +37,26 @@ impl Pipeline {
         T::register(&mut self.features);
     }
 
-    pub fn run(&mut self) {
+    pub fn run(&mut self) -> anyhow::Result<()> {
         for (stage, stage_type_id) in &self.pipeline_stages {
-            stage.initialize(&mut self.context);
+            stage.initialize(&mut self.context)?;
             self.features.run_hooks(
                 &mut self.context,
                 *stage_type_id,
                 PipelineStageLifetime::PreProcess,
             );
 
-            stage.process(&mut self.context);
+            stage.process(&mut self.context)?;
             self.features.run_hooks(
                 &mut self.context,
                 *stage_type_id,
                 PipelineStageLifetime::PostProcess,
             );
 
-            stage.finalize(&mut self.context);
+            stage.finalize(&mut self.context)?;
 
             println!("--------------------------------");
         }
+        Ok(())
     }
 }

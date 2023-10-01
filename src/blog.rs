@@ -6,6 +6,7 @@ use crate::page::Page;
 use crate::pipeline::Pipeline;
 use crate::post;
 use crate::post::Post;
+use crate::stages::CreateBuildDirectoriesStage;
 use crate::stages::WrapPostsStage;
 use crate::utils;
 use crate::utils::TruncWithDots;
@@ -28,21 +29,21 @@ use std::path::PathBuf;
 
 #[derive(Debug, Default)]
 pub struct BlogContext {
-    posts: Vec<Post>,
-    pages: Vec<Page>,
-    config_file: PathBuf,
-    base_dir: PathBuf,
+    pub posts: Vec<Post>,
+    pub pages: Vec<Page>,
+    pub config_file: PathBuf,
+    pub base_dir: PathBuf,
 
-    build_dir: PathBuf,
-    build_posts_dir: PathBuf,
-    build_assets_dir: PathBuf,
-    build_css_dir: PathBuf,
-    build_meta_dir: PathBuf,
+    pub build_dir: PathBuf,
+    pub build_posts_dir: PathBuf,
+    pub build_assets_dir: PathBuf,
+    pub build_css_dir: PathBuf,
+    pub build_meta_dir: PathBuf,
 
-    posts_dir: PathBuf,
-    assets_dir: PathBuf,
-    css_dir: PathBuf,
-    meta_dir: PathBuf,
+    pub posts_dir: PathBuf,
+    pub assets_dir: PathBuf,
+    pub css_dir: PathBuf,
+    pub meta_dir: PathBuf,
 }
 
 impl BlogContext {
@@ -162,13 +163,12 @@ pub fn build(path: &Path) -> anyhow::Result<()> {
     let mut context = BlogContext::from_path(path).context("Failed to initialize build context")?;
 
     let mut pipeline = Pipeline::new(context);
+    pipeline.add_stage(CreateBuildDirectoriesStage);
     pipeline.add_stage(WrapPostsStage);
-    pipeline.add_feature::<NavbarFeature>();
 
-    pipeline.run();
-    // setup_build_config(&context).context("Failed to configure build environment")?;
-    // prepare_build_env(&mut context).context("Failed to prepare build environment")?;
-    // start_build(context).context("Failed to build blog")?;
+    // pipeline.add_feature::<NavbarFeature>();
+
+    pipeline.run().context("Build process failed")?;
 
     println!("Build process completed.");
     Ok(())
