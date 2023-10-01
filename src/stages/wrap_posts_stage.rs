@@ -2,7 +2,7 @@ use crate::blog::BlogContext;
 use crate::pipeline::pipeline_stage::PipelineStage;
 
 pub struct WrapPostsStage;
-
+// TODO: The entire HTML site wrapping can be abstracted into dedicated classes to improve readablity a lot.
 impl PipelineStage for WrapPostsStage {
     fn initialize(&self, _ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("WrapPostsStage: Initialize ...");

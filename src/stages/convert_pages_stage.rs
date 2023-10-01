@@ -1,5 +1,7 @@
 use crate::blog::BlogContext;
 use crate::pipeline::pipeline_stage::PipelineStage;
+use markdown::CompileOptions;
+use markdown::Options;
 pub struct ConvertPagesStage;
 
 impl PipelineStage for ConvertPagesStage {
@@ -13,7 +15,17 @@ impl PipelineStage for ConvertPagesStage {
         println!("ConvertPagesStage: Process ...");
         // Process all pages
         for page in &mut ctx.pages {
-            page.content = markdown::to_html(&page.content);
+            page.content = markdown::to_html_with_options(
+                &page.content,
+                &Options {
+                    compile: CompileOptions {
+                        allow_dangerous_html: true,
+                        ..CompileOptions::default()
+                    },
+                    ..Options::default()
+                },
+            )
+            .unwrap(); // We can safely unwrap here!
             println!("Successfully converted page '{}'", page.title);
         }
         Ok(())

@@ -14,6 +14,7 @@
 !/src/stages/*.rs
 !/src/features/*.rs
 !/res/posts/*.md
+!/res/pages/*.md
 !/res/css/*.css
 !/res/assets/*.jpg
 !/res/meta/*.ico
