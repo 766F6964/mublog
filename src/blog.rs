@@ -1,5 +1,6 @@
 use crate::config;
 use crate::embedded_resources;
+use crate::features::NavbarFeature;
 use crate::page;
 use crate::page::Page;
 use crate::pipeline::Pipeline;
@@ -204,7 +205,7 @@ pub fn build(path: &Path) -> anyhow::Result<()> {
     pipeline.add_stage(WritePagesStage);
     pipeline.add_stage(WritePostsStage);
 
-    // pipeline.add_feature::<NavbarFeature>();
+    pipeline.add_feature::<NavbarFeature>();
 
     pipeline.run().context("Build process failed")?;
 
