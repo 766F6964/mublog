@@ -9,6 +9,10 @@
 !/*.md
 !/*.toml
 !/src/*.rs
+!/src/*.rs
+!/src/pipeline/*.rs
+!/src/stages/*.rs
+!/src/features/*.rs
 !/res/posts/*.md
 !/res/css/*.css
 !/res/assets/*.jpg

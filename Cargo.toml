@@ -1,5 +1,5 @@
 [package]
-name = "blog_rs"
+name = "mublog"
 version = "0.1.0"
 edition = "2021"
 

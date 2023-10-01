@@ -11,10 +11,12 @@ use std::env;
 mod blog;
 mod cli;
 mod embedded_resources;
+mod features;
 mod page;
+mod pipeline;
 mod post;
+mod stages;
 mod utils;
-// TODO: Add blog config options such as enabled plugins, author name, copyright year etc
 
 fn main() -> anyhow::Result<()> {
     let cli_args = Cli::parse();

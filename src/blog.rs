@@ -1,8 +1,11 @@
 use crate::embedded_resources;
+use crate::features::NavbarFeature;
 use crate::page;
 use crate::page::Page;
+use crate::pipeline::Pipeline;
 use crate::post;
 use crate::post::Post;
+use crate::stages::WrapPostsStage;
 use crate::utils;
 use crate::utils::TruncWithDots;
 use anyhow::bail;
@@ -19,24 +22,8 @@ use inquire::CustomType;
 use inquire::CustomUserError;
 use inquire::Text;
 use std::fs;
-
 use std::path::Path;
 use std::path::PathBuf;
-
-#[derive(Debug, Default)]
-struct BlogInfo {
-    active_posts: u32,
-    draft_posts: u32,
-}
-
-impl BlogInfo {
-    fn new(active_posts: u32, draft_posts: u32) -> Self {
-        Self {
-            active_posts,
-            draft_posts,
-        }
-    }
-}
 
 #[derive(Debug, Default)]
 pub struct BlogContext {
@@ -173,16 +160,21 @@ pub fn init(target_path: &Path, blog_dir_name: &str) -> anyhow::Result<()> {
 pub fn build(path: &Path) -> anyhow::Result<()> {
     let mut context = BlogContext::from_path(path).context("Failed to initialize build context")?;
 
-    setup_build_config(&context).context("Failed to configure build environment")?;
-    prepare_build_env(&mut context).context("Failed to prepare build environment")?;
-    start_build(context).context("Failed to build blog")?;
+    let mut pipeline = Pipeline::new(context);
+    pipeline.add_stage(WrapPostsStage);
+    pipeline.add_feature::<NavbarFeature>();
+
+    pipeline.run();
+    // setup_build_config(&context).context("Failed to configure build environment")?;
+    // prepare_build_env(&mut context).context("Failed to prepare build environment")?;
+    // start_build(context).context("Failed to build blog")?;
 
     println!("Build process completed.");
     Ok(())
 }
 
 fn start_build(context: BlogContext) -> Result<()> {
-    // Get a vector of all posts in the given directory
+    // Process all posts
     for post in context.posts {
         let filename =
             utils::derive_filename(&post.header.title, ".html", &context.build_posts_dir)
@@ -196,6 +188,7 @@ fn start_build(context: BlogContext) -> Result<()> {
         )?;
         println!("Successfully built post '{}'", post.header.title);
     }
+    // Process all pages
     for page in context.pages {
         let page_filename = if page.index == true {
             utils::derive_filename("index", ".html", &context.base_dir)
