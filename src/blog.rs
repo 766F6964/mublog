@@ -163,6 +163,9 @@ pub fn init(target_path: &Path, blog_dir_name: &str) -> anyhow::Result<()> {
 
 pub fn build(path: &Path) -> anyhow::Result<()> {
     let context = BlogContext::from_path(path).context("Failed to initialize build context")?;
+    let config =
+        config::parse_config(&context.config_file).context("Failed to parse mublog.conf")?;
+    println!("{config:#?}");
 
     let mut pipeline = Pipeline::new(context);
     pipeline.add_stage(CreateBuildDirectoriesStage);
@@ -175,80 +178,6 @@ pub fn build(path: &Path) -> anyhow::Result<()> {
     pipeline.run().context("Build process failed")?;
 
     println!("Build process completed.");
-    Ok(())
-}
-
-fn start_build(context: BlogContext) -> Result<()> {
-    // Process all posts
-    for post in context.posts {
-        let filename =
-            utils::derive_filename(&post.header.title, ".html", &context.build_posts_dir)
-                .context("Failed to derive a unique filename for page.")?;
-
-        let content_html = markdown::to_html(&post.content);
-        let html_filename = filename.replace(".md", ".html");
-        fs::write(
-            context.build_posts_dir.join(html_filename).as_path(),
-            content_html,
-        )?;
-        println!("Successfully built post '{}'", post.header.title);
-    }
-    // Process all pages
-    for page in context.pages {
-        let page_filename = if page.index {
-            utils::derive_filename("index", ".html", &context.base_dir)
-                .context("Failed to derive a unique filename for page.")?
-        } else {
-            utils::derive_filename(&page.title, ".html", &context.base_dir)
-                .context("Failed to derive a unique filename for page.")?
-        };
-        let content_html = markdown::to_html(&page.content);
-        let html_filename = page_filename.replace(".md", ".html");
-        fs::write(
-            context.build_dir.join(html_filename).as_path(),
-            content_html,
-        )?;
-        println!("Successfully built page '{}'", page.title);
-    }
-    Ok(())
-}
-
-fn setup_build_config(context: &BlogContext) -> Result<()> {
-    // TODO: Read config from mublog.toml, and specify what plugins to enable etc
-    println!("Configuring build ...");
-
-    let config =
-        config::parse_config(&context.config_file).context("Failed to parse mublog.conf")?;
-    println!("{config:#?}");
-    Ok(())
-}
-
-fn prepare_build_env(context: &mut BlogContext) -> Result<()> {
-    // Delete previous build environment, if present
-    if fs::metadata(context.build_dir.as_path()).is_ok() {
-        fs::remove_dir_all(context.build_dir.as_path())
-            .context("Failed to remove existing build environment.")?;
-    }
-    // Check source directories exist
-    utils::is_valid_dir(&context.assets_dir)
-        .context("Assets directory could not be found or is inaccessible.")?;
-    utils::is_valid_dir(&context.css_dir)
-        .context("CSS directory could not be found or is inaccessible.")?;
-    utils::is_valid_dir(&context.posts_dir)
-        .context("Posts directory could not be found or is inaccessible.")?;
-
-    // Setup build directory and subdirectories
-    fs::create_dir(context.build_dir.as_path())
-        .with_context(|| format!("Failed to create directory {:?}", context.build_dir))?;
-    fs::create_dir(context.build_posts_dir.as_path())
-        .with_context(|| format!("Failed to create directory {:?}", context.build_posts_dir))?;
-    fs::create_dir(context.build_css_dir.as_path())
-        .with_context(|| format!("Failed to create directory {:?}", context.build_css_dir))?;
-    fs::create_dir(context.build_assets_dir.as_path())
-        .with_context(|| format!("Failed to create directory {:?}", context.build_assets_dir))?;
-
-    context.posts = post::get_posts(&context.posts_dir);
-    context.pages = page::get_pages(&context.base_dir);
     Ok(())
 }
 
