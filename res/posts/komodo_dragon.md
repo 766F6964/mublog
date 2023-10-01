@@ -7,8 +7,7 @@ draft: true
 ---
 # Overview
 
-<img src="../assets/komodo_dragon.jpg">
-
+![](/assets/komodo_dragon.jpg)
 
 The Komodo Dragon, scientifically known as Varanus komodoensis, is a large reptile found primarily on the Indonesian islands of Komodo, Rinca, Flores, Gili Motang, and Padar. Known for its massive size and powerful build, the Komodo Dragon is the largest living lizard in the world. It has a unique and intriguing place in the animal kingdom.
 

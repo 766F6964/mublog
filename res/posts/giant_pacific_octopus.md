@@ -7,7 +7,7 @@ draft: false
 ---
 # Overview
 
-<img src="../assets/giant_pacific_octopus.jpg">
+![](/assets/giant_pacific_octopus.jpg)
 
 The Giant Pacific Octopus, scientifically known as Enteroctopus dofleini, is one of the largest and most intelligent species of octopus. It inhabits the coastal waters of the northern Pacific Ocean, ranging from California to Alaska and across to Japan. With its remarkable size and impressive abilities, the Giant Pacific Octopus has captivated the curiosity of scientists and ocean enthusiasts alike.
 

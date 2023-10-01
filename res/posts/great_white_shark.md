@@ -7,7 +7,7 @@ draft: true
 ---
 # Overview
 
-<img src="../assets/great_white_shark.jpg">
+![](/assets/great_white_shark.jpg)
 
 The Great White Shark, scientifically known as Carcharodon carcharias, is a large predatory fish that is widely recognized as one of the most fearsome and awe-inspiring creatures in the ocean. It is often referred to as the "great white" due to its distinctive white belly. With its powerful build and serrated, triangular teeth, this apex predator has fascinated researchers, divers, and the general public for centuries.
 

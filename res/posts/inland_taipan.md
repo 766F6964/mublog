@@ -8,7 +8,7 @@ draft: false
 
 # Overview
 
-<img src="../assets/inland_taipan.jpg">
+![](/assets/inland_taipan.jpg)
 
 The Inland Taipan, scientifically known as Oxyuranus microlepidotus, is a highly venomous snake endemic to the arid regions of central Australia. It is widely recognized as the most venomous land snake in the world, possessing a venom potency that far surpasses that of any other snake. Despite its venomous nature, the Inland Taipan is relatively shy and elusive, often avoiding human encounters due to its remote habitat.
 
