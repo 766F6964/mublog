@@ -20,18 +20,9 @@ impl PipelineStage for ConvertPagesStage {
     fn process(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("ConvertPagesStage: Process ...");
         // Process all pages
-        for page in &ctx.pages {
-            let page_filename = if page.index {
-                utils::derive_filename("index", ".html", &ctx.base_dir)
-                    .context("Failed to derive a unique filename for page.")?
-            } else {
-                utils::derive_filename(&page.title, ".html", &ctx.base_dir)
-                    .context("Failed to derive a unique filename for page.")?
-            };
-            let content_html = markdown::to_html(&page.content);
-            let html_filename = page_filename.replace(".md", ".html");
-            fs::write(ctx.build_dir.join(html_filename).as_path(), content_html)?;
-            println!("Successfully built page '{}'", page.title);
+        for page in &mut ctx.pages {
+            page.content = markdown::to_html(&page.content);
+            println!("Successfully converted page '{}'", page.title);
         }
         Ok(())
     }
