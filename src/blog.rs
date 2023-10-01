@@ -1,6 +1,5 @@
 use crate::config;
 use crate::embedded_resources;
-use crate::features::NavbarFeature;
 use crate::page;
 use crate::page::Page;
 use crate::pipeline::Pipeline;
@@ -9,10 +8,12 @@ use crate::post::Post;
 use crate::stages::ConvertPagesStage;
 use crate::stages::ConvertPostsStage;
 use crate::stages::CreateBuildDirectoriesStage;
+use crate::stages::LoadAssetsStage;
 use crate::stages::LoadPagesStage;
 use crate::stages::LoadPostsStage;
 use crate::stages::LoadStylesheetsStage;
 use crate::stages::WrapPostsStage;
+use crate::stages::WriteAssetsStage;
 use crate::stages::WritePagesStage;
 use crate::stages::WritePostsStage;
 use crate::stages::WriteStylesheetsStage;
@@ -24,8 +25,8 @@ use anyhow::Context;
 use anyhow::Result;
 use chrono::Local;
 use chrono::NaiveDate;
-use clap::builder;
 use colored::Colorize;
+use include_dir::File;
 use inquire::formatter::DEFAULT_DATE_FORMATTER;
 use inquire::validator::StringValidator;
 use inquire::validator::Validation;
@@ -38,10 +39,11 @@ use std::path::Path;
 use std::path::PathBuf;
 
 #[derive(Debug, Default)]
-pub struct BlogContext {
+pub struct BlogContext<'a> {
     pub posts: Vec<Post>,
     pub pages: Vec<Page>,
     pub stylesheets: Vec<Stylesheet>,
+    pub assets: Vec<&'a File<'a>>,
     pub config_file: PathBuf,
     pub base_dir: PathBuf,
 
@@ -59,7 +61,7 @@ pub struct BlogContext {
     pub meta_dir: PathBuf,
 }
 
-impl BlogContext {
+impl<'a> BlogContext<'a> {
     pub fn from_path(base_path: &Path) -> Result<Self> {
         if !is_blog_directory(base_path) {
             bail!("The current directory is not a mublog environment.");
@@ -68,6 +70,7 @@ impl BlogContext {
             posts: vec![],
             pages: vec![],
             stylesheets: vec![],
+            assets: vec![],
             config_file: base_path.join("mublog.toml"),
             base_dir: base_path.to_path_buf(),
             build_dir: base_path.join("build"),
@@ -184,12 +187,14 @@ pub fn build(path: &Path) -> anyhow::Result<()> {
     let mut pipeline = Pipeline::new(context);
     pipeline.add_stage(CreateBuildDirectoriesStage);
     pipeline.add_stage(LoadStylesheetsStage);
+    pipeline.add_stage(LoadAssetsStage);
     pipeline.add_stage(LoadPostsStage);
     pipeline.add_stage(LoadPagesStage);
     pipeline.add_stage(ConvertPostsStage);
     pipeline.add_stage(ConvertPagesStage);
     pipeline.add_stage(WrapPostsStage);
     pipeline.add_stage(WriteStylesheetsStage);
+    pipeline.add_stage(WriteAssetsStage);
     pipeline.add_stage(WritePagesStage);
     pipeline.add_stage(WritePostsStage);
 

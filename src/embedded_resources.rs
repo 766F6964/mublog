@@ -16,6 +16,7 @@ pub fn get_resources(dir_path: &str) -> anyhow::Result<Vec<&File>, anyhow::Error
         files.push(file);
     }
     if files.is_empty() {
+        // TODO: Replace with bail!
         return Err(anyhow::anyhow!(
             "No files found in embedded directory: {}",
             dir_path

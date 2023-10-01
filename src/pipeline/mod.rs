@@ -11,13 +11,13 @@ use std::any::{Any, TypeId};
 use self::feature::Feature;
 use self::feature_registry::FeatureRegistry;
 
-pub struct Pipeline {
+pub struct Pipeline<'a> {
     pipeline_stages: Vec<(Box<dyn pipeline_stage::PipelineStage>, TypeId)>,
-    context: BlogContext,
+    context: BlogContext<'a>,
     features: FeatureRegistry,
 }
 
-impl Pipeline {
+impl<'a> Pipeline<'a> {
     pub fn new(ctx: BlogContext) -> Pipeline {
         Pipeline {
             context: ctx,
