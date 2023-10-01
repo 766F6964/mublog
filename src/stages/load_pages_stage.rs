@@ -12,7 +12,7 @@ impl PipelineStage for LoadPagesStage {
 
     fn process(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("LoadPagesStage: Process ...");
-        ctx.pages = page::get_pages(&ctx.base_dir).context("Failed to get pages")?;
+        ctx.pages = page::get_pages(&ctx.pages_dir).context("Failed to get pages")?;
         println!("Loaded {} pages", ctx.pages.len());
         Ok(())
     }

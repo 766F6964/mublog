@@ -17,6 +17,7 @@ mod page;
 mod pipeline;
 mod post;
 mod stages;
+mod stylesheet;
 mod utils;
 
 fn main() -> anyhow::Result<()> {

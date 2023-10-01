@@ -34,7 +34,9 @@ impl PipelineStage for WritePagesStage {
             fs::write(
                 ctx.build_pages_dir.join(filename).as_path(),
                 page.content.clone(),
-            )?;
+            )
+            .with_context(|| format!("Failed to write page '{}' to disk", page.title))?;
+
             println!(
                 "Successfully wrote page '{}' to disk ({} bytes)",
                 page.title,

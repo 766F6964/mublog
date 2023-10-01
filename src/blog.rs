@@ -11,9 +11,12 @@ use crate::stages::ConvertPostsStage;
 use crate::stages::CreateBuildDirectoriesStage;
 use crate::stages::LoadPagesStage;
 use crate::stages::LoadPostsStage;
+use crate::stages::LoadStylesheetsStage;
 use crate::stages::WrapPostsStage;
 use crate::stages::WritePagesStage;
 use crate::stages::WritePostsStage;
+use crate::stages::WriteStylesheetsStage;
+use crate::stylesheet::Stylesheet;
 use crate::utils;
 use crate::utils::TruncWithDots;
 use anyhow::bail;
@@ -38,6 +41,7 @@ use std::path::PathBuf;
 pub struct BlogContext {
     pub posts: Vec<Post>,
     pub pages: Vec<Page>,
+    pub stylesheets: Vec<Stylesheet>,
     pub config_file: PathBuf,
     pub base_dir: PathBuf,
 
@@ -63,6 +67,7 @@ impl BlogContext {
         Ok(Self {
             posts: vec![],
             pages: vec![],
+            stylesheets: vec![],
             config_file: base_path.join("mublog.toml"),
             base_dir: base_path.to_path_buf(),
             build_dir: base_path.join("build"),
@@ -178,11 +183,13 @@ pub fn build(path: &Path) -> anyhow::Result<()> {
 
     let mut pipeline = Pipeline::new(context);
     pipeline.add_stage(CreateBuildDirectoriesStage);
+    pipeline.add_stage(LoadStylesheetsStage);
     pipeline.add_stage(LoadPostsStage);
     pipeline.add_stage(LoadPagesStage);
     pipeline.add_stage(ConvertPostsStage);
     pipeline.add_stage(ConvertPagesStage);
     pipeline.add_stage(WrapPostsStage);
+    pipeline.add_stage(WriteStylesheetsStage);
     pipeline.add_stage(WritePagesStage);
     pipeline.add_stage(WritePostsStage);
 

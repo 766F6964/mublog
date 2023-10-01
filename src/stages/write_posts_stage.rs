@@ -22,7 +22,8 @@ impl PipelineStage for WritePostsStage {
             fs::write(
                 ctx.build_posts_dir.join(filename).as_path(),
                 post.content.clone(),
-            )?;
+            )
+            .with_context(|| format!("Failed to write post '{}' to disk", post.header.title))?;
             println!(
                 "Successfully wrote post '{}' to disk ({} bytes)",
                 post.header.title,
