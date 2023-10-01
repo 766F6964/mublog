@@ -6,6 +6,8 @@ use crate::page::Page;
 use crate::pipeline::Pipeline;
 use crate::post;
 use crate::post::Post;
+use crate::stages::ConvertPagesStage;
+use crate::stages::ConvertPostsStage;
 use crate::stages::CreateBuildDirectoriesStage;
 use crate::stages::WrapPostsStage;
 use crate::utils;
@@ -160,10 +162,12 @@ pub fn init(target_path: &Path, blog_dir_name: &str) -> anyhow::Result<()> {
 }
 
 pub fn build(path: &Path) -> anyhow::Result<()> {
-    let mut context = BlogContext::from_path(path).context("Failed to initialize build context")?;
+    let context = BlogContext::from_path(path).context("Failed to initialize build context")?;
 
     let mut pipeline = Pipeline::new(context);
     pipeline.add_stage(CreateBuildDirectoriesStage);
+    pipeline.add_stage(ConvertPostsStage);
+    pipeline.add_stage(ConvertPagesStage);
     pipeline.add_stage(WrapPostsStage);
 
     // pipeline.add_feature::<NavbarFeature>();
