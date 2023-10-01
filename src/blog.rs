@@ -219,7 +219,7 @@ pub fn info(path: &Path) -> anyhow::Result<()> {
         "—".repeat(title_alignment + date_alignment + draft_alignment + 4)
     );
 
-    let posts = post::get_posts(&context.posts_dir);
+    let posts = post::get_posts(&context.posts_dir)?;
     let draft_post_count = posts.iter().filter(|post| post.header.draft).count();
     let finalized_post_count = posts.iter().filter(|post| !post.header.draft).count();
 
@@ -251,7 +251,7 @@ pub fn info(path: &Path) -> anyhow::Result<()> {
         "—".repeat(title_alignment + page_type_alignment + draft_alignment + 4)
     );
 
-    let pages = page::get_pages(&context.pages_dir);
+    let pages = page::get_pages(&context.pages_dir)?;
     let draft_page_count = pages.iter().filter(|page| page.draft).count();
     let finalized_page_count = pages.iter().filter(|page| !page.draft).count();
 

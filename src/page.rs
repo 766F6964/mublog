@@ -17,28 +17,24 @@ pub struct Page {
     pub title: String,
 }
 
-pub fn get_pages(pages_dir: &Path) -> Vec<Page> {
+pub fn get_pages(pages_dir: &Path) -> Result<Vec<Page>> {
     let entries = WalkDir::new(pages_dir);
     let mut pages = vec![];
     for entry in entries.into_iter().filter_map(std::result::Result::ok) {
         let page_path = entry.path();
         if page_path.extension().and_then(OsStr::to_str) == Some("md") {
-            if let Ok(contents) = fs::read_to_string(page_path) {
-                // TODO: Silently ignoring parsing failure can be fatal
-                // If someone has many pages, and accidently breaks the header of one,
-                // the tool would still build, but exclude the broken page, without notice.
-                // NOTE: Immidiately failing is also problematic tho, because then having some other
-                // Markdown file, e.g. a README in the same directory, causes a build failure.
-                // NOTE: Possible solution: Have a dedicates "pages" directory, that should only hold pages.
-                // That way we can still have a README or other .md files in the project root.
-                // -> Makes linking between posts/pages less intuitive tho.
-                if let Ok(page) = parse_from_string(&contents) {
-                    pages.push(page);
-                }
-            }
+            let file_content = fs::read_to_string(page_path).with_context(|| {
+                format!(
+                    "Failed to open page file '{}' for reading",
+                    page_path.display()
+                )
+            })?;
+            let page = parse_from_string(&file_content)
+                .with_context(|| format!("Failed to parse page '{}'", page_path.display()))?;
+            pages.push(page);
         }
     }
-    pages
+    Ok(pages)
 }
 
 pub fn parse_to_string(page: &Page) -> String {
