@@ -1,6 +1,7 @@
+use crate::blog::BlogContext;
+use crate::page;
+use crate::pipeline::pipeline_stage::PipelineStage;
 use anyhow::Context;
-
-use crate::{blog::BlogContext, page, pipeline::pipeline_stage::PipelineStage};
 
 pub struct LoadPagesStage;
 

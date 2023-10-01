@@ -1,8 +1,8 @@
-use std::fs;
-
+use crate::blog::BlogContext;
+use crate::pipeline::pipeline_stage::PipelineStage;
+use crate::utils;
 use anyhow::Context;
-
-use crate::{blog::BlogContext, pipeline::pipeline_stage::PipelineStage, utils};
+use std::fs;
 
 pub struct WritePostsStage;
 

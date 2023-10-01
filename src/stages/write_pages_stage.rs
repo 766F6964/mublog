@@ -1,8 +1,9 @@
+use crate::blog::BlogContext;
+use crate::pipeline::pipeline_stage::PipelineStage;
+use crate::utils;
+use anyhow::bail;
+use anyhow::Context;
 use std::fs;
-
-use anyhow::{bail, Context};
-
-use crate::{blog::BlogContext, pipeline::pipeline_stage::PipelineStage, utils};
 
 pub struct WritePagesStage;
 
@@ -46,7 +47,7 @@ impl PipelineStage for WritePagesStage {
         Ok(())
     }
 
-    fn finalize(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
+    fn finalize(&self, _ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("WritePagesStage: Finalize ...");
         Ok(())
     }

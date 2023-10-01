@@ -154,7 +154,7 @@ pub fn init(target_path: &Path, blog_dir_name: &str) -> anyhow::Result<()> {
     fs::create_dir(css_dir.clone()).context("Failed to create blog/css/ directory")?;
     fs::create_dir(meta_dir.clone()).context("Failed to create blog/meta directory")?;
     fs::create_dir(posts_dir.clone()).context("Failed to create blog/posts directory")?;
-    fs::create_dir(pages_dir.clone()).context("Failed to create blog/pages directory")?;
+    fs::create_dir(pages_dir).context("Failed to create blog/pages directory")?;
 
     let assets_resources = embedded_resources::get_resources("assets")
         .context("Failed to extract resources from embedded directory 'assets'")?;

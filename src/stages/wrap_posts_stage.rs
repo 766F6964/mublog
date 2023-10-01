@@ -1,9 +1,10 @@
-use crate::{blog::BlogContext, pipeline::pipeline_stage::PipelineStage};
+use crate::blog::BlogContext;
+use crate::pipeline::pipeline_stage::PipelineStage;
 
 pub struct WrapPostsStage;
 
 impl PipelineStage for WrapPostsStage {
-    fn initialize(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
+    fn initialize(&self, _ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("WrapPostsStage: Initialize ...");
         Ok(())
     }
@@ -36,34 +37,34 @@ impl PipelineStage for WrapPostsStage {
         Ok(())
     }
 
-    fn finalize(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
+    fn finalize(&self, _ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("WrapPostsStage: Finalize ...");
         Ok(())
     }
 }
 
 fn html_tag_start() -> String {
-    return r#"
+    r#"
 <!DOCTYPE html>
 <html lang="en-US">"#
-        .into();
+        .into()
 }
 
 fn html_tag_end() -> String {
-    return r#"
+    r#"
     </html>"#
-        .into();
+        .into()
 }
 
 fn head_tag_start() -> String {
-    return r#"
+    r#"
     <head>"#
-        .into();
+        .into()
 }
 fn head_tag_end() -> String {
-    return r#"
+    r#"
     </head>"#
-        .into();
+        .into()
 }
 
 fn meta_tags(
@@ -76,7 +77,7 @@ fn meta_tags(
     post_url: &str,
     post_date: &str,
 ) -> String {
-    return format!(
+    format!(
         r#"
         <meta charset="utf-8">
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
@@ -93,24 +94,23 @@ fn meta_tags(
         <meta property="og:article:published_time" content="{post_date}" />
         <meta property="og:article:author" content="{blog_author}" />"#
     )
-    .into();
 }
 
 fn stylesheet_refs() -> String {
-    return r#"
+    r#"
     <link rel="stylesheet" type="text/css" media="all" href="/css/layout.css">"#
-        .into();
+        .into()
 }
 fn body_tag_start() -> String {
-    return r#"
+    r#"
         <body class="${blog_theme}">
         <main>
         <hr>"#
-        .into();
+        .into()
 }
 fn body_tag_end() -> String {
-    return r#"
+    r#"
         </main>
         </body>"#
-        .into();
+        .into()
 }

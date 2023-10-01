@@ -1,13 +1,10 @@
-use std::fs;
-
-use anyhow::Context;
-
-use crate::{blog::BlogContext, page, pipeline::pipeline_stage::PipelineStage, post, utils};
+use crate::blog::BlogContext;
+use crate::pipeline::pipeline_stage::PipelineStage;
 
 pub struct ConvertPostsStage;
 
 impl PipelineStage for ConvertPostsStage {
-    fn initialize(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
+    fn initialize(&self, _ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("ConvertPostsStage: Initialize ...");
         Ok(())
     }
@@ -22,7 +19,7 @@ impl PipelineStage for ConvertPostsStage {
         Ok(())
     }
 
-    fn finalize(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
+    fn finalize(&self, _ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("ConvertPostsStage: Finalize ...");
         Ok(())
     }

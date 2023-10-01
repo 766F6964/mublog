@@ -1,13 +1,12 @@
+use crate::blog::BlogContext;
+use crate::embedded_resources;
+use crate::pipeline::pipeline_stage::PipelineStage;
 use anyhow::Context;
-
-use crate::{
-    blog::BlogContext, embedded_resources, page, pipeline::pipeline_stage::PipelineStage, post,
-};
 
 pub struct WriteAssetsStage;
 
 impl PipelineStage for WriteAssetsStage {
-    fn initialize(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
+    fn initialize(&self, _ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("WriteAssetsStage: Initialize ...");
         Ok(())
     }
@@ -20,7 +19,7 @@ impl PipelineStage for WriteAssetsStage {
         Ok(())
     }
 
-    fn finalize(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
+    fn finalize(&self, _ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("WriteAssetsStage: Finalize ...");
         Ok(())
     }

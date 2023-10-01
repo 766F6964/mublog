@@ -11,7 +11,7 @@ impl Feature for NavbarFeature {
         Self: Sized,
     {
         registry
-            .register::<WrapPostsStage, Self>(PipelineStageLifetime::PostProcess, NavbarFeature);
+            .register::<WrapPostsStage, Self>(PipelineStageLifetime::PostProcess, Self);
     }
 
     fn run(
@@ -29,6 +29,6 @@ impl Feature for NavbarFeature {
     }
 }
 
-fn modification1(ctx: &mut BlogContext) {
+fn modification1(_ctx: &mut BlogContext) {
     println!("Navbar Feature execution ...");
 }

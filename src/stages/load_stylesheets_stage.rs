@@ -1,11 +1,12 @@
+use crate::blog::BlogContext;
+use crate::pipeline::pipeline_stage::PipelineStage;
+use crate::stylesheet;
 use anyhow::Context;
-
-use crate::{blog::BlogContext, pipeline::pipeline_stage::PipelineStage, stylesheet};
 
 pub struct LoadStylesheetsStage;
 
 impl PipelineStage for LoadStylesheetsStage {
-    fn initialize(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
+    fn initialize(&self, _ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("LoadStylesheetsStage: Initialize ...");
         Ok(())
     }
@@ -18,7 +19,7 @@ impl PipelineStage for LoadStylesheetsStage {
         Ok(())
     }
 
-    fn finalize(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
+    fn finalize(&self, _ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("LoadStylesheetsStage: Finalize ...");
         Ok(())
     }

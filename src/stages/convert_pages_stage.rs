@@ -1,12 +1,5 @@
-use std::fs;
-
-use anyhow::Context;
-
 use crate::blog::BlogContext;
-use crate::page;
 use crate::pipeline::pipeline_stage::PipelineStage;
-use crate::utils;
-
 pub struct ConvertPagesStage;
 
 impl PipelineStage for ConvertPagesStage {
@@ -26,7 +19,7 @@ impl PipelineStage for ConvertPagesStage {
         Ok(())
     }
 
-    fn finalize(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
+    fn finalize(&self, _ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("ConvertPagesStage: Finalize ...");
         Ok(())
     }

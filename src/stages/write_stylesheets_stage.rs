@@ -1,15 +1,15 @@
+use crate::blog::BlogContext;
+use crate::pipeline::pipeline_stage::PipelineStage;
+use anyhow::bail;
+use anyhow::Context;
 use std::fs;
-
-use anyhow::{bail, Context};
-
-use crate::{blog::BlogContext, pipeline::pipeline_stage::PipelineStage};
 
 pub struct WriteStylesheetsStage;
 
 impl PipelineStage for WriteStylesheetsStage {
     fn initialize(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("WriteStylesheetsStage: Initialize ...");
-        if *(&ctx.stylesheets.iter().count()) == 0 {
+        if ctx.stylesheets.is_empty() {
             bail!("No stylesheets loaded.");
         }
         Ok(())
