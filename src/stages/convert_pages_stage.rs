@@ -12,7 +12,6 @@ pub struct ConvertPagesStage;
 impl PipelineStage for ConvertPagesStage {
     fn initialize(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("ConvertPagesStage: Initialize ...");
-        ctx.pages = page::get_pages(&ctx.base_dir);
         println!("Found: {} pages", ctx.pages.len());
         Ok(())
     }

@@ -9,6 +9,8 @@ use crate::post::Post;
 use crate::stages::ConvertPagesStage;
 use crate::stages::ConvertPostsStage;
 use crate::stages::CreateBuildDirectoriesStage;
+use crate::stages::LoadPagesStage;
+use crate::stages::LoadPostsStage;
 use crate::stages::WrapPostsStage;
 use crate::stages::WritePagesStage;
 use crate::stages::WritePostsStage;
@@ -171,6 +173,8 @@ pub fn build(path: &Path) -> anyhow::Result<()> {
 
     let mut pipeline = Pipeline::new(context);
     pipeline.add_stage(CreateBuildDirectoriesStage);
+    pipeline.add_stage(LoadPostsStage);
+    pipeline.add_stage(LoadPagesStage);
     pipeline.add_stage(ConvertPostsStage);
     pipeline.add_stage(ConvertPagesStage);
     pipeline.add_stage(WrapPostsStage);

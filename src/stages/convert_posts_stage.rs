@@ -9,7 +9,6 @@ pub struct ConvertPostsStage;
 impl PipelineStage for ConvertPostsStage {
     fn initialize(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("ConvertPostsStage: Initialize ...");
-        ctx.posts = post::get_posts(&ctx.posts_dir);
         Ok(())
     }
 
