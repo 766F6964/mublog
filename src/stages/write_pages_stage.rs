@@ -31,7 +31,10 @@ impl PipelineStage for WritePagesStage {
                     .context("Failed to derive a unique filename for page.")?,
             };
 
-            fs::write(ctx.build_dir.join(filename).as_path(), page.content.clone())?;
+            fs::write(
+                ctx.build_pages_dir.join(filename).as_path(),
+                page.content.clone(),
+            )?;
             println!(
                 "Successfully wrote page '{}' to disk ({} bytes)",
                 page.title,

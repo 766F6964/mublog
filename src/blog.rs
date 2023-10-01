@@ -21,6 +21,7 @@ use anyhow::Context;
 use anyhow::Result;
 use chrono::Local;
 use chrono::NaiveDate;
+use clap::builder;
 use colored::Colorize;
 use inquire::formatter::DEFAULT_DATE_FORMATTER;
 use inquire::validator::StringValidator;
@@ -41,11 +42,13 @@ pub struct BlogContext {
     pub base_dir: PathBuf,
 
     pub build_dir: PathBuf,
-    pub build_posts_dir: PathBuf,
+    pub build_pages_dir: PathBuf,
     pub build_assets_dir: PathBuf,
     pub build_css_dir: PathBuf,
     pub build_meta_dir: PathBuf,
+    pub build_posts_dir: PathBuf,
 
+    pub pages_dir: PathBuf,
     pub posts_dir: PathBuf,
     pub assets_dir: PathBuf,
     pub css_dir: PathBuf,
@@ -63,6 +66,7 @@ impl BlogContext {
             config_file: base_path.join("mublog.toml"),
             base_dir: base_path.to_path_buf(),
             build_dir: base_path.join("build"),
+            build_pages_dir: base_path.join("build"),
             build_assets_dir: base_path.join("build").join("assets"),
             build_css_dir: base_path.join("build").join("css"),
             build_posts_dir: base_path.join("build").join("posts"),
@@ -71,6 +75,7 @@ impl BlogContext {
             css_dir: base_path.join("css"),
             posts_dir: base_path.join("posts"),
             meta_dir: base_path.join("meta"),
+            pages_dir: base_path.join("pages"),
         })
     }
 }
@@ -246,7 +251,7 @@ pub fn info(path: &Path) -> anyhow::Result<()> {
         "—".repeat(title_alignment + page_type_alignment + draft_alignment + 4)
     );
 
-    let pages = page::get_pages(&context.base_dir);
+    let pages = page::get_pages(&context.pages_dir);
     let draft_page_count = pages.iter().filter(|page| page.draft).count();
     let finalized_page_count = pages.iter().filter(|page| !page.draft).count();
 
@@ -360,14 +365,18 @@ pub fn create_page(path: &Path) -> anyhow::Result<()> {
     let filename = utils::derive_filename(&page.title, ".md", &context.base_dir)?;
     let contents = page::parse_to_string(&page);
 
-    fs::write(context.base_dir.join(filename), contents)?;
+    fs::write(context.pages_dir.join(filename), contents)?;
 
     Ok(())
 }
 fn is_blog_directory(path: &Path) -> bool {
+    // TODO: Maybe we can reuse the paths stored in the context
+    // That way we dont have to rebuild the paths here, because
+    // that is more error prone (typos)
     if path.is_dir() {
         let blog_meta_file = path.join("mublog.toml");
         let posts_dir = path.join("posts");
+        let pages_dir = path.join("pages");
         let meta_dir = path.join("meta");
         let css_dir = path.join("css");
         let assets_dir = path.join("assets");
@@ -375,6 +384,8 @@ fn is_blog_directory(path: &Path) -> bool {
             && blog_meta_file.is_file()
             && posts_dir.exists()
             && posts_dir.is_dir()
+            && pages_dir.exists()
+            && pages_dir.is_dir()
             && meta_dir.exists()
             && meta_dir.is_dir()
             && css_dir.exists()
@@ -385,5 +396,8 @@ fn is_blog_directory(path: &Path) -> bool {
             return true;
         }
     }
+    // TODO: Better error handling. Currently we just say its not a mublog
+    // environment, if a single dir is missing. It might be worth mentioning
+    // what dir is missing to make it a valid mublog env
     false
 }

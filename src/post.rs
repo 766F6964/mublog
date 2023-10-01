@@ -133,6 +133,11 @@ pub fn get_posts(posts_dir: &Path) -> Vec<Post> {
         let post_path = entry.path();
         if post_path.extension().and_then(OsStr::to_str) == Some("md") {
             if let Ok(contents) = fs::read_to_string(post_path) {
+                // TODO: Silently ignoring parsing failure can be fatal
+                // If someone has many posts, and accidently breaks the header
+                // The tool would still build, but exclude the broken post, without notice.
+                // NOTE: Immidiately failing is also problematic tho, because then having some other
+                // Markdown file, e.g. a README in the same directory, causes a build failure.
                 if let Ok(post) = parse_from_string(&contents) {
                     posts.push(post);
                 }

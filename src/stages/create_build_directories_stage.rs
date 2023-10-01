@@ -29,6 +29,8 @@ impl PipelineStage for CreateBuildDirectoriesStage {
             .context("CSS directory could not be found or is inaccessible.")?;
         utils::is_valid_dir(&ctx.posts_dir)
             .context("Posts directory could not be found or is inaccessible.")?;
+        utils::is_valid_dir(&ctx.pages_dir)
+            .context("Pages directory could not be found or is inaccessible.")?;
 
         // Setup build directory and subdirectories
         fs::create_dir(ctx.build_dir.as_path())
