@@ -1,3 +1,4 @@
+use crate::config;
 use crate::embedded_resources;
 use crate::features::NavbarFeature;
 use crate::page;
@@ -190,7 +191,7 @@ fn start_build(context: BlogContext) -> Result<()> {
     }
     // Process all pages
     for page in context.pages {
-        let page_filename = if page.index == true {
+        let page_filename = if page.index {
             utils::derive_filename("index", ".html", &context.base_dir)
                 .context("Failed to derive a unique filename for page.")?
         } else {
@@ -208,9 +209,13 @@ fn start_build(context: BlogContext) -> Result<()> {
     Ok(())
 }
 
-fn setup_build_config(_context: &BlogContext) -> Result<()> {
+fn setup_build_config(context: &BlogContext) -> Result<()> {
     // TODO: Read config from mublog.toml, and specify what plugins to enable etc
     println!("Configuring build ...");
+
+    let config =
+        config::parse_config(&context.config_file).context("Failed to parse mublog.conf")?;
+    println!("{config:#?}");
     Ok(())
 }
 

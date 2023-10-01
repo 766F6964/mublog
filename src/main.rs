@@ -10,6 +10,7 @@ use std::env;
 
 mod blog;
 mod cli;
+mod config;
 mod embedded_resources;
 mod features;
 mod page;
