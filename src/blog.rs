@@ -13,6 +13,7 @@ use crate::stages::LoadAssetsStage;
 use crate::stages::LoadPagesStage;
 use crate::stages::LoadPostsStage;
 use crate::stages::LoadStylesheetsStage;
+use crate::stages::WrapPagesStage;
 use crate::stages::WrapPostsStage;
 use crate::stages::WriteAssetsStage;
 use crate::stages::WritePagesStage;
@@ -200,6 +201,7 @@ pub fn build(path: &Path) -> anyhow::Result<()> {
     pipeline.add_stage(ConvertPostsStage);
     pipeline.add_stage(ConvertPagesStage);
     pipeline.add_stage(WrapPostsStage);
+    pipeline.add_stage(WrapPagesStage);
     pipeline.add_stage(WriteStylesheetsStage);
     pipeline.add_stage(WriteAssetsStage);
     pipeline.add_stage(WritePagesStage);
