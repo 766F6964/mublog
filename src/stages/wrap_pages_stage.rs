@@ -68,11 +68,8 @@ impl PipelineStage for WrapPagesStage {
                 )
                 .with_head_link("/meta/favicon.ico", "favicon")
                 .with_title("PAGE_TITLE")
-                .with_container(
-                    Container::new(ContainerType::Main)
-                        .with_raw("<hr>")
-                        .with_raw(&page.content),
-                )
+                // .with_raw("<hr>")
+                .with_container(Container::new(ContainerType::Main).with_raw(&page.content))
                 .with_container(
                     Container::new(ContainerType::Footer)
                         .with_raw("<hr>")
