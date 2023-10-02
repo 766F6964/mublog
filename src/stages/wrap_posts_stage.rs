@@ -1,3 +1,5 @@
+use build_html::{Container, ContainerType, Html, HtmlContainer};
+
 use crate::blog::BlogContext;
 use crate::pipeline::pipeline_stage::PipelineStage;
 
@@ -11,28 +13,84 @@ impl PipelineStage for WrapPostsStage {
 
     fn process(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("WrapPostsStage: Process ...");
+        // --------------------------------------
+        // --------------------------------------
         for post in &mut ctx.posts {
-            let mut post_html = String::new();
-            post_html.push_str(html_tag_start().as_str());
-            post_html.push_str(head_tag_start().as_str());
-            post_html.push_str(&meta_tags(
-                &post.header.title,
-                "TODO_AUTHOR",
-                "TODO_URL",
-                "TODO_DESCRIPTION",
-                "TODO_DESCRIPTION",
-                &post.header.title,
-                "TODO_URL",
-                post.header.date.to_string().as_str(),
-            ));
-            post_html.push_str(stylesheet_refs().as_str());
-            post_html.push_str(head_tag_end().as_str());
-            post_html.push_str(body_tag_start().as_str());
-            post_html.push_str(&post.content);
-            post_html.push_str(body_tag_end().as_str());
-            post_html.push_str(html_tag_end().as_str());
+            let doc = build_html::HtmlPage::new()
+                .with_meta(vec![("charset", "utf-8")])
+                .with_title("POST_TITLE")
+                .with_meta(vec![
+                    ("name", "viewport"),
+                    ("content", "width=device-width, initial-scale=1"),
+                ])
+                .with_meta(vec![("name", "robots"), ("content", "index, archive")])
+                .with_meta(vec![("name", "canonical"), ("content", "BLOG_URL")])
+                .with_meta(vec![
+                    ("name", "description"),
+                    ("content", "BLOG_DESCRIPTION"),
+                ])
+                .with_meta(vec![("property", "og:type"), ("content", "article")])
+                .with_meta(vec![("property", "og:locale"), ("content", "en_US")])
+                .with_meta(vec![
+                    ("property", "og:site_name"),
+                    ("content", "BLOG_TITLE"),
+                ])
+                .with_meta(vec![("property", "og:title"), ("content", "POST_TITLE")])
+                .with_meta(vec![
+                    ("property", "og:description"),
+                    ("content", "POST_DESCRIPTION"),
+                ])
+                .with_meta(vec![("property", "og:url"), ("content", "POST_URL")])
+                .with_meta(vec![
+                    ("property", "og:article:published_time"),
+                    ("content", "POST_DATE"),
+                ])
+                .with_meta(vec![
+                    ("property", "og:article:author"),
+                    ("content", "BLOG_AUTHOR"),
+                ])
+                .with_stylesheet("/css/layout.css")
+                // .with_stylesheet("/css/normalize.css") // Currently breaks body margin
+                .with_head_link("/meta/webmanifest.xml", "manifest")
+                .with_head_link_attr(
+                    "/meta/apple-touch-icon.png",
+                    "apple-touch-icon",
+                    [("sizes", "180x180")],
+                )
+                .with_head_link_attr(
+                    "/meta/favicon-32x32.png",
+                    "icon",
+                    [("type", "image/png"), ("sizes", "32x32")],
+                )
+                .with_head_link_attr(
+                    "/meta/favicon-16x16.png",
+                    "icon",
+                    [("type", "image/png"), ("sizes", "16x16")],
+                )
+                .with_head_link("/meta/favicon.ico", "favicon")
+                .with_title("POST_TITLE")
+                .with_container(
+                    Container::new(ContainerType::Main)
+                        .with_raw("<hr>")
+                        .with_raw(&post.content),
+                )
+                .with_container(
+                    Container::new(ContainerType::Footer)
+                        .with_raw("<hr>")
+                        .with_container(
+                            Container::new(ContainerType::Div)
+                                .with_attributes(vec![("class", "footer-elements")])
+                                .with_container(
+                                    Container::new(ContainerType::Div)
+                                        .with_attributes(vec![("class", "footer-copyright")])
+                                        .with_raw("BLOG_COPYRIGHT_YEAR"),
+                                ),
+                        ),
+                )
+                .to_html_string();
+            println!("{}", doc);
 
-            post.content = post_html;
+            post.content = doc;
         }
         Ok(())
     }
@@ -41,76 +99,4 @@ impl PipelineStage for WrapPostsStage {
         println!("WrapPostsStage: Finalize ...");
         Ok(())
     }
-}
-
-fn html_tag_start() -> String {
-    r#"
-<!DOCTYPE html>
-<html lang="en-US">"#
-        .into()
-}
-
-fn html_tag_end() -> String {
-    r#"
-    </html>"#
-        .into()
-}
-
-fn head_tag_start() -> String {
-    r#"
-    <head>"#
-        .into()
-}
-fn head_tag_end() -> String {
-    r#"
-    </head>"#
-        .into()
-}
-
-fn meta_tags(
-    blog_title: &str,
-    blog_author: &str,
-    blog_url: &str,
-    blog_description: &str,
-    post_description: &str,
-    post_title: &str,
-    post_url: &str,
-    post_date: &str,
-) -> String {
-    format!(
-        r#"
-        <meta charset="utf-8">
-        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="robots" content="index, archive">
-        <meta name="canonical" content="{blog_url}">
-        <meta name="description" content="{blog_description}">
-        <meta property="og:type" content="article" />
-        <meta property="og:locale" content="en_US" />
-        <meta property="og:site_name" content="${blog_title}" />
-        <meta property="og:title" content="{post_title}" />
-        <meta property="og:description" content="${post_description}" />
-        <meta property="og:url" content="{post_url}/${post_title}.html" />
-        <meta property="og:article:published_time" content="{post_date}" />
-        <meta property="og:article:author" content="{blog_author}" />"#
-    )
-}
-
-fn stylesheet_refs() -> String {
-    r#"
-    <link rel="stylesheet" type="text/css" media="all" href="/css/layout.css">"#
-        .into()
-}
-fn body_tag_start() -> String {
-    r#"
-        <body class="${blog_theme}">
-        <main>
-        <hr>"#
-        .into()
-}
-fn body_tag_end() -> String {
-    r#"
-        </main>
-        </body>"#
-        .into()
 }
