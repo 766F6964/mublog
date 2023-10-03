@@ -9,27 +9,29 @@ pub struct WriteStylesheetsStage;
 impl PipelineStage for WriteStylesheetsStage {
     fn initialize(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("WriteStylesheetsStage: Initialize ...");
-        if ctx.stylesheets.is_empty() {
-            bail!("No stylesheets loaded.");
-        }
+        // if ctx.stylesheets.is_empty() {
+        //     bail!("No stylesheets loaded.");
+        // }
         Ok(())
     }
 
     fn process(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("WriteStylesheetsStage: Process ...");
-        for stylesheet in &mut ctx.stylesheets {
-            fs::write(
-                ctx.build_css_dir.join(&stylesheet.name),
-                &stylesheet.content,
-            )
-            .with_context(|| format!("Failed to write stylesheet '{}' to disk", stylesheet.name))?;
+        // TODO: Temporarily disabled for now
 
-            println!(
-                "Successfully wrote stylesheet '{}' to disk ({} bytes)",
-                stylesheet.name,
-                stylesheet.content.len()
-            );
-        }
+        // for stylesheet in &mut ctx.stylesheets {
+        //     fs::write(
+        //         ctx.paths.build_css_dir.join(&stylesheet.name),
+        //         &stylesheet.content,
+        //     )
+        //     .with_context(|| format!("Failed to write stylesheet '{}' to disk", stylesheet.name))?;
+
+        //     println!(
+        //         "Successfully wrote stylesheet '{}' to disk ({} bytes)",
+        //         stylesheet.name,
+        //         stylesheet.content.len()
+        //     );
+        // }
         Ok(())
     }
 

@@ -11,10 +11,10 @@ impl PipelineStage for ConvertPostsStage {
         Ok(())
     }
 
-    fn process(&self, context: &mut BlogContext) -> anyhow::Result<()> {
+    fn process(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("ConvertPostsStage: Process ...");
         // Process all posts
-        for post in &mut context.posts {
+        for post in ctx.registry.get_posts_mut() {
             post.content = markdown::to_html_with_options(
                 &post.content,
                 &Options {

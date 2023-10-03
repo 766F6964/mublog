@@ -15,6 +15,7 @@ pub struct Page {
     pub draft: bool,
     pub index: bool,
     pub title: String,
+    pub fname: String,
 }
 
 pub fn get_pages(pages_dir: &Path) -> Result<Vec<Page>> {

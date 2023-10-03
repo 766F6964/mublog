@@ -14,6 +14,7 @@ use walkdir::WalkDir;
 pub struct Post {
     pub content: String,
     pub header: PostHeader,
+    pub fname: String,
 }
 
 // TODO: Maybe Post and PostHeader should be merged into a single struct

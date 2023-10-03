@@ -13,9 +13,10 @@ impl PipelineStage for WriteAssetsStage {
 
     fn process(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("WriteAssetsStage: Process ...");
-        embedded_resources::write_resources(ctx.assets.clone(), &ctx.build_assets_dir)
-            .context("Failed to write assets to disk")?;
-        println!("Wrote {} assets to disk", ctx.assets.len());
+        // TODO: Temporarily disabled too
+        // embedded_resources::write_resources(ctx.assets.clone(), &ctx.paths.build_assets_dir)
+        // .context("Failed to write assets to disk")?;
+        // println!("Wrote {} assets to disk", ctx.assets.len());
         Ok(())
     }
 

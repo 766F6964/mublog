@@ -40,17 +40,16 @@ impl Feature for NavbarFeature {
 
 fn inject_navbar_in_post(ctx: &mut BlogContext) {
     println!("Navbar Feature execution ...");
-
     let mut nav_html = "<nav>".to_owned();
-    for page in &mut ctx.pages {
+    for page in ctx.registry.get_pages() {
         // TODO: We should store the filenames in the Page/Post struct, so we don't have to rebuild it all the time
         // TODO: This is very poorly written, we need to refactor this in the future
         // TODO: Every feature hook should return an anyhow<Result>
         let filename = match page.index {
-            true => utils::derive_filename("index", ".html", &ctx.build_pages_dir)
+            true => utils::derive_filename("index", ".html", &ctx.paths.build_pages_dir)
                 .context("Failed to derive a unique filename for page.")
                 .unwrap(),
-            false => utils::derive_filename(&page.title, ".html", &ctx.build_pages_dir)
+            false => utils::derive_filename(&page.title, ".html", &ctx.paths.build_pages_dir)
                 .context("Failed to derive a unique filename for page.")
                 .unwrap(),
         };
@@ -61,7 +60,7 @@ fn inject_navbar_in_post(ctx: &mut BlogContext) {
     nav_html.push_str("</nav>");
 
     // Inject navbar html at the top of each converted post
-    for post in &mut ctx.posts {
+    for post in ctx.registry.get_posts_mut() {
         post.content = format!("{nav_html}{}", post.content);
     }
 }
@@ -69,15 +68,15 @@ fn inject_navbar_in_page(ctx: &mut BlogContext) {
     println!("Navbar Feature execution ...");
 
     let mut nav_html = "<nav>".to_owned();
-    for page in &mut ctx.pages {
+    for page in ctx.registry.get_pages() {
         // TODO: We should store the filenames in the Page/Post struct, so we don't have to rebuild it all the time
         // TODO: This is very poorly written, we need to refactor this in the future
         // TODO: Every feature hook should return an anyhow<Result>
         let filename = match page.index {
-            true => utils::derive_filename("index", ".html", &ctx.build_pages_dir)
+            true => utils::derive_filename("index", ".html", &ctx.paths.build_pages_dir)
                 .context("Failed to derive a unique filename for page.")
                 .unwrap(),
-            false => utils::derive_filename(&page.title, ".html", &ctx.build_pages_dir)
+            false => utils::derive_filename(&page.title, ".html", &ctx.paths.build_pages_dir)
                 .context("Failed to derive a unique filename for page.")
                 .unwrap(),
         };
@@ -91,7 +90,7 @@ fn inject_navbar_in_page(ctx: &mut BlogContext) {
     );
 
     // Inject navbar html at the top of each converted post
-    for page in &mut ctx.pages {
+    for page in ctx.registry.get_pages_mut() {
         page.content = format!("{nav_html}{}", page.content);
     }
 }

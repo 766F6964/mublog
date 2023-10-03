@@ -14,7 +14,7 @@ impl PipelineStage for WrapPagesStage {
 
     fn process(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("WrapPagesStage: Process ...");
-        for page in &mut ctx.pages {
+        for page in ctx.registry.get_pages_mut() {
             let doc = build_html::HtmlPage::new()
                 .with_meta(vec![("charset", "utf-8")])
                 .with_title("PAGE_TITLE")

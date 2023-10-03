@@ -13,11 +13,12 @@ impl PipelineStage for LoadAssetsStage {
 
     fn process(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("LoadAssetsStage: Process ...");
+        // TODO: Temporarily disabled this stage
 
-        let assets_resources = embedded_resources::get_resources("assets")
-            .context("Failed to extract resources from embedded directory 'assets'")?;
-        ctx.assets = assets_resources;
-        println!("Loaded {} assets", ctx.assets.len());
+        // let assets_resources = embedded_resources::get_resources("assets")
+        // .context("Failed to extract resources from embedded directory 'assets'")?;
+        // ctx.assets = assets_resources;
+        // println!("Loaded {} assets", ctx.assets.len());
         Ok(())
     }
 

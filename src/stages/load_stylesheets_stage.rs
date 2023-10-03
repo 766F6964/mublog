@@ -13,9 +13,9 @@ impl PipelineStage for LoadStylesheetsStage {
 
     fn process(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("LoadStylesheetsStage: Process ...");
-        ctx.stylesheets =
-            stylesheet::get_stylesheets(&ctx.css_dir).context("Failed to get stylesheets")?;
-        println!("Loaded {} stylesheets", ctx.stylesheets.len());
+        // ctx.stylesheets =
+        // stylesheet::get_stylesheets(&ctx.paths.css_dir).context("Failed to get stylesheets")?;
+        // println!("Loaded {} stylesheets", ctx.stylesheets.len());
         Ok(())
     }
 

@@ -15,7 +15,7 @@ impl PipelineStage for WrapPostsStage {
         println!("WrapPostsStage: Process ...");
         // --------------------------------------
         // --------------------------------------
-        for post in &mut ctx.posts {
+        for post in ctx.registry.get_posts_mut() {
             let doc = build_html::HtmlPage::new()
                 .with_meta(vec![("charset", "utf-8")])
                 .with_title("POST_TITLE")

@@ -7,14 +7,14 @@ pub struct ConvertPagesStage;
 impl PipelineStage for ConvertPagesStage {
     fn initialize(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("ConvertPagesStage: Initialize ...");
-        println!("Found: {} pages", ctx.pages.len());
+        println!("Found: {} pages", ctx.registry.get_pages().len());
         Ok(())
     }
 
     fn process(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("ConvertPagesStage: Process ...");
         // Process all pages
-        for page in &mut ctx.pages {
+        for page in ctx.registry.get_pages_mut() {
             page.content = markdown::to_html_with_options(
                 &page.content,
                 &Options {
