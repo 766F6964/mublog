@@ -13,8 +13,6 @@ impl PipelineStage for WrapPostsStage {
 
     fn process(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("WrapPostsStage: Process ...");
-        // --------------------------------------
-        // --------------------------------------
         for post in ctx.registry.get_posts_mut() {
             let doc = build_html::HtmlPage::new()
                 .with_meta(vec![("charset", "utf-8")])
@@ -50,7 +48,6 @@ impl PipelineStage for WrapPostsStage {
                     ("content", "BLOG_AUTHOR"),
                 ])
                 .with_stylesheet("/css/layout.css")
-                // .with_stylesheet("/css/normalize.css") // Currently breaks body margin
                 .with_head_link("/meta/webmanifest.xml", "manifest")
                 .with_head_link_attr(
                     "/meta/apple-touch-icon.png",

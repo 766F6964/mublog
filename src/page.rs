@@ -15,28 +15,30 @@ pub struct Page {
     pub draft: bool,
     pub index: bool,
     pub title: String,
-    pub fname: String,
+    pub html_filename: String,
+    pub md_filename: String,
 }
 
-pub fn get_pages(pages_dir: &Path) -> Result<Vec<Page>> {
-    let entries = WalkDir::new(pages_dir);
-    let mut pages = vec![];
-    for entry in entries.into_iter().filter_map(std::result::Result::ok) {
-        let page_path = entry.path();
-        if page_path.extension().and_then(OsStr::to_str) == Some("md") {
-            let file_content = fs::read_to_string(page_path).with_context(|| {
-                format!(
-                    "Failed to open page file '{}' for reading",
-                    page_path.display()
-                )
-            })?;
-            let page = parse_from_string(&file_content)
-                .with_context(|| format!("Failed to parse page '{}'", page_path.display()))?;
-            pages.push(page);
-        }
-    }
-    Ok(pages)
-}
+// pub fn get_pages(pages_dir: &Path) -> Result<Vec<Page>> {
+//     // TODO: Should access registry, page shouldnt interact with disk
+//     let entries = WalkDir::new(pages_dir);
+//     let mut pages = vec![];
+//     for entry in entries.into_iter().filter_map(std::result::Result::ok) {
+//         let page_path = entry.path();
+//         if page_path.extension().and_then(OsStr::to_str) == Some("md") {
+//             let file_content = fs::read_to_string(page_path).with_context(|| {
+//                 format!(
+//                     "Failed to open page file '{}' for reading",
+//                     page_path.display()
+//                 )
+//             })?;
+//             let page = parse_from_string(&file_content)
+//                 .with_context(|| format!("Failed to parse page '{}'", page_path.display()))?;
+//             pages.push(page);
+//         }
+//     }
+//     Ok(pages)
+// }
 
 pub fn parse_to_string(page: &Page) -> String {
     let page_str = format!(

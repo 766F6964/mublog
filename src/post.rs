@@ -14,7 +14,8 @@ use walkdir::WalkDir;
 pub struct Post {
     pub content: String,
     pub header: PostHeader,
-    pub fname: String,
+    pub html_filename: String,
+    pub md_filename: String,
 }
 
 // TODO: Maybe Post and PostHeader should be merged into a single struct
@@ -114,6 +115,7 @@ pub fn parse_from_string(data: &str) -> anyhow::Result<Post> {
     Ok(post)
 }
 
+// TODO: use self
 pub fn parse_to_string(post: &Post) -> String {
     let post_str = format!(
         "---\ntitle: {}\ndescription: {}\ndate: {}\ntags: {}\ndraft: {}\n---\n{}",
@@ -127,25 +129,26 @@ pub fn parse_to_string(post: &Post) -> String {
     post_str
 }
 
-pub fn get_posts(posts_dir: &Path) -> anyhow::Result<Vec<Post>> {
-    let entries = WalkDir::new(posts_dir);
-    let mut posts = vec![];
-    for entry in entries.into_iter().filter_map(std::result::Result::ok) {
-        let post_path = entry.path();
-        if post_path.extension().and_then(OsStr::to_str) == Some("md") {
-            let file_content = fs::read_to_string(post_path).with_context(|| {
-                format!(
-                    "Failed to open post file '{}' for reading",
-                    post_path.display()
-                )
-            })?;
-            let post = parse_from_string(&file_content)
-                .with_context(|| format!("Failed to parse post '{}'", post_path.display()))?;
-            posts.push(post);
-        }
-    }
-    Ok(posts)
-}
+// pub fn get_posts(posts_dir: &Path) -> anyhow::Result<Vec<Post>> {
+//     // TODO: Should access registry, post shouldnt interact with disk
+//     let entries = WalkDir::new(posts_dir);
+//     let mut posts = vec![];
+//     for entry in entries.into_iter().filter_map(std::result::Result::ok) {
+//         let post_path = entry.path();
+//         if post_path.extension().and_then(OsStr::to_str) == Some("md") {
+//             let file_content = fs::read_to_string(post_path).with_context(|| {
+//                 format!(
+//                     "Failed to open post file '{}' for reading",
+//                     post_path.display()
+//                 )
+//             })?;
+//             let post = parse_from_string(&file_content)
+//                 .with_context(|| format!("Failed to parse post '{}'", post_path.display()))?;
+//             posts.push(post);
+//         }
+//     }
+//     Ok(posts)
+// }
 #[cfg(test)]
 mod test {
     use super::*;
