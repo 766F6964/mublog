@@ -108,6 +108,7 @@ pub fn build(working_dir: PathBuf) -> anyhow::Result<()> {
 
     let path_cfg = PathConfig::new(working_dir);
     let context = BlogContext::init(path_cfg);
+    // TODO: Have something like Config::init()
     let config =
         config::parse_config(&context.paths.config_file).context("Failed to parse mublog.conf")?;
     println!("{config:#?}");
@@ -134,6 +135,9 @@ pub fn build(working_dir: PathBuf) -> anyhow::Result<()> {
 }
 
 pub fn info(working_dir: PathBuf) -> anyhow::Result<()> {
+    if !is_blog_directory(&working_dir) {
+        bail!("The current directory is not a mublog environment.");
+    }
     let cfg = PathConfig::new(working_dir);
     let mut registry = SiteComponentRegistry::init();
     registry
@@ -142,10 +146,6 @@ pub fn info(working_dir: PathBuf) -> anyhow::Result<()> {
     registry
         .init_pages(&cfg.pages_dir)
         .context("Failed to load pages from disk")?;
-
-    if !is_blog_directory(&cfg.base_dir) {
-        bail!("Directory is not a mublog environment");
-    }
 
     let title_alignment = 30;
     let date_alignment = 12;
@@ -241,7 +241,9 @@ pub fn info(working_dir: PathBuf) -> anyhow::Result<()> {
 }
 
 pub fn create_post(working_dir: PathBuf) -> anyhow::Result<()> {
-    println!("Creating new post ...");
+    if !is_blog_directory(&working_dir) {
+        bail!("The current directory is not a mublog environment.");
+    }
     let cfg = PathConfig::new(working_dir);
     let mut registry = SiteComponentRegistry::init();
     registry
@@ -295,12 +297,15 @@ pub fn create_post(working_dir: PathBuf) -> anyhow::Result<()> {
     println!("post Filename: {}", &new_post.html_filename);
 
     let contents = post::parse_to_string(&new_post);
-    fs::write(cfg.posts_dir.join(&new_post.md_filename), contents)?;
+    fs::write(cfg.posts_dir.join(&new_post.md_filename), contents)
+        .context("Failed to write newly created post to disk.")?;
     Ok(())
 }
 
 pub fn create_page(working_dir: PathBuf) -> anyhow::Result<()> {
-    println!("Creating new page ...");
+    if !is_blog_directory(&working_dir) {
+        bail!("The current directory is not a mublog environment.");
+    }
     let cfg = PathConfig::new(working_dir);
     let mut registry = SiteComponentRegistry::init();
     registry
@@ -340,10 +345,10 @@ pub fn create_page(working_dir: PathBuf) -> anyhow::Result<()> {
         .get_pages()
         .last()
         .context("Failed to load newly added page")?;
-    println!("Page Filename: {}", &new_page.html_filename);
 
     let contents = page::parse_to_string(&new_page);
-    fs::write(cfg.pages_dir.join(&new_page.md_filename), contents)?;
+    fs::write(cfg.pages_dir.join(&new_page.md_filename), contents)
+        .context("Failed to write newly created page to disk.")?;
 
     Ok(())
 }

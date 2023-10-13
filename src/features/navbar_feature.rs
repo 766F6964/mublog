@@ -1,6 +1,8 @@
 use std::any::{self, TypeId};
 
 use anyhow::Context;
+use build_html::{Container, Html, HtmlContainer};
+use chrono::format;
 
 use crate::blog::BlogContext;
 use crate::pipeline::feature::Feature;
@@ -42,18 +44,10 @@ fn inject_navbar_in_post(ctx: &mut BlogContext) {
     println!("Navbar Feature execution ...");
     let mut nav_html = "<nav>".to_owned();
     for page in ctx.registry.get_pages() {
-        // TODO: We should store the filenames in the Page/Post struct, so we don't have to rebuild it all the time
         // TODO: This is very poorly written, we need to refactor this in the future
         // TODO: Every feature hook should return an anyhow<Result>
-        let filename = match page.index {
-            true => utils::derive_filename("index", ".html", &ctx.paths.build_pages_dir)
-                .context("Failed to derive a unique filename for page.")
-                .unwrap(),
-            false => utils::derive_filename(&page.title, ".html", &ctx.paths.build_pages_dir)
-                .context("Failed to derive a unique filename for page.")
-                .unwrap(),
-        };
         let title = &page.title;
+        let filename = &page.html_filename;
         nav_html
             .push_str(format!("<a href=\"/{filename}\" title=\"{title}\">{title}</a>\n").as_str());
     }
@@ -66,31 +60,35 @@ fn inject_navbar_in_post(ctx: &mut BlogContext) {
 }
 fn inject_navbar_in_page(ctx: &mut BlogContext) {
     println!("Navbar Feature execution ...");
+    // TODO: This is very poorly written, we need to refactor this in the future
+    // TODO: Every feature hook should return an anyhow<Result>
 
-    let mut nav_html = "<nav>".to_owned();
+    // let mut nav_html = "<nav>".to_owned();
+    // for page in ctx.registry.get_pages() {
+    //     let title = &page.title;
+    //     let filename = &page.html_filename;
+    //     nav_html
+    //         .push_str(format!("<a href=\"/{filename}\" title=\"{title}\">{title}</a>\n").as_str());
+    // }
+    // nav_html.push_str(
+    //     "</nav>
+    // <hr>",
+    // );
+
+    let mut nav = Container::new(build_html::ContainerType::Nav);
     for page in ctx.registry.get_pages() {
-        // TODO: We should store the filenames in the Page/Post struct, so we don't have to rebuild it all the time
-        // TODO: This is very poorly written, we need to refactor this in the future
-        // TODO: Every feature hook should return an anyhow<Result>
-        let filename = match page.index {
-            true => utils::derive_filename("index", ".html", &ctx.paths.build_pages_dir)
-                .context("Failed to derive a unique filename for page.")
-                .unwrap(),
-            false => utils::derive_filename(&page.title, ".html", &ctx.paths.build_pages_dir)
-                .context("Failed to derive a unique filename for page.")
-                .unwrap(),
-        };
-        let title = &page.title;
-        nav_html
-            .push_str(format!("<a href=\"/{filename}\" title=\"{title}\">{title}</a>\n").as_str());
+        nav = nav.with_link_attr(
+            format!("/{}", page.html_filename),
+            format!("{}", page.title),
+            [("title", page.title.as_str())],
+        );
     }
-    nav_html.push_str(
-        "</nav>
-        <hr>",
-    );
+    nav = nav.with_raw("<hr>");
+    println!("NAV: {}", nav.to_html_string());
 
     // Inject navbar html at the top of each converted post
     for page in ctx.registry.get_pages_mut() {
-        page.content = format!("{nav_html}{}", page.content);
+        // page.content = format!("{}{}", nav_html, page.content);
+        page.content = format!("{}{}", nav.to_html_string(), page.content);
     }
 }

@@ -22,7 +22,10 @@ body nav {
     margin-bottom: 30px;
     margin-top: 30px;
 }
-
+nav a {
+    margin-left: 0.4rem;
+    margin-right: 0.4rem;
+}
 body main {
     flex: 1 0 auto;
 }
