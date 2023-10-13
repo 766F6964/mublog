@@ -8,7 +8,7 @@ use crate::blog::BlogContext;
 use crate::pipeline::feature::Feature;
 use crate::pipeline::feature_registry::FeatureRegistry;
 use crate::pipeline::pipeline_stage_lifetime::PipelineStageLifetime;
-use crate::stages::{ConvertPagesStage, ConvertPostsStage};
+use crate::stages::{ConvertPagesStage, ConvertPostsStage, LoadStylesheetsStage};
 use crate::utils;
 pub struct NavbarFeature;
 
@@ -19,6 +19,7 @@ impl Feature for NavbarFeature {
     {
         registry.register::<ConvertPostsStage, Self>(PipelineStageLifetime::PostProcess, Self);
         registry.register::<ConvertPagesStage, Self>(PipelineStageLifetime::PostProcess, Self);
+        registry.register::<LoadStylesheetsStage, Self>(PipelineStageLifetime::PostProcess, Self);
     }
 
     fn run(
@@ -36,45 +37,59 @@ impl Feature for NavbarFeature {
             && lifetime == PipelineStageLifetime::PostProcess
         {
             inject_navbar_in_page(ctx);
+        } else if pipeline_type == TypeId::of::<LoadStylesheetsStage>()
+            && lifetime == PipelineStageLifetime::PostProcess
+        {
+            inject_navbar_css(ctx);
         }
     }
 }
 
-fn inject_navbar_in_post(ctx: &mut BlogContext) {
-    println!("Navbar Feature execution ...");
-    let mut nav_html = "<nav>".to_owned();
-    for page in ctx.registry.get_pages() {
-        // TODO: This is very poorly written, we need to refactor this in the future
-        // TODO: Every feature hook should return an anyhow<Result>
-        let title = &page.title;
-        let filename = &page.html_filename;
-        nav_html
-            .push_str(format!("<a href=\"/{filename}\" title=\"{title}\">{title}</a>\n").as_str());
-    }
-    nav_html.push_str("</nav>");
+// TODO: Maybe every feature hook should return an anyhow<Result>
+// TODO: Inject CSS into default CSS template
 
-    // Inject navbar html at the top of each converted post
+fn inject_navbar_css(ctx: &mut BlogContext) {
+    println!("Injecting Navbar CSS into layout.css");
+    let nav_css = r#"
+        body nav {
+            font-size: 1.2rem;
+            text-align: center;
+            margin-bottom: 30px;
+            margin-top: 30px;
+        }
+        nav a {
+            margin-left: 0.4rem;
+            margin-right: 0.4rem;
+        }
+    "#;
+    if let Some(layout) = ctx
+        .registry
+        .get_stylesheets_mut()
+        .iter_mut()
+        .find(|s| s.filename == "layout.css")
+    {
+        layout.content.push_str(nav_css);
+        println!("Completed!");
+    } else {
+        // TODO: Don't panic, instead propagate an error
+        panic!("Layout.css should be in SiteComponentRegistry.");
+    }
+}
+
+fn inject_navbar_in_post(ctx: &mut BlogContext) {
+    let nav = create_navbar_html(ctx);
     for post in ctx.registry.get_posts_mut() {
-        post.content = format!("{nav_html}{}", post.content);
+        post.content = format!("{}{}", nav.to_html_string(), post.content);
     }
 }
 fn inject_navbar_in_page(ctx: &mut BlogContext) {
-    println!("Navbar Feature execution ...");
-    // TODO: This is very poorly written, we need to refactor this in the future
-    // TODO: Every feature hook should return an anyhow<Result>
+    let nav = create_navbar_html(ctx);
+    for page in ctx.registry.get_pages_mut() {
+        page.content = format!("{}{}", nav.to_html_string(), page.content);
+    }
+}
 
-    // let mut nav_html = "<nav>".to_owned();
-    // for page in ctx.registry.get_pages() {
-    //     let title = &page.title;
-    //     let filename = &page.html_filename;
-    //     nav_html
-    //         .push_str(format!("<a href=\"/{filename}\" title=\"{title}\">{title}</a>\n").as_str());
-    // }
-    // nav_html.push_str(
-    //     "</nav>
-    // <hr>",
-    // );
-
+fn create_navbar_html(ctx: &mut BlogContext) -> Container {
     let mut nav = Container::new(build_html::ContainerType::Nav);
     for page in ctx.registry.get_pages() {
         nav = nav.with_link_attr(
@@ -84,11 +99,5 @@ fn inject_navbar_in_page(ctx: &mut BlogContext) {
         );
     }
     nav = nav.with_raw("<hr>");
-    println!("NAV: {}", nav.to_html_string());
-
-    // Inject navbar html at the top of each converted post
-    for page in ctx.registry.get_pages_mut() {
-        // page.content = format!("{}{}", nav_html, page.content);
-        page.content = format!("{}{}", nav.to_html_string(), page.content);
-    }
+    nav
 }
