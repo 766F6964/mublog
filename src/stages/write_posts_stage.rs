@@ -15,12 +15,11 @@ impl PipelineStage for WritePostsStage {
     fn process(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("WritePostsStage: Process ...");
         for post in ctx.registry.get_posts() {
-            let filename =
-                utils::derive_filename(&post.header.title, ".html", &ctx.paths.build_posts_dir)
-                    .context("Failed to derive a unique filename for page.")?;
-
             fs::write(
-                ctx.paths.build_posts_dir.join(filename).as_path(),
+                ctx.paths
+                    .build_posts_dir
+                    .join(post.html_filename.as_str())
+                    .as_path(),
                 post.content.clone(),
             )
             .with_context(|| format!("Failed to write post '{}' to disk", post.header.title))?;

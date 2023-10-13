@@ -244,13 +244,10 @@ pub fn create_post(working_dir: PathBuf) -> anyhow::Result<()> {
     println!("Creating new post ...");
     let cfg = PathConfig::new(working_dir);
     let mut registry = SiteComponentRegistry::init();
-    registry.init_posts(&cfg.posts_dir);
+    registry
+        .init_posts(&cfg.posts_dir)
+        .context("Failed to load posts from disk")?;
 
-    for post in registry.get_posts() {
-        println!("post Title: {}", post.header.title);
-        println!("post HTML Filename: {}", post.html_filename);
-        println!("post MD Filename: {}", post.md_filename);
-    }
     let mut post = Post::default();
     post.header.title = Text::new("Title")
         .with_placeholder("Default Title")
@@ -306,7 +303,9 @@ pub fn create_page(working_dir: PathBuf) -> anyhow::Result<()> {
     println!("Creating new page ...");
     let cfg = PathConfig::new(working_dir);
     let mut registry = SiteComponentRegistry::init();
-    registry.init_pages(&cfg.pages_dir);
+    registry
+        .init_pages(&cfg.pages_dir)
+        .context("Failed to load pages from disk")?;
 
     let mut page = Page::default();
     page.title = Text::new("Page Title")

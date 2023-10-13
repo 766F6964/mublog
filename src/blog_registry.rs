@@ -1,19 +1,19 @@
-use std::ffi::OsStr;
-use std::fs::read_to_string;
-use std::path::PathBuf;
-
-use crate::page;
 use crate::page::Page;
 use crate::path_config::PathConfig;
 use crate::post;
 use crate::post::Post;
+use crate::{page, stylesheet::Stylesheet};
 use anyhow::{bail, Context, Ok};
+use std::ffi::OsStr;
+use std::fs::{self, read_to_string};
+use std::path::PathBuf;
 use walkdir::WalkDir;
 
 #[derive(Debug, Default)]
 pub struct SiteComponentRegistry {
     pages: Vec<Page>,
     posts: Vec<Post>,
+    stylesheets: Vec<Stylesheet>,
 }
 
 impl SiteComponentRegistry {
@@ -21,6 +21,7 @@ impl SiteComponentRegistry {
         Self {
             pages: vec![],
             posts: vec![],
+            stylesheets: vec![],
         }
     }
 
@@ -36,8 +37,10 @@ impl SiteComponentRegistry {
             .context("Failed to load pages from disk")?)
     }
 
-    pub fn init_stylsheets(stylesheets_dir: &PathBuf) {
-        unimplemented!("Stylesheet loading not yet implemented")
+    pub fn init_stylesheets(&mut self, stylesheets_dir: &PathBuf) -> anyhow::Result<()> {
+        Ok(self
+            .load_stylesheets_from_disk(stylesheets_dir)
+            .context("Failed to load stylesheets from disk")?)
     }
 
     pub fn init_assets(assets_dir: &PathBuf) {
@@ -76,6 +79,14 @@ impl SiteComponentRegistry {
 
     pub fn get_posts(&self) -> &Vec<Post> {
         &self.posts
+    }
+
+    pub fn get_stylesheets_mut(&mut self) -> &mut Vec<Stylesheet> {
+        &mut self.stylesheets
+    }
+
+    pub fn get_stylesheets(&self) -> &Vec<Stylesheet> {
+        &self.stylesheets
     }
 
     pub fn get_page_filename(&self, page: &Page) -> anyhow::Result<(String, String)> {
@@ -151,6 +162,28 @@ impl SiteComponentRegistry {
                     .with_context(|| format!("Failed to parse page '{}'", page_path.display()))?;
                 self.register_page(page)
                     .context("Failed to register new page")?;
+            }
+        }
+        Ok(())
+    }
+
+    fn load_stylesheets_from_disk(&mut self, css_dir: &PathBuf) -> anyhow::Result<()> {
+        let entries = WalkDir::new(css_dir);
+        for entry in entries.into_iter().filter_map(std::result::Result::ok) {
+            let css_path = entry.path();
+            let css_filename = css_path
+                .file_name()
+                .context("Failed to obtain filename for css file")?
+                .to_string_lossy()
+                .to_string();
+            if css_path.extension().and_then(OsStr::to_str) == Some("css") {
+                let file_content = fs::read_to_string(css_path).with_context(|| {
+                    format!("Failed to open stylesheet file '{css_filename}' for reading")
+                })?;
+                self.stylesheets.push(Stylesheet {
+                    content: file_content,
+                    filename: css_filename,
+                });
             }
         }
         Ok(())

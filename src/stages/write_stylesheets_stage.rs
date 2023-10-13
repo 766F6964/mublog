@@ -9,9 +9,6 @@ pub struct WriteStylesheetsStage;
 impl PipelineStage for WriteStylesheetsStage {
     fn initialize(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("WriteStylesheetsStage: Initialize ...");
-        // if ctx.stylesheets.is_empty() {
-        //     bail!("No stylesheets loaded.");
-        // }
         Ok(())
     }
 
@@ -19,19 +16,24 @@ impl PipelineStage for WriteStylesheetsStage {
         println!("WriteStylesheetsStage: Process ...");
         // TODO: Temporarily disabled for now
 
-        // for stylesheet in &mut ctx.stylesheets {
-        //     fs::write(
-        //         ctx.paths.build_css_dir.join(&stylesheet.name),
-        //         &stylesheet.content,
-        //     )
-        //     .with_context(|| format!("Failed to write stylesheet '{}' to disk", stylesheet.name))?;
+        for stylesheet in ctx.registry.get_stylesheets() {
+            fs::write(
+                ctx.paths.build_css_dir.join(&stylesheet.filename),
+                &stylesheet.content,
+            )
+            .with_context(|| {
+                format!(
+                    "Failed to write stylesheet '{}' to disk",
+                    stylesheet.filename
+                )
+            })?;
 
-        //     println!(
-        //         "Successfully wrote stylesheet '{}' to disk ({} bytes)",
-        //         stylesheet.name,
-        //         stylesheet.content.len()
-        //     );
-        // }
+            println!(
+                "Successfully wrote stylesheet '{}' to disk ({} bytes)",
+                stylesheet.filename,
+                stylesheet.content.len()
+            );
+        }
         Ok(())
     }
 
