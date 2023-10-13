@@ -13,10 +13,9 @@ impl PipelineStage for LoadPostsStage {
 
     fn process(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("LoadPostsStage: Process ...");
-        // We can just initialize all the components at once
-
-        ctx.registry.initialize(&ctx.paths);
-        // ctx.posts = post::get_posts(&ctx.paths.posts_dir).context("Failed to get posts")?;
+        ctx.registry
+            .init_posts(&ctx.paths.posts_dir)
+            .context("Failed to load posts from disk")?;
         println!("Loaded {} posts", ctx.registry.get_posts().len());
         Ok(())
     }

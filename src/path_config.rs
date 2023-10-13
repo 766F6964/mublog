@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
-#[derive(Debug, Default)]
+// TODO: Maybe find a better name, such as EnvironmentConfig
+#[derive(Debug, Default, Clone)]
 pub struct PathConfig {
     pub config_file: PathBuf,
     pub assets_dir: PathBuf,

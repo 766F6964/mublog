@@ -49,9 +49,12 @@ pub struct BlogContext {
 
 impl BlogContext {
     pub fn init(cfg: PathConfig) -> Self {
+        // TODO: Maybe we need something like a service provider, because otherwise
+        // we create unnecessary deps. we could have a serivce provider that
+        // creates/returns singletons
         Self {
             paths: cfg,
-            registry: SiteComponentRegistry::new(),
+            registry: SiteComponentRegistry::init(),
         }
     }
 }
@@ -131,9 +134,14 @@ pub fn build(working_dir: PathBuf) -> anyhow::Result<()> {
 }
 
 pub fn info(working_dir: PathBuf) -> anyhow::Result<()> {
-    let mut registry = SiteComponentRegistry::new();
     let cfg = PathConfig::new(working_dir);
-    registry.initialize(&cfg)?;
+    let mut registry = SiteComponentRegistry::init();
+    registry
+        .init_posts(&cfg.posts_dir)
+        .context("Failed to load posts from disk")?;
+    registry
+        .init_pages(&cfg.pages_dir)
+        .context("Failed to load pages from disk")?;
 
     if !is_blog_directory(&cfg.base_dir) {
         bail!("Directory is not a mublog environment");
@@ -235,10 +243,8 @@ pub fn info(working_dir: PathBuf) -> anyhow::Result<()> {
 pub fn create_post(working_dir: PathBuf) -> anyhow::Result<()> {
     println!("Creating new post ...");
     let cfg = PathConfig::new(working_dir);
-    let mut registry = SiteComponentRegistry::new();
-    registry
-        .initialize(&cfg)
-        .context("Failed to initialize registry")?;
+    let mut registry = SiteComponentRegistry::init();
+    registry.init_posts(&cfg.posts_dir);
 
     for post in registry.get_posts() {
         println!("post Title: {}", post.header.title);
@@ -296,13 +302,11 @@ pub fn create_post(working_dir: PathBuf) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub fn create_page(path: PathBuf) -> anyhow::Result<()> {
+pub fn create_page(working_dir: PathBuf) -> anyhow::Result<()> {
     println!("Creating new page ...");
-    let cfg = PathConfig::new(path);
-    let mut registry = SiteComponentRegistry::new();
-    registry
-        .initialize(&cfg)
-        .context("Failed to initialize registry")?;
+    let cfg = PathConfig::new(working_dir);
+    let mut registry = SiteComponentRegistry::init();
+    registry.init_pages(&cfg.pages_dir);
 
     let mut page = Page::default();
     page.title = Text::new("Page Title")

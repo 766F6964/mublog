@@ -13,8 +13,9 @@ impl PipelineStage for LoadPagesStage {
 
     fn process(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("LoadPagesStage: Process ...");
-        // TODO: I think we only need one stage to load components
-        // ctx.pages = page::get_pages(&ctx.paths.pages_dir).context("Failed to get pages")?;
+        ctx.registry
+            .init_pages(&ctx.paths.pages_dir)
+            .context("Failed to load pages from disk")?;
         println!("Loaded {} pages", ctx.registry.get_pages().len());
         Ok(())
     }

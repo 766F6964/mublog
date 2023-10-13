@@ -1,5 +1,5 @@
 use std::ffi::OsStr;
-use std::fs::{self, read_to_string};
+use std::fs::read_to_string;
 use std::path::PathBuf;
 
 use crate::page;
@@ -17,24 +17,35 @@ pub struct SiteComponentRegistry {
 }
 
 impl SiteComponentRegistry {
-    pub fn new() -> Self {
+    pub fn init() -> Self {
         Self {
             pages: vec![],
             posts: vec![],
         }
     }
 
-    pub fn initialize(&mut self, cfg: &PathConfig) -> anyhow::Result<()> {
-        println!("Initializing SiteComponentRegistry ...");
-        self.load_posts_from_disk(&cfg.posts_dir)
-            .context("Failed to load posts from disk")?;
-        self.load_pages_from_disk(&cfg.pages_dir)
-            .context("Failed to load pages from disk")?;
-        Ok(())
+    pub fn init_posts(&mut self, posts_dir: &PathBuf) -> anyhow::Result<()> {
+        Ok(self
+            .load_posts_from_disk(posts_dir)
+            .context("Failed to load posts from disk")?)
+    }
+
+    pub fn init_pages(&mut self, pages_dir: &PathBuf) -> anyhow::Result<()> {
+        Ok(self
+            .load_pages_from_disk(pages_dir)
+            .context("Failed to load pages from disk")?)
+    }
+
+    pub fn init_stylsheets(stylesheets_dir: &PathBuf) {
+        unimplemented!("Stylesheet loading not yet implemented")
+    }
+
+    pub fn init_assets(assets_dir: &PathBuf) {
+        unimplemented!("Asset loading not yet implemented")
     }
 
     pub fn register_post(&mut self, mut post: Post) -> anyhow::Result<()> {
-        // TODO: Validate the post
+        // TODO: Maybe we should insert in a hashmap instead of a vec
         let (html_name, md_name) = self.get_post_filename(&post)?;
         post.html_filename = html_name;
         post.md_filename = md_name;
@@ -45,8 +56,6 @@ impl SiteComponentRegistry {
     pub fn register_page(&mut self, mut page: Page) -> anyhow::Result<()> {
         // TODO: Maybe we should insert in a hashmap instead of a vec
         let (html_name, md_name) = self.get_page_filename(&page)?;
-        println!("HTML Filename: {html_name}");
-        println!("MD Filename: {md_name}");
         page.html_filename = html_name;
         page.md_filename = md_name;
         self.pages.push(page);
@@ -70,7 +79,6 @@ impl SiteComponentRegistry {
     }
 
     pub fn get_page_filename(&self, page: &Page) -> anyhow::Result<(String, String)> {
-        // TODO
         let title = page.title.trim().replace(" ", "_").to_lowercase();
         if page.index && self.contains_index_page() {
             bail!("Duplicate index pages are not allowed.");
@@ -78,12 +86,17 @@ impl SiteComponentRegistry {
         if !page.index && title == "index" {
             bail!("Non-index page can't be named 'index'");
         }
-
         let mut html_fname = format!("{}.html", title).to_owned();
+        if page.index {
+            html_fname = "index.html".into();
+        }
         let mut md_fname = format!("{}.md", title).to_owned();
         let mut count = 1;
         while self.contains_page_filename(&html_fname, &md_fname) {
             html_fname = format!("{}_{}.html", title, count);
+            if page.index {
+                html_fname = "index.html".into();
+            }
             md_fname = format!("{}_{}.md", title, count);
             count += 1;
         }
@@ -167,7 +180,7 @@ mod test {
     // TODO: Add unit test that loads posts/pages from disk
     #[test]
     fn register_post_incremental_filename() {
-        let mut reg = SiteComponentRegistry::new();
+        let mut reg = SiteComponentRegistry::init();
         let mut p1 = Post::default();
         let mut p2 = Post::default();
         let mut p3 = Post::default();
@@ -208,7 +221,7 @@ mod test {
 
     #[test]
     fn register_page_incremental_filename() {
-        let mut reg = SiteComponentRegistry::new();
+        let mut reg = SiteComponentRegistry::init();
         let mut p1 = Page::default();
         let mut p2 = Page::default();
         let mut p3 = Page::default();
@@ -249,7 +262,7 @@ mod test {
 
     #[test]
     fn register_page_index_page() {
-        let mut reg = SiteComponentRegistry::new();
+        let mut reg = SiteComponentRegistry::init();
         let mut p1 = Page::default();
         p1.index = true;
         p1.title = "test".into();
@@ -269,7 +282,7 @@ mod test {
 
     #[test]
     fn register_page_fake_index_page() {
-        let mut reg = SiteComponentRegistry::new();
+        let mut reg = SiteComponentRegistry::init();
         let mut p1 = Page::default();
         p1.index = false;
         p1.title = "index".into();
@@ -284,7 +297,7 @@ mod test {
 
     #[test]
     fn register_page_duplicate_index_page() {
-        let mut reg = SiteComponentRegistry::new();
+        let mut reg = SiteComponentRegistry::init();
         let mut p1 = Page::default();
         let mut p2 = Page::default();
         p1.index = true;
