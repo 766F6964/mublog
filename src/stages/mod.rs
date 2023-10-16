@@ -1,3 +1,4 @@
+mod apply_global_vars;
 mod convert_pages_stage;
 mod convert_posts_stage;
 mod create_build_directories_stage;
@@ -12,6 +13,7 @@ mod write_pages_stage;
 mod write_posts_stage;
 mod write_stylesheets_stage;
 
+pub use apply_global_vars::ApplyGlobalVarsStage;
 pub use convert_pages_stage::ConvertPagesStage;
 pub use convert_posts_stage::ConvertPostsStage;
 pub use create_build_directories_stage::CreateBuildDirectoriesStage;

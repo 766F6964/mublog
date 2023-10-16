@@ -12,5 +12,5 @@ pub trait Feature {
         ctx: &mut super::BlogContext,
         pipeline_type: TypeId,
         lifetime: PipelineStageLifetime,
-    );
+    ) -> anyhow::Result<()>;
 }

@@ -1,5 +1,6 @@
 use crate::blog_registry::SiteComponentRegistry;
 use crate::config;
+use crate::config::Config;
 use crate::embedded_resources;
 use crate::features::NavbarFeature;
 use crate::input::CommaListValidator;
@@ -10,6 +11,7 @@ use crate::path_config::PathConfig;
 use crate::pipeline::Pipeline;
 use crate::post;
 use crate::post::Post;
+use crate::stages::ApplyGlobalVarsStage;
 use crate::stages::ConvertPagesStage;
 use crate::stages::ConvertPostsStage;
 use crate::stages::CreateBuildDirectoriesStage;
@@ -43,16 +45,18 @@ struct BlogConfig {
 
 #[derive(Debug, Default)]
 pub struct BlogContext {
+    pub cfg_file: Config,
     pub paths: PathConfig,
     pub registry: SiteComponentRegistry,
 }
 
 impl BlogContext {
-    pub fn init(cfg: PathConfig) -> Self {
+    pub fn init(cfg: PathConfig, cfg_file: Config) -> Self {
         // TODO: Maybe we need something like a service provider, because otherwise
         // we create unnecessary deps. we could have a serivce provider that
         // creates/returns singletons
         Self {
+            cfg_file,
             paths: cfg,
             registry: SiteComponentRegistry::init(),
         }
@@ -107,11 +111,12 @@ pub fn build(working_dir: PathBuf) -> anyhow::Result<()> {
     }
 
     let path_cfg = PathConfig::new(working_dir);
-    let context = BlogContext::init(path_cfg);
     // TODO: Have something like Config::init()
-    let config =
-        config::parse_config(&context.paths.config_file).context("Failed to parse mublog.conf")?;
-    println!("{config:#?}");
+    let config = config::parse_config(&path_cfg.config_file)
+        .context("Failed to parse mublog config file")?;
+
+    let context = BlogContext::init(path_cfg, config);
+    // println!("{config:#?}");
 
     let mut pipeline = Pipeline::new(context);
     pipeline.add_stage(CreateBuildDirectoriesStage);
@@ -119,6 +124,7 @@ pub fn build(working_dir: PathBuf) -> anyhow::Result<()> {
     pipeline.add_stage(LoadAssetsStage);
     pipeline.add_stage(LoadPostsStage);
     pipeline.add_stage(LoadPagesStage);
+    pipeline.add_stage(ApplyGlobalVarsStage);
     pipeline.add_stage(ConvertPostsStage);
     pipeline.add_stage(ConvertPagesStage);
     pipeline.add_stage(WrapPostsStage);
