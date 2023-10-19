@@ -1,15 +1,11 @@
-use std::any::{self, TypeId};
-
-use anyhow::{bail, Context, Ok};
-use build_html::{Container, Html, HtmlContainer};
-use chrono::format;
-
 use crate::blog::BlogContext;
 use crate::pipeline::feature::Feature;
 use crate::pipeline::feature_registry::FeatureRegistry;
 use crate::pipeline::pipeline_stage_lifetime::PipelineStageLifetime;
 use crate::stages::{ConvertPagesStage, ConvertPostsStage, LoadStylesheetsStage};
-use crate::utils;
+use anyhow::{bail, Context, Ok};
+use build_html::{Container, Html, HtmlContainer};
+use std::any::TypeId;
 pub struct NavbarFeature;
 
 impl Feature for NavbarFeature {

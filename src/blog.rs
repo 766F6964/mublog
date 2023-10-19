@@ -1,8 +1,9 @@
 use crate::blog_registry::SiteComponentRegistry;
 use crate::config;
-use crate::config::Config;
+use crate::config::BlogConfig;
 use crate::embedded_resources;
 use crate::features::NavbarFeature;
+use crate::features::PostListingFeature;
 use crate::input::CommaListValidator;
 use crate::input::EmptyOrWhitespaceValidator;
 use crate::page;
@@ -38,26 +39,21 @@ use inquire::Text;
 use std::fs;
 use std::path::PathBuf;
 
-struct BlogConfig {
-    // TODO: This is populated after parsing the config file
-    blog_author: String,
-}
-
 #[derive(Debug, Default)]
 pub struct BlogContext {
-    pub cfg_file: Config,
+    pub config: BlogConfig,
     pub paths: PathConfig,
     pub registry: SiteComponentRegistry,
 }
 
 impl BlogContext {
-    pub fn init(cfg: PathConfig, cfg_file: Config) -> Self {
+    pub fn init(paths: PathConfig, config: BlogConfig) -> Self {
         // TODO: Maybe we need something like a service provider, because otherwise
         // we create unnecessary deps. we could have a serivce provider that
         // creates/returns singletons
         Self {
-            cfg_file,
-            paths: cfg,
+            config,
+            paths,
             registry: SiteComponentRegistry::init(),
         }
     }
@@ -133,6 +129,7 @@ pub fn build(working_dir: PathBuf) -> anyhow::Result<()> {
     pipeline.add_stage(WriteAssetsStage);
     pipeline.add_stage(WritePagesStage);
     pipeline.add_stage(WritePostsStage);
+    pipeline.add_feature::<PostListingFeature>();
     pipeline.add_feature::<NavbarFeature>();
     pipeline.run().context("Build process failed")?;
 

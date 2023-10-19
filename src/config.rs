@@ -16,18 +16,18 @@ pub enum Feature {
 }
 
 #[derive(Debug, Default, Deserialize)]
-pub struct Config {
+pub struct BlogConfig {
     pub blog_author: String,
     pub blog_copyright_year: i64,
     pub blog_email: String,
     pub features: Vec<Feature>,
 }
 
-pub fn parse_config(config_path: &PathBuf) -> Result<Config> {
+pub fn parse_config(config_path: &PathBuf) -> Result<BlogConfig> {
     let contents = fs::read_to_string(config_path).context("Failed to open config file")?;
     let document = Document::from_str(&contents).context("Failed to parse toml file")?;
 
-    let cfg = Config {
+    let cfg = BlogConfig {
         blog_author: conf_get_string(&document, "general", "blog_author")?,
         blog_copyright_year: conf_get_integer(&document, "general", "blog_copyright_year")?,
         blog_email: conf_get_string(&document, "general", "blog_email")?,

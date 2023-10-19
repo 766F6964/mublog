@@ -12,9 +12,9 @@ impl PipelineStage for ApplyGlobalVarsStage {
     fn process(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("ApplyGlobalVarsStage: Process ...");
 
-        let author_name = &ctx.cfg_file.blog_author;
-        let author_email = &ctx.cfg_file.blog_email;
-        let copyright_year = ctx.cfg_file.blog_copyright_year.to_string();
+        let author_name = &ctx.config.blog_author;
+        let author_email = &ctx.config.blog_email;
+        let copyright_year = ctx.config.blog_copyright_year.to_string();
 
         for page in ctx.registry.get_pages_mut() {
             page.content = page
