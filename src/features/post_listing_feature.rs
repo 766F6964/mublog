@@ -44,19 +44,23 @@ fn inject_post_listing_html(ctx: &mut BlogContext) -> anyhow::Result<()> {
 }
 
 fn generate_post_listing_html(ctx: &mut BlogContext) -> String {
-    let mut list = Container::new(ContainerType::UnorderedList);
+    let mut articles =
+        Container::new(ContainerType::UnorderedList).with_attributes(vec![("class", "articles")]);
     for post in ctx.registry.get_posts() {
-        let id = post.html_filename.clone();
         let path = Path::new("posts").join(&post.html_filename);
-        list = list.with_container(
-            Container::new(ContainerType::Div)
-                .with_attributes(vec![
-                    ("id", id.as_str()), // TODO: Do we need an ID?
-                    ("date", post.header.date.to_string().as_str()),
-                ])
-                .with_link(path.display(), &post.header.title),
-        )
+        let post_entry = Container::new(ContainerType::Div)
+            .with_container(
+                Container::new(ContainerType::Div)
+                    .with_attributes(vec![("class", "post_entry_date")])
+                    .with_raw(format!("{}", post.header.date.to_string().as_str())),
+            )
+            .with_container(
+                Container::new(ContainerType::Div)
+                    .with_attributes(vec![("class", "post_entry_link")])
+                    .with_link(path.display(), &post.header.title),
+            )
+            .with_attributes(vec![("class", "post_entry")]);
+        articles = articles.with_html(post_entry)
     }
-    let article = Container::new(ContainerType::Article).with_container(list);
-    return article.to_html_string();
+    return articles.to_html_string();
 }

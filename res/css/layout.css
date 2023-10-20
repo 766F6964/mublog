@@ -126,34 +126,29 @@ h3 {
     font-size: 1.3rem
 }
 
-.articles {
-    padding-left: 2rem;
-    padding-right: 2rem;
-}
-
-.article-entry {
+.post_entry {
   display: flex;
   align-items: center;
 }
 
-.article-date {
-  flex: 0 0 auto;
-  margin-right: 0.8rem;
-  font-weight: bold;
-  color: var(--color-article-listing-date);
+.post_entry_date {
+    font-weight: bold;
+    flex: 0 0 auto;
+    margin-right: 0.8rem;
+    color: var(--color-article-listing-date);
+}
+.post_entry_link {
+    flex: 1;
 }
 
-.article-title {
-  flex: 1;
+.post_entry_link a {
+    flex: 1;
+    text-decoration: underline;
+    font-style: normal;
+    color: var(--color-article-listing-title);
 }
 
-.article-title a {
-  text-decoration: underline;
-  font-style: normal;
-  color: var(--color-article-listing-title);
-}
-
-.article-title a:hover {
+.post_entry_link a:hover {
     color: var(--color-page-background);
     background-color: var(--color-text);
 }
