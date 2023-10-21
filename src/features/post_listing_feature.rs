@@ -1,8 +1,8 @@
-use crate::blog::BlogContext;
 use crate::pipeline::feature::Feature;
 use crate::pipeline::feature_registry::FeatureRegistry;
 use crate::pipeline::pipeline_stage_lifetime::PipelineStageLifetime;
 use crate::stages::ConvertPagesStage;
+use crate::{blog::BlogContext, post::Post};
 use anyhow::Context;
 use build_html::{Container, ContainerType, Html, HtmlContainer};
 use std::{any::TypeId, path::Path};
@@ -44,9 +44,14 @@ fn inject_post_listing_html(ctx: &mut BlogContext) -> anyhow::Result<()> {
 }
 
 fn generate_post_listing_html(ctx: &mut BlogContext) -> String {
+    // let mut posts = &ctx.registry.get_posts_mut();
+    // &posts.sort_by(|a, b| a.header.date.cmp(&b.header.date));
+    let posts = ctx.registry.get_posts_mut();
+    posts.sort_by(|a, b| b.header.date.cmp(&a.header.date));
+
     let mut articles =
         Container::new(ContainerType::UnorderedList).with_attributes(vec![("class", "articles")]);
-    for post in ctx.registry.get_posts() {
+    for post in posts {
         let path = Path::new("posts").join(&post.html_filename);
         let post_entry = Container::new(ContainerType::Div)
             .with_container(
