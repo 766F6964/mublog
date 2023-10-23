@@ -2,15 +2,14 @@
 blog_author = "Bob"
 blog_copyright_year = 2023
 blog_email = "bob@example.com"
-# features = ["navbar", "tags", "postlisting"]
 features = ["tags", "postlisting"]
 
-[feature.navbar]
+[feature-navbar]
 order = ["index", "projects", "about"]
 
-[feature.postlisting]
+[feature-postlisting]
 order = "ascending"
  
-[feature.tags]
+[feature-tags]
 sort_by = "count" # Order by name
 

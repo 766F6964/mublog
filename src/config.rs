@@ -1,3 +1,6 @@
+use crate::features::post_listing_feature::PostlistingConfig;
+use crate::features::post_listing_feature::SortingOrder;
+use crate::features::FeatureConfig;
 use anyhow::bail;
 use anyhow::Context;
 use anyhow::Ok;
@@ -8,47 +11,63 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use toml_edit::Document;
 
-#[derive(Debug, Deserialize)]
-pub enum Feature {
-    Navbar,
-    Tags,
-    Postlisting,
-}
-
 #[derive(Debug, Default, Deserialize)]
 pub struct BlogConfig {
     pub blog_author: String,
     pub blog_copyright_year: i64,
     pub blog_email: String,
-    pub features: Vec<Feature>,
+    pub features: Vec<FeatureConfig>,
 }
 
 pub fn parse_config(config_path: &PathBuf) -> Result<BlogConfig> {
     let contents = fs::read_to_string(config_path).context("Failed to open config file")?;
     let document = Document::from_str(&contents).context("Failed to parse toml file")?;
 
+    // General configs
+    let author = conf_get_string(&document, "general", "blog_author")?;
+    let year = conf_get_integer(&document, "general", "blog_copyright_year")?;
+    let email = conf_get_string(&document, "general", "blog_email")?;
+    let features = conf_get_features(&document)?;
+
     let cfg = BlogConfig {
-        blog_author: conf_get_string(&document, "general", "blog_author")?,
-        blog_copyright_year: conf_get_integer(&document, "general", "blog_copyright_year")?,
-        blog_email: conf_get_string(&document, "general", "blog_email")?,
-        features: conf_get_features(&document)?,
+        blog_author: author,
+        blog_copyright_year: year,
+        blog_email: email,
+        features: features,
     };
 
     Ok(cfg)
 }
 
-pub fn conf_get_features(doc: &Document) -> anyhow::Result<Vec<Feature>> {
-    Ok(conf_get_string_array(doc, "general", "features")?
+pub fn conf_get_features(doc: &Document) -> anyhow::Result<Vec<FeatureConfig>> {
+    Ok(conf_get_string_array(&doc, "general", "features")?
         .iter()
         .map(|s| {
             Ok(match s.as_str() {
-                "navbar" => Feature::Navbar,
-                "tags" => Feature::Tags,
-                "postlisting" => Feature::Postlisting,
+                "navbar" => FeatureConfig::Navbar,
+                "tags" => FeatureConfig::Tags,
+                "postlisting" => parse_postlisting_conf(&doc)
+                    .context("Failed to parse configuration for PostListingFeature")?,
                 _ => bail!("Invalid feature '{s}'"),
             })
         })
-        .collect::<Result<Vec<Feature>>>()?)
+        .collect::<Result<Vec<FeatureConfig>>>()?)
+}
+
+pub fn parse_postlisting_conf(doc: &Document) -> anyhow::Result<FeatureConfig> {
+    let cfgstr_order = conf_get_string(&doc, "feature-postlisting", "order")
+        .context("Failed to parse feature configuration: feature-postlising")?;
+
+    let order = match cfgstr_order.as_str() {
+        "ascending" => SortingOrder::Ascending,
+        "descending" => SortingOrder::Descending,
+        _ => {
+            bail!("Invalid configuration for field: 'sort' in feature: 'feature-postlisting'");
+        }
+    };
+    Ok(FeatureConfig::Postlisting(PostlistingConfig {
+        sort: order,
+    }))
 }
 
 pub fn conf_get_string(doc: &Document, table: &str, key: &str) -> anyhow::Result<String> {

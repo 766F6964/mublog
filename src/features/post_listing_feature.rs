@@ -1,10 +1,13 @@
+use crate::features::FeatureConfig;
+// use crate::config::{FeatureConfig, SortingOrder};
 use crate::pipeline::feature::Feature;
 use crate::pipeline::feature_registry::FeatureRegistry;
 use crate::pipeline::pipeline_stage_lifetime::PipelineStageLifetime;
 use crate::stages::ConvertPagesStage;
 use crate::{blog::BlogContext, post::Post};
-use anyhow::Context;
+// use anyhow::{bail, Context};
 use build_html::{Container, ContainerType, Html, HtmlContainer};
+use serde::Deserialize;
 use std::{any::TypeId, path::Path};
 pub struct PostListingFeature;
 
@@ -26,28 +29,59 @@ impl Feature for PostListingFeature {
         if pipeline_type == TypeId::of::<ConvertPagesStage>()
             && lifetime == PipelineStageLifetime::PostProcess
         {
-            inject_post_listing_html(ctx)
-                .context("Failed to inject post listing HTML into page")?;
+            let features: Vec<FeatureConfig> = ctx.config.features.clone();
+
+            // Extract and work with post_cfg
+            if let Some(post_cfg) = features.iter().find_map(|config| {
+                if let FeatureConfig::Postlisting(post_config) = config {
+                    Some(post_config.clone()) // Clone post_config to avoid borrow conflicts
+                } else {
+                    None
+                }
+            }) {
+                // Mutable borrow of ctx here is fine because post_cfg is a cloned copy
+                let ctx = &mut *ctx;
+                println!("SORT ORDER: {:#?}", post_cfg.sort);
+                inject_post_listing_html(ctx, &post_cfg)?;
+            } else {
+                // Handle case when PostListingConfig is not found in features
+                println!("PostListingConfig not found in the vector");
+            }
         }
         Ok(())
     }
 }
+#[derive(Debug, Deserialize, Clone)]
+pub enum SortingOrder {
+    Ascending,
+    Descending,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct PostlistingConfig {
+    pub sort: SortingOrder,
+}
 
 // TODO: Add pagination support, configurable via config
-fn inject_post_listing_html(ctx: &mut BlogContext) -> anyhow::Result<()> {
-    println!("Injecting post listing html ...");
-    let html = generate_post_listing_html(ctx);
+fn inject_post_listing_html(ctx: &mut BlogContext, cfg: &PostlistingConfig) -> anyhow::Result<()> {
+    let html = generate_post_listing_html(ctx, cfg.sort.clone());
     for page in ctx.registry.get_pages_mut() {
         page.content = page.content.replace("{{{POST_LISTING}}}", html.as_str());
     }
     Ok(())
 }
 
-fn generate_post_listing_html(ctx: &mut BlogContext) -> String {
-    // let mut posts = &ctx.registry.get_posts_mut();
-    // &posts.sort_by(|a, b| a.header.date.cmp(&b.header.date));
+fn generate_post_listing_html(ctx: &mut BlogContext, sort: SortingOrder) -> String {
     let posts = ctx.registry.get_posts_mut();
-    posts.sort_by(|a, b| b.header.date.cmp(&a.header.date));
+
+    match sort {
+        SortingOrder::Ascending => {
+            posts.sort_by(|a, b| a.header.date.cmp(&b.header.date));
+        }
+        SortingOrder::Descending => {
+            posts.sort_by(|a, b| b.header.date.cmp(&a.header.date));
+        }
+    }
 
     let mut articles =
         Container::new(ContainerType::UnorderedList).with_attributes(vec![("class", "articles")]);
