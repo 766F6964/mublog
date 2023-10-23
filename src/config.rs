@@ -59,8 +59,8 @@ pub fn parse_postlisting_conf(doc: &Document) -> anyhow::Result<FeatureConfig> {
         .context("Failed to parse feature configuration: feature-postlising")?;
 
     let order = match cfgstr_order.as_str() {
-        "ascending" => SortingOrder::Ascending,
-        "descending" => SortingOrder::Descending,
+        "oldestontop" => SortingOrder::OldestOnTop,
+        "newestontop" => SortingOrder::NewestOnTop,
         _ => {
             bail!("Invalid configuration for field: 'sort' in feature: 'feature-postlisting'");
         }

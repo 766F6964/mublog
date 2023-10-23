@@ -45,16 +45,17 @@ impl Feature for PostListingFeature {
                 inject_post_listing_html(ctx, &post_cfg)?;
             } else {
                 // Handle case when PostListingConfig is not found in features
-                println!("PostListingConfig not found in the vector");
+                bail!("PostListingConfig not found in the vector");
             }
         }
         Ok(())
     }
 }
+
 #[derive(Debug, Deserialize, Clone)]
 pub enum SortingOrder {
-    Ascending,
-    Descending,
+    OldestOnTop,
+    NewestOnTop,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -64,21 +65,21 @@ pub struct PostlistingConfig {
 
 // TODO: Add pagination support, configurable via config
 fn inject_post_listing_html(ctx: &mut BlogContext, cfg: &PostlistingConfig) -> anyhow::Result<()> {
-    let html = generate_post_listing_html(ctx, cfg.sort.clone());
+    let html = generate_post_listing_html(ctx, &cfg.sort);
     for page in ctx.registry.get_pages_mut() {
         page.content = page.content.replace("{{{POST_LISTING}}}", html.as_str());
     }
     Ok(())
 }
 
-fn generate_post_listing_html(ctx: &mut BlogContext, sort: SortingOrder) -> String {
+fn generate_post_listing_html(ctx: &mut BlogContext, sort: &SortingOrder) -> String {
     let posts = ctx.registry.get_posts_mut();
 
     match sort {
-        SortingOrder::Ascending => {
+        SortingOrder::OldestOnTop => {
             posts.sort_by(|a, b| a.header.date.cmp(&b.header.date));
         }
-        SortingOrder::Descending => {
+        SortingOrder::NewestOnTop => {
             posts.sort_by(|a, b| b.header.date.cmp(&a.header.date));
         }
     }
