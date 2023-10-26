@@ -34,21 +34,21 @@ pub fn parse_config(config_path: &PathBuf) -> Result<BlogConfig> {
         blog_author: author,
         blog_copyright_year: year,
         blog_email: email,
-        features: features,
+        features,
     };
 
     Ok(cfg)
 }
 
 pub fn conf_get_features(doc: &Document) -> anyhow::Result<Vec<FeatureConfig>> {
-    Ok(conf_get_string_array(&doc, "general", "features")?
+    Ok(conf_get_string_array(doc, "general", "features")?
         .iter()
         .map(|s| {
             Ok(match s.as_str() {
                 "tags" => FeatureConfig::Tags,
-                "navbar" => parse_navbar_conf(&doc)
+                "navbar" => parse_navbar_conf(doc)
                     .context("Failed to parse configuration for NavbarFeature")?,
-                "postlisting" => parse_postlisting_conf(&doc)
+                "postlisting" => parse_postlisting_conf(doc)
                     .context("Failed to parse configuration for PostListingFeature")?,
                 _ => bail!("Invalid feature '{s}'"),
             })
@@ -57,7 +57,7 @@ pub fn conf_get_features(doc: &Document) -> anyhow::Result<Vec<FeatureConfig>> {
 }
 
 pub fn parse_postlisting_conf(doc: &Document) -> anyhow::Result<FeatureConfig> {
-    let cfgstr_order = conf_get_string(&doc, "feature-postlisting", "order")
+    let cfgstr_order = conf_get_string(doc, "feature-postlisting", "order")
         .context("Failed to parse feature configuration: feature-postlising")?;
 
     let order = match cfgstr_order.as_str() {
@@ -73,7 +73,7 @@ pub fn parse_postlisting_conf(doc: &Document) -> anyhow::Result<FeatureConfig> {
 }
 
 pub fn parse_navbar_conf(doc: &Document) -> anyhow::Result<FeatureConfig> {
-    let cfgstr_order = conf_get_string_array(&doc, "feature-navbar", "links")
+    let cfgstr_order = conf_get_string_array(doc, "feature-navbar", "links")
         .context("Failed to parse feature configuration: feature-navbar")?;
 
     Ok(FeatureConfig::Navbar(NavbarConfig {

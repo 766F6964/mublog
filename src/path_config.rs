@@ -22,7 +22,7 @@ impl PathConfig {
     pub fn new(working_dir: PathBuf) -> Self {
         Self {
             config_file: working_dir.join("mublog.toml"),
-            base_dir: working_dir.to_path_buf(),
+            base_dir: working_dir.clone(),
             build_dir: working_dir.join("build"),
             build_pages_dir: working_dir.join("build"),
             build_assets_dir: working_dir.join("build").join("assets"),

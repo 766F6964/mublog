@@ -4,10 +4,6 @@ use anyhow::Context;
 use anyhow::Result;
 use std::collections;
 use std::collections::HashSet;
-use std::ffi::OsStr;
-use std::fs;
-use std::path::Path;
-use walkdir::WalkDir;
 
 #[derive(Debug, Default, Clone)]
 pub struct Page {
@@ -18,27 +14,6 @@ pub struct Page {
     pub html_filename: String,
     pub md_filename: String,
 }
-
-// pub fn get_pages(pages_dir: &Path) -> Result<Vec<Page>> {
-//     // TODO: Should access registry, page shouldnt interact with disk
-//     let entries = WalkDir::new(pages_dir);
-//     let mut pages = vec![];
-//     for entry in entries.into_iter().filter_map(std::result::Result::ok) {
-//         let page_path = entry.path();
-//         if page_path.extension().and_then(OsStr::to_str) == Some("md") {
-//             let file_content = fs::read_to_string(page_path).with_context(|| {
-//                 format!(
-//                     "Failed to open page file '{}' for reading",
-//                     page_path.display()
-//                 )
-//             })?;
-//             let page = parse_from_string(&file_content)
-//                 .with_context(|| format!("Failed to parse page '{}'", page_path.display()))?;
-//             pages.push(page);
-//         }
-//     }
-//     Ok(pages)
-// }
 
 pub fn parse_to_string(page: &Page) -> String {
     let page_str = format!(
@@ -98,20 +73,20 @@ fn parse_index(index: &str) -> Result<bool> {
     index
         .trim()
         .parse::<bool>()
-        .map_err(|_| anyhow!("Draft field must be either 'true' or 'false'."))
+        .map_err(|_| anyhow!("Draft field must be either 'true' or 'false'"))
 }
 
 fn parse_draft(draft: &str) -> Result<bool> {
     draft
         .trim()
         .parse::<bool>()
-        .map_err(|_| anyhow!("Draft field must be either 'true' or 'false'."))
+        .map_err(|_| anyhow!("Draft field must be either 'true' or 'false'"))
 }
 
 fn parse_title(mut title: &str) -> Result<String> {
     title = title.trim();
     if title.is_empty() {
-        bail!("The title cannot be empty or consist of only whitespace characters.");
+        bail!("The title cannot be empty or consist of only whitespace characters");
     }
     Ok(title.to_owned())
 }

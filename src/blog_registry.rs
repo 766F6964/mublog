@@ -1,5 +1,5 @@
 use crate::page::Page;
-use crate::path_config::PathConfig;
+
 use crate::post;
 use crate::post::Post;
 use crate::{page, stylesheet::Stylesheet};
@@ -43,7 +43,7 @@ impl SiteComponentRegistry {
             .context("Failed to load stylesheets from disk")?)
     }
 
-    pub fn init_assets(assets_dir: &PathBuf) {
+    pub fn init_assets(_assets_dir: &PathBuf) {
         unimplemented!("Asset loading not yet implemented")
     }
 
@@ -90,38 +90,38 @@ impl SiteComponentRegistry {
     }
 
     pub fn get_page_filename(&self, page: &Page) -> anyhow::Result<(String, String)> {
-        let title = page.title.trim().replace(" ", "_").to_lowercase();
+        let title = page.title.trim().replace(' ', "_").to_lowercase();
         if page.index && self.contains_index_page() {
             bail!("Duplicate index pages are not allowed.");
         }
         if !page.index && title == "index" {
             bail!("Non-index page can't be named 'index'");
         }
-        let mut html_fname = format!("{}.html", title).to_owned();
+        let mut html_fname = format!("{title}.html");
         if page.index {
             html_fname = "index.html".into();
         }
-        let mut md_fname = format!("{}.md", title).to_owned();
+        let mut md_fname = format!("{title}.md");
         let mut count = 1;
         while self.contains_page_filename(&html_fname, &md_fname) {
-            html_fname = format!("{}_{}.html", title, count);
+            html_fname = format!("{title}_{count}.html");
             if page.index {
                 html_fname = "index.html".into();
             }
-            md_fname = format!("{}_{}.md", title, count);
+            md_fname = format!("{title}_{count}.md");
             count += 1;
         }
         Ok((html_fname, md_fname))
     }
 
     pub fn get_post_filename(&self, post: &Post) -> anyhow::Result<(String, String)> {
-        let title = post.header.title.trim().replace(" ", "_").to_lowercase();
-        let mut html_fname = format!("{}.html", title).to_owned();
-        let mut md_fname = format!("{}.md", title).to_owned();
+        let title = post.header.title.trim().replace(' ', "_").to_lowercase();
+        let mut html_fname = format!("{title}.html");
+        let mut md_fname = format!("{title}.md");
         let mut count = 1;
         while self.contains_post_filename(&html_fname, &md_fname) {
-            html_fname = format!("{}_{}.html", title, count);
-            md_fname = format!("{}_{}.md", title, count);
+            html_fname = format!("{title}_{count}.html");
+            md_fname = format!("{title}_{count}.md");
             count += 1;
         }
         Ok((html_fname, md_fname))
@@ -202,7 +202,7 @@ impl SiteComponentRegistry {
     }
 
     fn contains_index_page(&self) -> bool {
-        self.pages.iter().any(|p| p.index == true)
+        self.pages.iter().any(|p| p.index)
     }
 }
 

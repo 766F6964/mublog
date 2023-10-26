@@ -156,7 +156,7 @@ fn create_navbar_html(ctx: &mut BlogContext, nav_cfg: &NavbarConfig) -> anyhow::
     for page in navbar_elements {
         nav = nav.with_link_attr(
             format!("/{}", page.html_filename),
-            format!("{}", page.title),
+            page.title.to_string(),
             [("title", page.title.as_str())],
         );
     }

@@ -1,7 +1,7 @@
 use crate::blog::BlogContext;
-use crate::embedded_resources;
+
 use crate::pipeline::pipeline_stage::PipelineStage;
-use anyhow::Context;
+
 
 pub struct LoadAssetsStage;
 
@@ -11,7 +11,7 @@ impl PipelineStage for LoadAssetsStage {
         Ok(())
     }
 
-    fn process(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
+    fn process(&self, _ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("LoadAssetsStage: Process ...");
         // TODO: Temporarily disabled this stage
 

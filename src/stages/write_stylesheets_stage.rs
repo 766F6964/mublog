@@ -1,13 +1,13 @@
 use crate::blog::BlogContext;
 use crate::pipeline::pipeline_stage::PipelineStage;
-use anyhow::bail;
+
 use anyhow::Context;
 use std::fs;
 
 pub struct WriteStylesheetsStage;
 
 impl PipelineStage for WriteStylesheetsStage {
-    fn initialize(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
+    fn initialize(&self, _ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("WriteStylesheetsStage: Initialize ...");
         Ok(())
     }

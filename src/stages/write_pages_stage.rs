@@ -1,14 +1,14 @@
 use crate::blog::BlogContext;
 use crate::pipeline::pipeline_stage::PipelineStage;
-use crate::utils;
-use anyhow::bail;
+
+
 use anyhow::Context;
 use std::fs;
 
 pub struct WritePagesStage;
 
 impl PipelineStage for WritePagesStage {
-    fn initialize(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
+    fn initialize(&self, _ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("WritePagesStage: Initialize ...");
         Ok(())
     }

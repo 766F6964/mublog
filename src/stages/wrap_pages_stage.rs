@@ -1,7 +1,7 @@
 use build_html::{Container, ContainerType, Html, HtmlContainer};
 
 use crate::blog::BlogContext;
-use crate::page;
+
 use crate::pipeline::pipeline_stage::PipelineStage;
 
 pub struct WrapPagesStage;
@@ -84,7 +84,7 @@ impl PipelineStage for WrapPagesStage {
                         ),
                 )
                 .to_html_string();
-            println!("{}", doc);
+            println!("{doc}");
             // TODO: Instead of directly converting to string, store the HTML document structure to allow
             // for easier modifications by features (e.g. if they need to insert new dom elements)
             page.content = doc;

@@ -4,7 +4,7 @@ use crate::pipeline::feature::Feature;
 use crate::pipeline::feature_registry::FeatureRegistry;
 use crate::pipeline::pipeline_stage_lifetime::PipelineStageLifetime;
 use crate::stages::ConvertPagesStage;
-use crate::{blog::BlogContext, post::Post};
+use crate::{blog::BlogContext};
 use anyhow::bail;
 // use anyhow::{bail, Context};
 use build_html::{Container, ContainerType, Html, HtmlContainer};
@@ -93,7 +93,7 @@ fn generate_post_listing_html(ctx: &mut BlogContext, sort: &SortingOrder) -> Str
             .with_container(
                 Container::new(ContainerType::Div)
                     .with_attributes(vec![("class", "post_entry_date")])
-                    .with_raw(format!("{}", post.header.date.to_string().as_str())),
+                    .with_raw(post.header.date.to_string().as_str().to_string()),
             )
             .with_container(
                 Container::new(ContainerType::Div)
@@ -103,5 +103,5 @@ fn generate_post_listing_html(ctx: &mut BlogContext, sort: &SortingOrder) -> Str
             .with_attributes(vec![("class", "post_entry")]);
         articles = articles.with_html(post_entry)
     }
-    return articles.to_html_string();
+    articles.to_html_string()
 }

@@ -6,7 +6,7 @@ use crate::cli::Commands;
 use crate::cli::NewCommands;
 use anyhow::Context;
 use clap::Parser;
-use path_config::PathConfig;
+
 use std::env;
 
 mod blog;
@@ -33,7 +33,7 @@ fn main() -> anyhow::Result<()> {
         Commands::Deploy => todo!("Deploying blog to specified remote ..."),
         Commands::Build => blog::build(working_dir)?,
         Commands::Init(init_args) => blog::init(working_dir, &init_args.dir_name)
-            .context("Failed to initialize new blog environment.")?,
+            .context("Failed to initialize new blog environment")?,
         Commands::Info => {
             blog::info(working_dir).context("Failed to load blog information")?;
         }

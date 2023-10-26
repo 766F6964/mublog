@@ -18,8 +18,8 @@ pub struct Pipeline {
 }
 
 impl Pipeline {
-    pub fn new(ctx: BlogContext) -> Pipeline {
-        Pipeline {
+    pub fn new(ctx: BlogContext) -> Self {
+        Self {
             context: ctx,
             pipeline_stages: Default::default(),
             features: Default::default(),
@@ -46,7 +46,7 @@ impl Pipeline {
                     *stage_type_id,
                     PipelineStageLifetime::PreProcess,
                 )
-                .context("Exception occured in feature hook at preprocess step")?;
+                .context("Stage execution failed during PreProcess step")?;
 
             stage.process(&mut self.context)?;
             self.features
@@ -55,11 +55,9 @@ impl Pipeline {
                     *stage_type_id,
                     PipelineStageLifetime::PostProcess,
                 )
-                .context("Exception occured in feature hook at postprocess step")?;
+                .context("Stage execution failed during PostProcess step")?;
 
             stage.finalize(&mut self.context)?;
-
-            println!("--------------------------------");
         }
         Ok(())
     }

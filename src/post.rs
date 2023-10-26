@@ -5,10 +5,6 @@ use chrono::NaiveDate;
 use std::borrow::ToOwned;
 use std::collections;
 use std::collections::HashSet;
-use std::ffi::OsStr;
-use std::fs;
-use std::path::Path;
-use walkdir::WalkDir;
 
 #[derive(Debug, Default)]
 pub struct Post {
