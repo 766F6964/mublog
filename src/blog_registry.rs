@@ -115,7 +115,7 @@ impl SiteComponentRegistry {
     }
 
     pub fn get_post_filename(&self, post: &Post) -> anyhow::Result<(String, String)> {
-        let title = post.header.title.trim().replace(' ', "_").to_lowercase();
+        let title = post.title.trim().replace(' ', "_").to_lowercase();
         let mut html_fname = format!("{title}.html");
         let mut md_fname = format!("{title}.md");
         let mut count = 1;
@@ -217,9 +217,9 @@ mod test {
         let mut p1 = Post::default();
         let mut p2 = Post::default();
         let mut p3 = Post::default();
-        p1.header.title = "post".into();
-        p2.header.title = "post".into();
-        p3.header.title = "post".into();
+        p1.title = "post".into();
+        p2.title = "post".into();
+        p3.title = "post".into();
 
         _ = reg.register_post(p1);
         _ = reg.register_post(p2);

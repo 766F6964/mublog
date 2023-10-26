@@ -161,8 +161,8 @@ pub fn info(working_dir: PathBuf) -> anyhow::Result<()> {
     let page_type_col = 12;
 
     let posts = registry.get_posts();
-    let draft_post_count = posts.iter().filter(|post| post.header.draft).count();
-    let finalized_post_count = posts.iter().filter(|post| !post.header.draft).count();
+    let draft_post_count = posts.iter().filter(|post| post.draft).count();
+    let finalized_post_count = posts.iter().filter(|post| !post.draft).count();
     let pages = registry.get_pages();
     let draft_page_count = pages.iter().filter(|page| page.draft).count();
     let finalized_page_count = pages.iter().filter(|page| !page.draft).count();
@@ -228,9 +228,9 @@ fn info_posts(title_col: usize, date_col: usize, draft_col: usize, posts: &Vec<P
     for post in posts {
         println!(
             "{0: <title_col$}  {1: >date_col$}  {2: >draft_col$}",
-            post.header.title.trunc_with_dots(title_col),
-            post.header.date.to_string(),
-            post.header.draft.to_string(),
+            post.title.trunc_with_dots(title_col),
+            post.date.to_string(),
+            post.draft.to_string(),
             title_col = title_col,
             date_col = date_col,
             draft_col = draft_col,
@@ -280,24 +280,24 @@ pub fn create_post(working_dir: PathBuf) -> anyhow::Result<()> {
         .context("Failed to load posts from disk")?;
 
     let mut post = Post::default();
-    post.header.title = Text::new("Title")
+    post.title = Text::new("Title")
         .with_placeholder("Default Title")
         .with_default("Default Title")
         .with_validator(EmptyOrWhitespaceValidator::default())
         .prompt()?;
-    post.header.description = Text::new("Description")
+    post.description = Text::new("Description")
         .with_placeholder("Default Description")
         .with_default("Default Description")
         .with_validator(EmptyOrWhitespaceValidator::default())
         .prompt()?;
-    post.header.date = CustomType::<NaiveDate>::new("Publication Date")
+    post.date = CustomType::<NaiveDate>::new("Publication Date")
         .with_placeholder("yyyy-mm-dd")
         .with_parser(&|i| NaiveDate::parse_from_str(i, "%Y-%m-%d").map_err(|_e| ()))
         .with_formatter(DEFAULT_DATE_FORMATTER)
         .with_error_message("Please type a valid date.")
         .with_default(Local::now().date_naive())
         .prompt()?;
-    post.header.tags = Text::new("Tags")
+    post.tags = Text::new("Tags")
         .with_placeholder("A comma-separated list of tags that match the posts topic")
         .with_default("creativity,writing,technology")
         .with_validator(CommaListValidator::default())
@@ -305,7 +305,7 @@ pub fn create_post(working_dir: PathBuf) -> anyhow::Result<()> {
         .split(',')
         .map(std::string::ToString::to_string)
         .collect();
-    post.header.draft = Confirm::new("Draft")
+    post.draft = Confirm::new("Draft")
         .with_default(false)
         .with_placeholder("Specify if the post is a draft (y/n)")
         .with_parser(&|ans| match ans {

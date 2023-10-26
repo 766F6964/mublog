@@ -9,19 +9,13 @@ use std::collections::HashSet;
 #[derive(Debug, Default)]
 pub struct Post {
     pub content: String,
-    pub header: PostHeader,
-    pub html_filename: String,
-    pub md_filename: String,
-}
-
-// TODO: Maybe Post and PostHeader should be merged into a single struct
-#[derive(Debug, Default)]
-pub struct PostHeader {
     pub title: String,
     pub description: String,
     pub date: NaiveDate,
     pub tags: Vec<String>,
     pub draft: bool,
+    pub html_filename: String,
+    pub md_filename: String,
 }
 
 pub fn parse_title(mut title: &str) -> anyhow::Result<String> {
@@ -97,11 +91,11 @@ pub fn parse_from_string(data: &str) -> anyhow::Result<Post> {
         }
 
         match key {
-            "title" => post.header.title = parse_title(value)?,
-            "description" => post.header.description = parse_description(value)?,
-            "date" => post.header.date = parse_date(value)?,
-            "tags" => post.header.tags = parse_tags(value)?,
-            "draft" => post.header.draft = parse_draft(value)?,
+            "title" => post.title = parse_title(value)?,
+            "description" => post.description = parse_description(value)?,
+            "date" => post.date = parse_date(value)?,
+            "tags" => post.tags = parse_tags(value)?,
+            "draft" => post.draft = parse_draft(value)?,
             _ => bail!("Unsupported header field: {key}"),
         }
     }
@@ -115,11 +109,11 @@ pub fn parse_from_string(data: &str) -> anyhow::Result<Post> {
 pub fn parse_to_string(post: &Post) -> String {
     let post_str = format!(
         "---\ntitle: {}\ndescription: {}\ndate: {}\ntags: {}\ndraft: {}\n---\n{}",
-        post.header.title,
-        post.header.description,
-        post.header.date,
-        post.header.tags.join(","),
-        post.header.draft,
+        post.title,
+        post.description,
+        post.date,
+        post.tags.join(","),
+        post.draft,
         post.content
     );
     post_str
@@ -197,15 +191,15 @@ mod test {
     fn parse_valid_with_content() {
         let expected = "---\ntitle: test title\ndescription: test description\ntags: test,test2,test3\ndate: 2023-01-23\ndraft: false\n---\nSome Text\nMore Text".to_owned();
         let res = parse_from_string(&expected).expect("Header should be valid"); // TODO: Validate parsed fields properly
-        assert_eq!(res.header.title, "test title");
-        assert_eq!(res.header.description, "test description");
-        assert_eq!(res.header.tags, vec!["test", "test2", "test3"]);
+        assert_eq!(res.title, "test title");
+        assert_eq!(res.description, "test description");
+        assert_eq!(res.tags, vec!["test", "test2", "test3"]);
         assert_eq!(
-            res.header.date,
+            res.date,
             NaiveDate::parse_from_str("2023-01-23", "%Y-%m-%d")
                 .expect("Date conversion should pass")
         );
-        assert_eq!(res.header.draft, false);
+        assert_eq!(res.draft, false);
         assert_eq!(res.content, "Some Text\nMore Text");
     }
 
@@ -213,15 +207,15 @@ mod test {
     fn parse_valid_no_content() {
         let expected = "---\ntitle: test title\ndescription: test description\ntags: test,test2,test3\ndate: 2023-01-23\ndraft: false\n---".to_owned();
         let res = parse_from_string(&expected).expect("Header should be valid"); // TODO: Validate parsed fields properly
-        assert_eq!(res.header.title, "test title");
-        assert_eq!(res.header.description, "test description");
-        assert_eq!(res.header.tags, vec!["test", "test2", "test3"]);
+        assert_eq!(res.title, "test title");
+        assert_eq!(res.description, "test description");
+        assert_eq!(res.tags, vec!["test", "test2", "test3"]);
         assert_eq!(
-            res.header.date,
+            res.date,
             NaiveDate::parse_from_str("2023-01-23", "%Y-%m-%d")
                 .expect("Date conversion should pass")
         );
-        assert_eq!(res.header.draft, false);
+        assert_eq!(res.draft, false);
         assert_eq!(res.content, "");
     }
 

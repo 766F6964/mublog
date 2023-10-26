@@ -22,10 +22,10 @@ impl PipelineStage for WritePostsStage {
                     .as_path(),
                 post.content.clone(),
             )
-            .with_context(|| format!("Failed to write post '{}' to disk", post.header.title))?;
+            .with_context(|| format!("Failed to write post '{}' to disk", post.title))?;
             println!(
                 "Successfully wrote post '{}' to disk ({} bytes)",
-                post.header.title,
+                post.title,
                 post.content.len()
             );
         }

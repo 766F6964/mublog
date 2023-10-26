@@ -26,7 +26,7 @@ impl PipelineStage for ConvertPostsStage {
                 },
             )
             .unwrap(); // We can safely unwrap here!
-            println!("Successfully converted post '{}'", post.header.title);
+            println!("Successfully converted post '{}'", post.title);
         }
         Ok(())
     }
