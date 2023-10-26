@@ -1,6 +1,5 @@
 use crate::blog::BlogContext;
 use crate::pipeline::pipeline_stage::PipelineStage;
-
 use anyhow::Context;
 use std::fs;
 

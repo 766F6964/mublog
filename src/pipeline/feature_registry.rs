@@ -1,10 +1,9 @@
-use std::{any::TypeId, collections::HashMap};
-
+use super::feature::Feature;
+use super::pipeline_stage::PipelineStage;
+use super::pipeline_stage_lifetime::PipelineStageLifetime;
 use anyhow::Context;
-
-use super::{
-    feature::Feature, pipeline_stage::PipelineStage, pipeline_stage_lifetime::PipelineStageLifetime,
-};
+use std::any::TypeId;
+use std::collections::HashMap;
 
 #[derive(Default)]
 pub struct FeatureRegistry(HashMap<(TypeId, PipelineStageLifetime), Vec<Box<dyn Feature>>>);
@@ -16,13 +15,8 @@ impl FeatureRegistry {
         type_id: TypeId,
         lifetime: PipelineStageLifetime,
     ) -> anyhow::Result<()> {
-        // let Some(features) = self.0.get_mut(&(type_id, lifetime)) else {
-        //     Ok(())
-        // };
-
         match self.0.get_mut(&(type_id, lifetime)) {
             Some(features) => {
-                // Handle the Some case here
                 for feature in features {
                     feature
                         .run(context, type_id, lifetime)

@@ -1,10 +1,11 @@
-use build_html::{Container, ContainerType, Html, HtmlContainer};
-
 use crate::blog::BlogContext;
 use crate::pipeline::pipeline_stage::PipelineStage;
+use build_html::Container;
+use build_html::ContainerType;
+use build_html::Html;
+use build_html::HtmlContainer;
 
 pub struct WrapPostsStage;
-// TODO: The entire HTML site wrapping can be abstracted into dedicated classes to improve readablity a lot.
 impl PipelineStage for WrapPostsStage {
     fn initialize(&self, _ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("WrapPostsStage: Initialize ...");
@@ -16,7 +17,7 @@ impl PipelineStage for WrapPostsStage {
         for post in ctx.registry.get_posts_mut() {
             let doc = build_html::HtmlPage::new()
                 .with_meta(vec![("charset", "utf-8")])
-                .with_title("POST_TITLE")
+                .with_title(post.title.clone())
                 .with_meta(vec![
                     ("name", "viewport"),
                     ("content", "width=device-width, initial-scale=1"),
@@ -45,7 +46,7 @@ impl PipelineStage for WrapPostsStage {
                 ])
                 .with_meta(vec![
                     ("property", "og:article:author"),
-                    ("content", "BLOG_AUTHOR"),
+                    ("content", ctx.config.blog_author.as_str()),
                 ])
                 .with_stylesheet("/css/layout.css")
                 .with_head_link("/meta/webmanifest.xml", "manifest")
@@ -65,7 +66,7 @@ impl PipelineStage for WrapPostsStage {
                     [("type", "image/png"), ("sizes", "16x16")],
                 )
                 .with_head_link("/meta/favicon.ico", "favicon")
-                .with_title("POST_TITLE")
+                .with_title(post.title.clone())
                 .with_container(
                     Container::new(ContainerType::Main)
                         .with_raw("<hr>")
@@ -80,13 +81,11 @@ impl PipelineStage for WrapPostsStage {
                                 .with_container(
                                     Container::new(ContainerType::Div)
                                         .with_attributes(vec![("class", "footer-copyright")])
-                                        .with_raw("BLOG_COPYRIGHT_YEAR"),
+                                        .with_raw(ctx.config.blog_copyright_year),
                                 ),
                         ),
                 )
                 .to_html_string();
-            // println!("{}", doc);
-
             post.content = doc;
         }
         Ok(())

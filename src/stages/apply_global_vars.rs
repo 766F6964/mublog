@@ -19,16 +19,16 @@ impl PipelineStage for ApplyGlobalVarsStage {
         for page in ctx.registry.get_pages_mut() {
             page.content = page
                 .content
-                .replace("{{{AUTHOR_NAME}}}", author_name)
+                .replace("{{{AUTHOR_NAME}}}", &author_name)
                 .replace("{{{COPYRIGHT_YEAR}}}", &copyright_year)
-                .replace("{{{AUTHOR_EMAIL}}}", author_email);
+                .replace("{{{AUTHOR_EMAIL}}}", &author_email);
         }
         for post in ctx.registry.get_posts_mut() {
             post.content = post
                 .content
-                .replace("{{{AUTHOR_NAME}}}", author_name)
+                .replace("{{{AUTHOR_NAME}}}", &author_name)
                 .replace("{{{COPYRIGHT_YEAR}}}", &copyright_year)
-                .replace("{{{AUTHOR_EMAIL}}}", author_email);
+                .replace("{{{AUTHOR_EMAIL}}}", &author_email);
         }
         Ok(())
     }

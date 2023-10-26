@@ -13,7 +13,6 @@ impl PipelineStage for ConvertPagesStage {
 
     fn process(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("ConvertPagesStage: Process ...");
-        // Process all pages
         for page in ctx.registry.get_pages_mut() {
             page.content = markdown::to_html_with_options(
                 &page.content,
@@ -25,7 +24,7 @@ impl PipelineStage for ConvertPagesStage {
                     ..Options::default()
                 },
             )
-            .unwrap(); // We can safely unwrap here!
+            .unwrap();
             println!("Successfully converted page '{}'", page.title);
         }
         Ok(())

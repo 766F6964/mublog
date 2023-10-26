@@ -2,14 +2,13 @@ pub mod feature;
 pub mod feature_registry;
 pub mod pipeline_stage;
 pub mod pipeline_stage_lifetime;
-use anyhow::{Context, Ok};
-
-use crate::blog::BlogContext;
-use crate::pipeline::pipeline_stage_lifetime::PipelineStageLifetime;
-use std::any::{Any, TypeId};
-
 use self::feature::Feature;
 use self::feature_registry::FeatureRegistry;
+use crate::blog::BlogContext;
+use crate::pipeline::pipeline_stage_lifetime::PipelineStageLifetime;
+use anyhow::Context;
+use std::any::Any;
+use std::any::TypeId;
 
 pub struct Pipeline {
     pipeline_stages: Vec<(Box<dyn pipeline_stage::PipelineStage>, TypeId)>,

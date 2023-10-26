@@ -32,29 +32,21 @@ impl Feature for NavbarFeature {
         if pipeline_type == TypeId::of::<ConvertPostsStage>()
             && lifetime == PipelineStageLifetime::PostProcess
         {
-            // let features: Vec<FeatureConfig> = ctx.config.features.clone();
-
-            let nav_cfg = get_navbar_config(ctx).context("Failed to retrieve navbar config")?;
-
-            println!("Done with navbar feature");
-            println!("Navbar Cfg: {:#?}", nav_cfg.links);
-            let nav =
-                create_navbar_html(ctx, &nav_cfg).context("Failed to generate navbar html")?;
-            println!("Injecting navbar into post now ....");
-            inject_navbar_in_post(ctx, nav).context("Failed to inject navbar into post")?;
-            println!("Finished injecting navbar");
+            let nav_cfg =
+                get_navbar_config(ctx).context("Failed to retrieve NavbarFeature configuration")?;
+            let nav = create_navbar_html(ctx, &nav_cfg)
+                .context("Failed to generate navbar html structure")?;
+            inject_navbar_in_post(ctx, nav)
+                .context("Failed to inject navbar HTML structure into post")?;
             Ok(())
         } else if pipeline_type == TypeId::of::<ConvertPagesStage>()
             && lifetime == PipelineStageLifetime::PostProcess
         {
-            let nav_cfg = get_navbar_config(ctx).context("Failed to retrieve navbar config")?;
-            let ctx = &mut *ctx;
-            println!("COnver Pages Navbar Cfg: {:#?}", nav_cfg.links);
-            let nav =
-                create_navbar_html(ctx, &nav_cfg).context("Failed to generate navbar html")?;
-            println!("Injecting navbar into page now ....");
+            let nav_cfg =
+                get_navbar_config(ctx).context("Failed to retrieve NavbarFeature configuration")?;
+            let nav = create_navbar_html(ctx, &nav_cfg)
+                .context("Failed to generate navbar html structure")?;
             inject_navbar_in_page(ctx, nav).context("Failed to inject navbar into page")?;
-            println!("Finished injecting navbar");
             Ok(())
         } else if pipeline_type == TypeId::of::<LoadStylesheetsStage>()
             && lifetime == PipelineStageLifetime::PostProcess
@@ -87,11 +79,7 @@ pub struct NavbarConfig {
     pub links: Vec<String>,
 }
 
-// TODO: Maybe every feature hook should return an anyhow<Result>
-// TODO: Inject CSS into default CSS template
-
 fn inject_navbar_css(ctx: &mut BlogContext) -> anyhow::Result<()> {
-    println!("Injecting Navbar CSS into layout.css");
     let nav_css = r#"
         body nav {
             font-size: 1.2rem;
@@ -111,11 +99,9 @@ fn inject_navbar_css(ctx: &mut BlogContext) -> anyhow::Result<()> {
         .find(|s| s.filename == "layout.css")
     {
         layout.content.push_str(nav_css);
-        println!("Completed!");
         Ok(())
     } else {
-        // TODO: Don't panic, instead propagate an error
-        bail!("Layout.css should be in SiteComponentRegistry.")
+        bail!("No such file layout.css in SiteComponentRegistry.")
     }
 }
 
@@ -152,7 +138,6 @@ fn create_navbar_html(ctx: &mut BlogContext, nav_cfg: &NavbarConfig) -> anyhow::
             ))
         }
     }
-    println!("Generating navbar html ...");
     for page in navbar_elements {
         nav = nav.with_link_attr(
             format!("/{}", page.html_filename),
@@ -161,6 +146,5 @@ fn create_navbar_html(ctx: &mut BlogContext, nav_cfg: &NavbarConfig) -> anyhow::
         );
     }
     nav = nav.with_raw("<hr>");
-    println!("NAV: {}", nav.to_html_string());
     Ok(nav)
 }

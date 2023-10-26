@@ -24,11 +24,14 @@ pub fn parse_config(config_path: &PathBuf) -> Result<BlogConfig> {
     let contents = fs::read_to_string(config_path).context("Failed to open config file")?;
     let document = Document::from_str(&contents).context("Failed to parse toml file")?;
 
-    // General configs
-    let author = conf_get_string(&document, "general", "blog_author")?;
-    let year = conf_get_integer(&document, "general", "blog_copyright_year")?;
-    let email = conf_get_string(&document, "general", "blog_email")?;
-    let features = conf_get_features(&document)?;
+    let author = conf_get_string(&document, "general", "blog_author")
+        .context("Failed to retrieve blog_author from mublog.toml config file")?;
+    let year = conf_get_integer(&document, "general", "blog_copyright_year")
+        .context("Failed to retrieve blog_copyright_year from mublog.toml config file")?;
+    let email = conf_get_string(&document, "general", "blog_email")
+        .context("Failed to retrieve blog_email from mublog.toml config file")?;
+    let features = conf_get_features(&document)
+        .context("Failed to retrieve features from mublog.toml config file")?;
 
     let cfg = BlogConfig {
         blog_author: author,
@@ -338,4 +341,6 @@ mod test {
             "Element in array 'test' in table 'general' is not of type string"
         );
     }
+
+    // TODO: Add unit tests that check error paths, e.g. invalid features etc
 }

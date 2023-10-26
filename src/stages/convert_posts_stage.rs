@@ -13,7 +13,6 @@ impl PipelineStage for ConvertPostsStage {
 
     fn process(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("ConvertPostsStage: Process ...");
-        // Process all posts
         for post in ctx.registry.get_posts_mut() {
             post.content = markdown::to_html_with_options(
                 &post.content,
@@ -25,7 +24,7 @@ impl PipelineStage for ConvertPostsStage {
                     ..Options::default()
                 },
             )
-            .unwrap(); // We can safely unwrap here!
+            .unwrap();
             println!("Successfully converted post '{}'", post.title);
         }
         Ok(())

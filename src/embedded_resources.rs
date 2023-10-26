@@ -16,8 +16,7 @@ pub fn get_resources(dir_path: &str) -> anyhow::Result<Vec<&File>, anyhow::Error
         files.push(file);
     }
     if files.is_empty() {
-        // TODO: Replace with bail!
-        return Err(anyhow::anyhow!(
+        bail!(format!(
             "No files found in embedded directory: {}",
             dir_path
         ));
@@ -34,22 +33,24 @@ pub fn get_resource_file(file_name: &str) -> anyhow::Result<&File, anyhow::Error
 
     Ok(resource)
 }
+
 pub fn write_resource_file(resource: &File, dst_path: &Path) -> anyhow::Result<(), anyhow::Error> {
     let parent_dir = dst_path
         .parent()
         .expect("Unable to determine parent directory for specified resource file.");
     if !parent_dir.exists() {
         println!("Resource File Path: {}", dst_path.display());
-        return Err(anyhow::anyhow!(format!(
+        bail!(format!(
             "Failed to extract resource file to {}",
             dst_path.display()
-        )));
+        ));
     }
 
     fs::write(dst_path, resource.contents())
         .with_context(|| "Failed to write resource to disk".to_string())?;
     Ok(())
 }
+
 pub fn write_resources(resources: Vec<&File>, dst_dir: &Path) -> anyhow::Result<(), anyhow::Error> {
     if resources.is_empty() {
         bail!("Empty resource vector is not writable");
