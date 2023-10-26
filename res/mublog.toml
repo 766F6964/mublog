@@ -2,13 +2,13 @@
 blog_author = "Bob"
 blog_copyright_year = 2023
 blog_email = "bob@example.com"
-features = ["tags", "postlisting"]
+features = ["navbar", "postlisting"]
 
 [feature-navbar]
-order = ["index", "projects", "about"]
+links = ["home.md", "posts.md", "about.md"]
 
 [feature-postlisting]
-order = "ascending"
+order = "newestontop"
  
 [feature-tags]
 sort_by = "count" # Order by name

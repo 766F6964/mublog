@@ -5,6 +5,7 @@ use crate::pipeline::feature_registry::FeatureRegistry;
 use crate::pipeline::pipeline_stage_lifetime::PipelineStageLifetime;
 use crate::stages::ConvertPagesStage;
 use crate::{blog::BlogContext, post::Post};
+use anyhow::bail;
 // use anyhow::{bail, Context};
 use build_html::{Container, ContainerType, Html, HtmlContainer};
 use serde::Deserialize;

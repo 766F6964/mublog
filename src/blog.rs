@@ -305,6 +305,9 @@ pub fn create_post(working_dir: PathBuf) -> anyhow::Result<()> {
     Ok(())
 }
 
+// TODO: Ensure we can't create more than one index page
+// TODO: Ensure that markdown filename is also index.md, if it is
+// an index page
 pub fn create_page(working_dir: PathBuf) -> anyhow::Result<()> {
     if !is_blog_directory(&working_dir) {
         bail!("The current directory is not a mublog environment.");

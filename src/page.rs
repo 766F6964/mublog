@@ -9,7 +9,7 @@ use std::fs;
 use std::path::Path;
 use walkdir::WalkDir;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Page {
     pub content: String,
     pub draft: bool,

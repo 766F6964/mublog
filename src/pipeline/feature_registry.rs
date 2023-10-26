@@ -1,5 +1,7 @@
 use std::{any::TypeId, collections::HashMap};
 
+use anyhow::Context;
+
 use super::{
     feature::Feature, pipeline_stage::PipelineStage, pipeline_stage_lifetime::PipelineStageLifetime,
 };
@@ -13,13 +15,22 @@ impl FeatureRegistry {
         context: &mut super::BlogContext,
         type_id: TypeId,
         lifetime: PipelineStageLifetime,
-    ) {
-        let Some(features) = self.0.get_mut(&(type_id, lifetime)) else {
-            return;
-        };
+    ) -> anyhow::Result<()> {
+        // let Some(features) = self.0.get_mut(&(type_id, lifetime)) else {
+        //     Ok(())
+        // };
 
-        for feature in features {
-            feature.run(context, type_id, lifetime);
+        match self.0.get_mut(&(type_id, lifetime)) {
+            Some(features) => {
+                // Handle the Some case here
+                for feature in features {
+                    feature
+                        .run(context, type_id, lifetime)
+                        .context("Feature execution failed")?;
+                }
+                Ok(())
+            }
+            None => Ok(()),
         }
     }
 

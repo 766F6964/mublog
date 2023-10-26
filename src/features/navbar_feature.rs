@@ -1,10 +1,14 @@
 use crate::blog::BlogContext;
+use crate::features::FeatureConfig;
+use crate::page::Page;
 use crate::pipeline::feature::Feature;
 use crate::pipeline::feature_registry::FeatureRegistry;
 use crate::pipeline::pipeline_stage_lifetime::PipelineStageLifetime;
 use crate::stages::{ConvertPagesStage, ConvertPostsStage, LoadStylesheetsStage};
-use anyhow::{bail, Context, Ok};
+use anyhow::Context;
+use anyhow::{bail, Ok};
 use build_html::{Container, Html, HtmlContainer};
+use serde::Deserialize;
 use std::any::TypeId;
 pub struct NavbarFeature;
 
@@ -28,11 +32,30 @@ impl Feature for NavbarFeature {
         if pipeline_type == TypeId::of::<ConvertPostsStage>()
             && lifetime == PipelineStageLifetime::PostProcess
         {
-            inject_navbar_in_post(ctx).context("Failed to inject navbar into post")
+            // let features: Vec<FeatureConfig> = ctx.config.features.clone();
+
+            let nav_cfg = get_navbar_config(ctx).context("Failed to retrieve navbar config")?;
+
+            println!("Done with navbar feature");
+            println!("Navbar Cfg: {:#?}", nav_cfg.links);
+            let nav =
+                create_navbar_html(ctx, &nav_cfg).context("Failed to generate navbar html")?;
+            println!("Injecting navbar into post now ....");
+            inject_navbar_in_post(ctx, nav).context("Failed to inject navbar into post")?;
+            println!("Finished injecting navbar");
+            Ok(())
         } else if pipeline_type == TypeId::of::<ConvertPagesStage>()
             && lifetime == PipelineStageLifetime::PostProcess
         {
-            inject_navbar_in_page(ctx).context("Failed to inject navbar into page")
+            let nav_cfg = get_navbar_config(ctx).context("Failed to retrieve navbar config")?;
+            let ctx = &mut *ctx;
+            println!("COnver Pages Navbar Cfg: {:#?}", nav_cfg.links);
+            let nav =
+                create_navbar_html(ctx, &nav_cfg).context("Failed to generate navbar html")?;
+            println!("Injecting navbar into page now ....");
+            inject_navbar_in_page(ctx, nav).context("Failed to inject navbar into page")?;
+            println!("Finished injecting navbar");
+            Ok(())
         } else if pipeline_type == TypeId::of::<LoadStylesheetsStage>()
             && lifetime == PipelineStageLifetime::PostProcess
         {
@@ -41,6 +64,27 @@ impl Feature for NavbarFeature {
             Ok(())
         }
     }
+}
+
+fn get_navbar_config(ctx: &mut BlogContext) -> anyhow::Result<NavbarConfig> {
+    let res = ctx
+        .config
+        .features
+        .iter()
+        .find_map(|config| {
+            if let FeatureConfig::Navbar(nav_cfg) = config {
+                Some(nav_cfg.clone())
+            } else {
+                None
+            }
+        })
+        .ok_or_else(|| anyhow::anyhow!("Failed to find navbar cfg in features vector"))?;
+    Ok(res)
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct NavbarConfig {
+    pub links: Vec<String>,
 }
 
 // TODO: Maybe every feature hook should return an anyhow<Result>
@@ -75,24 +119,41 @@ fn inject_navbar_css(ctx: &mut BlogContext) -> anyhow::Result<()> {
     }
 }
 
-fn inject_navbar_in_post(ctx: &mut BlogContext) -> anyhow::Result<()> {
-    let nav = create_navbar_html(ctx);
+fn inject_navbar_in_post(ctx: &mut BlogContext, nav: Container) -> anyhow::Result<()> {
     for post in ctx.registry.get_posts_mut() {
         post.content = format!("{}{}", nav.to_html_string(), post.content);
     }
     Ok(())
 }
-fn inject_navbar_in_page(ctx: &mut BlogContext) -> anyhow::Result<()> {
-    let nav = create_navbar_html(ctx);
+fn inject_navbar_in_page(ctx: &mut BlogContext, nav: Container) -> anyhow::Result<()> {
     for page in ctx.registry.get_pages_mut() {
         page.content = format!("{}{}", nav.to_html_string(), page.content);
     }
     Ok(())
 }
 
-fn create_navbar_html(ctx: &mut BlogContext) -> Container {
+fn create_navbar_html(ctx: &mut BlogContext, nav_cfg: &NavbarConfig) -> anyhow::Result<Container> {
     let mut nav = Container::new(build_html::ContainerType::Nav);
-    for page in ctx.registry.get_pages() {
+
+    let mut navbar_elements: Vec<Page> = Vec::new();
+    for cfg_entry in nav_cfg.links.clone() {
+        let mut found = false;
+        for page in ctx.registry.get_pages() {
+            if cfg_entry == page.md_filename {
+                navbar_elements.push(page.clone());
+                found = true;
+                break;
+            }
+        }
+        if !found {
+            bail!(format!(
+                "Navbar configuration expected a page '{}'. No such page was found.",
+                cfg_entry
+            ))
+        }
+    }
+    println!("Generating navbar html ...");
+    for page in navbar_elements {
         nav = nav.with_link_attr(
             format!("/{}", page.html_filename),
             format!("{}", page.title),
@@ -100,5 +161,6 @@ fn create_navbar_html(ctx: &mut BlogContext) -> Container {
         );
     }
     nav = nav.with_raw("<hr>");
-    nav
+    println!("NAV: {}", nav.to_html_string());
+    Ok(nav)
 }

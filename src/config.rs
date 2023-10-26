@@ -1,3 +1,4 @@
+use crate::features::navbar_feature::NavbarConfig;
 use crate::features::post_listing_feature::PostlistingConfig;
 use crate::features::post_listing_feature::SortingOrder;
 use crate::features::FeatureConfig;
@@ -44,8 +45,9 @@ pub fn conf_get_features(doc: &Document) -> anyhow::Result<Vec<FeatureConfig>> {
         .iter()
         .map(|s| {
             Ok(match s.as_str() {
-                "navbar" => FeatureConfig::Navbar,
                 "tags" => FeatureConfig::Tags,
+                "navbar" => parse_navbar_conf(&doc)
+                    .context("Failed to parse configuration for NavbarFeature")?,
                 "postlisting" => parse_postlisting_conf(&doc)
                     .context("Failed to parse configuration for PostListingFeature")?,
                 _ => bail!("Invalid feature '{s}'"),
@@ -67,6 +69,15 @@ pub fn parse_postlisting_conf(doc: &Document) -> anyhow::Result<FeatureConfig> {
     };
     Ok(FeatureConfig::Postlisting(PostlistingConfig {
         sort: order,
+    }))
+}
+
+pub fn parse_navbar_conf(doc: &Document) -> anyhow::Result<FeatureConfig> {
+    let cfgstr_order = conf_get_string_array(&doc, "feature-navbar", "links")
+        .context("Failed to parse feature configuration: feature-navbar")?;
+
+    Ok(FeatureConfig::Navbar(NavbarConfig {
+        links: cfgstr_order,
     }))
 }
 
