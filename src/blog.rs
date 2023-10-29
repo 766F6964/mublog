@@ -2,6 +2,7 @@ use crate::blog_registry::SiteComponentRegistry;
 use crate::config;
 use crate::config::BlogConfig;
 use crate::embedded_resources;
+use crate::features::FeatureConfig;
 use crate::features::NavbarFeature;
 use crate::features::PostListingFeature;
 use crate::input::CommaListValidator;
@@ -116,7 +117,6 @@ pub fn build(working_dir: PathBuf) -> anyhow::Result<()> {
         .context("Failed to parse mublog.toml config file")?;
 
     let context = BlogContext::init(path_cfg, config);
-
     let mut pipeline = Pipeline::new(context);
     pipeline.add_stage(CreateBuildDirectoriesStage);
     pipeline.add_stage(LoadStylesheetsStage);
@@ -133,9 +133,19 @@ pub fn build(working_dir: PathBuf) -> anyhow::Result<()> {
     pipeline.add_stage(WritePagesStage);
     pipeline.add_stage(WritePostsStage);
 
-    // TODO: Enable features based on mublog.toml config file
-    pipeline.add_feature::<PostListingFeature>();
-    pipeline.add_feature::<NavbarFeature>();
+    for feature in pipeline.context.config.features.clone().iter() {
+        match feature {
+            FeatureConfig::Navbar(_navbar_config) => {
+                pipeline.add_feature::<NavbarFeature>();
+            }
+            FeatureConfig::Postlisting(_postlisting_config) => {
+                pipeline.add_feature::<PostListingFeature>();
+            }
+            FeatureConfig::Tags => {
+                unimplemented!("Tags feature is not implemented yet.")
+            }
+        }
+    }
     pipeline.run().context("Build process failed")?;
 
     println!("Build process completed");
