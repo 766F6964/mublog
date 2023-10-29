@@ -11,9 +11,9 @@ use std::any::Any;
 use std::any::TypeId;
 
 pub struct Pipeline {
-    pipeline_stages: Vec<(Box<dyn pipeline_stage::PipelineStage>, TypeId)>,
-    context: BlogContext,
-    features: FeatureRegistry,
+    pub pipeline_stages: Vec<(Box<dyn pipeline_stage::PipelineStage>, TypeId)>,
+    pub context: BlogContext,
+    pub features: FeatureRegistry,
 }
 
 impl Pipeline {
