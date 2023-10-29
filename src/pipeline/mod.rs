@@ -61,3 +61,77 @@ impl Pipeline {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod test {
+    use crate::blog::BlogContext;
+    use crate::pipeline::pipeline_stage::PipelineStage;
+    use crate::pipeline::Pipeline;
+
+    #[test]
+    fn pipeline_execution_order() {
+        struct DummyStage1;
+        struct DummyStage2;
+        struct DummyStage3;
+
+        impl PipelineStage for DummyStage1 {
+            fn initialize(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
+                ctx.config.blog_author.push_str("1i");
+                Ok(())
+            }
+
+            fn process(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
+                ctx.config.blog_author.push_str("1p");
+                Ok(())
+            }
+
+            fn finalize(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
+                ctx.config.blog_author.push_str("1f");
+                Ok(())
+            }
+        }
+
+        impl PipelineStage for DummyStage2 {
+            fn initialize(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
+                ctx.config.blog_author.push_str("2i");
+                Ok(())
+            }
+
+            fn process(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
+                ctx.config.blog_author.push_str("2p");
+                Ok(())
+            }
+
+            fn finalize(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
+                ctx.config.blog_author.push_str("2f");
+                Ok(())
+            }
+        }
+
+        impl PipelineStage for DummyStage3 {
+            fn initialize(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
+                ctx.config.blog_author.push_str("3i");
+                Ok(())
+            }
+
+            fn process(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
+                ctx.config.blog_author.push_str("3p");
+                Ok(())
+            }
+
+            fn finalize(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
+                ctx.config.blog_author.push_str("3f");
+                Ok(())
+            }
+        }
+
+        let ctx = BlogContext::default();
+        let mut pipeline = Pipeline::new(ctx);
+        pipeline.add_stage(DummyStage1);
+        pipeline.add_stage(DummyStage2);
+        pipeline.add_stage(DummyStage3);
+        let res = pipeline.run();
+        assert!(res.is_ok());
+        assert_eq!(pipeline.context.config.blog_author, "1i1p1f2i2p2f3i3p3f");
+    }
+}
