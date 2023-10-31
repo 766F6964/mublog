@@ -61,58 +61,61 @@ impl BlogContext {
 }
 
 pub fn init(working_dir: PathBuf, blog_dir_name: &str) -> anyhow::Result<()> {
-    if is_blog_directory(&working_dir) {
+    let cfg_working_dir = PathConfig::new(working_dir.clone());
+    if is_blog_directory(&cfg_working_dir) {
         bail!("Can't initialize blog environment in existing blog environment");
     }
-    let blog_dir = working_dir.join(blog_dir_name);
-    fs::create_dir(&blog_dir).context("Failed to create blog directory")?;
 
-    let cfg = PathConfig::new(blog_dir);
-    fs::create_dir(cfg.assets_dir.clone()).context("Failed to create blog/assets directory")?;
-    fs::create_dir(cfg.css_dir.clone()).context("Failed to create blog/css/ directory")?;
-    fs::create_dir(cfg.meta_dir.clone()).context("Failed to create blog/meta directory")?;
-    fs::create_dir(cfg.posts_dir.clone()).context("Failed to create blog/posts directory")?;
-    fs::create_dir(cfg.pages_dir.clone()).context("Failed to create blog/pages directory")?;
+    let cfg_blog_dir = PathConfig::new(working_dir.join(blog_dir_name));
+    fs::create_dir(&cfg_blog_dir.base_dir).context("Failed to create blog directory")?;
+    fs::create_dir(&cfg_blog_dir.assets_dir).context("Failed to create blog/assets directory")?;
+    fs::create_dir(&cfg_blog_dir.css_dir).context("Failed to create blog/css/ directory")?;
+    fs::create_dir(&cfg_blog_dir.meta_dir).context("Failed to create blog/meta directory")?;
+    fs::create_dir(&cfg_blog_dir.posts_dir).context("Failed to create blog/posts directory")?;
+    fs::create_dir(&cfg_blog_dir.pages_dir).context("Failed to create blog/pages directory")?;
 
     let assets_resources = embedded_resources::get_resources("assets")
         .context("Failed to extract resources from embedded directory 'assets'")?;
-    embedded_resources::write_resources(assets_resources, cfg.assets_dir.as_path())
+    embedded_resources::write_resources(assets_resources, cfg_blog_dir.assets_dir.as_path())
         .context("Failed to write assets-resources to disk")?;
 
     let css_resources = embedded_resources::get_resources("css")
         .context("Failed to extract resources from embedded directory 'css'")?;
-    embedded_resources::write_resources(css_resources, cfg.css_dir.as_path())
+    embedded_resources::write_resources(css_resources, cfg_blog_dir.css_dir.as_path())
         .context("Failed to write css-resources to disk")?;
 
     let meta_resources = embedded_resources::get_resources("meta")
         .context("Failed to extract resources from embedded directory 'meta'")?;
-    embedded_resources::write_resources(meta_resources, cfg.meta_dir.as_path())
+    embedded_resources::write_resources(meta_resources, cfg_blog_dir.meta_dir.as_path())
         .context("Failed to write meta-resources to disk")?;
 
     let posts_resources = embedded_resources::get_resources("posts")
         .context("Failed to extract resources from embedded directory 'posts'")?;
-    embedded_resources::write_resources(posts_resources, cfg.posts_dir.as_path())
+    embedded_resources::write_resources(posts_resources, cfg_blog_dir.posts_dir.as_path())
         .context("Failed to write posts-resources to disk")?;
 
     let pages_resources = embedded_resources::get_resources("pages")
         .context("Failed to extract resources from embedded directory 'pages'")?;
-    embedded_resources::write_resources(pages_resources, cfg.pages_dir.as_path())
+    embedded_resources::write_resources(pages_resources, cfg_blog_dir.pages_dir.as_path())
         .context("Failed to write pages-resources to disk")?;
 
     let config_file_resource = embedded_resources::get_resource_file("mublog.toml")
         .context("Failed to extract mublog config file from embedded resources")?;
-    embedded_resources::write_resource_file(config_file_resource, cfg.config_file.as_path())
-        .context("Failed to write mublog.toml resource to disk")?;
+    embedded_resources::write_resource_file(
+        config_file_resource,
+        cfg_blog_dir.config_file.as_path(),
+    )
+    .context("Failed to write mublog.toml resource to disk")?;
 
     Ok(())
 }
 
 pub fn build(working_dir: PathBuf) -> anyhow::Result<()> {
-    if !is_blog_directory(&working_dir) {
+    let path_cfg = PathConfig::new(working_dir);
+    if !is_blog_directory(&path_cfg) {
         bail!("The current directory is not a mublog environment");
     }
 
-    let path_cfg = PathConfig::new(working_dir);
     let config = config::parse_config(&path_cfg.config_file)
         .context("Failed to parse mublog.toml config file")?;
 
@@ -135,7 +138,7 @@ pub fn build(working_dir: PathBuf) -> anyhow::Result<()> {
 
     for feature in pipeline.context.config.features.clone().iter() {
         match feature {
-            FeatureConfig::Navbar(_navbar_config) => {
+            FeatureConfig::Navbar(_cfg) => {
                 pipeline.add_feature::<NavbarFeature>();
             }
             FeatureConfig::Postlisting(_postlisting_config) => {
@@ -153,10 +156,10 @@ pub fn build(working_dir: PathBuf) -> anyhow::Result<()> {
 }
 
 pub fn info(working_dir: PathBuf) -> anyhow::Result<()> {
-    if !is_blog_directory(&working_dir) {
+    let cfg = PathConfig::new(working_dir);
+    if !is_blog_directory(&cfg) {
         bail!("The current directory is not a mublog environment");
     }
-    let cfg = PathConfig::new(working_dir);
     let mut registry = SiteComponentRegistry::init();
     registry
         .init_posts(&cfg.posts_dir)
@@ -280,10 +283,10 @@ fn info_general(
 }
 
 pub fn create_post(working_dir: PathBuf) -> anyhow::Result<()> {
-    if !is_blog_directory(&working_dir) {
+    let cfg = PathConfig::new(working_dir);
+    if !is_blog_directory(&cfg) {
         bail!("The current directory is not a mublog environment");
     }
-    let cfg = PathConfig::new(working_dir);
     let mut registry = SiteComponentRegistry::init();
     registry
         .init_posts(&cfg.posts_dir)
@@ -345,10 +348,10 @@ pub fn create_post(working_dir: PathBuf) -> anyhow::Result<()> {
 // TODO: Ensure that markdown filename is also index.md, if it is
 // an index page
 pub fn create_page(working_dir: PathBuf) -> anyhow::Result<()> {
-    if !is_blog_directory(&working_dir) {
+    let cfg = PathConfig::new(working_dir);
+    if !is_blog_directory(&cfg) {
         bail!("The current directory is not a mublog environment.");
     }
-    let cfg = PathConfig::new(working_dir);
     let mut registry = SiteComponentRegistry::init();
     registry
         .init_pages(&cfg.pages_dir)
@@ -395,35 +398,74 @@ pub fn create_page(working_dir: PathBuf) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn is_blog_directory(working_dir: &PathBuf) -> bool {
-    // TODO: Maybe we can reuse the paths stored in the context
-    // That way we dont have to rebuild the paths here, because
-    // that is more error prone (typos)
-    if working_dir.is_dir() {
-        let blog_meta_file = working_dir.join("mublog.toml");
-        let posts_dir = working_dir.join("posts");
-        let pages_dir = working_dir.join("pages");
-        let meta_dir = working_dir.join("meta");
-        let css_dir = working_dir.join("css");
-        let assets_dir = working_dir.join("assets");
-        if blog_meta_file.exists()
-            && blog_meta_file.is_file()
-            && posts_dir.exists()
-            && posts_dir.is_dir()
-            && pages_dir.exists()
-            && pages_dir.is_dir()
-            && meta_dir.exists()
-            && meta_dir.is_dir()
-            && css_dir.exists()
-            && css_dir.is_dir()
-            && assets_dir.exists()
-            && assets_dir.is_dir()
+// fn is_blog_directory(working_dir: &PathBuf) -> bool {
+fn is_blog_directory(path_cfg: &PathConfig) -> bool {
+    if path_cfg.base_dir.is_dir() {
+        if path_cfg.config_file.exists()
+            && path_cfg.config_file.is_file()
+            && path_cfg.posts_dir.exists()
+            && path_cfg.posts_dir.is_dir()
+            && path_cfg.pages_dir.exists()
+            && path_cfg.pages_dir.is_dir()
+            && path_cfg.meta_dir.exists()
+            && path_cfg.meta_dir.is_dir()
+            && path_cfg.css_dir.exists()
+            && path_cfg.css_dir.is_dir()
+            && path_cfg.assets_dir.exists()
+            && path_cfg.assets_dir.is_dir()
         {
             return true;
         }
     }
-    // TODO: Better error handling. Currently we just say its not a mublog
-    // environment, if a single dir is missing. It might be worth mentioning
-    // what dir is missing to make it a valid mublog env
     false
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use tempdir::TempDir;
+
+    #[test]
+    fn blog_init() {
+        let tmp_dir = TempDir::new("blog_init").expect("Expected temp dir creation to succeed");
+        let res = init(tmp_dir.path().to_path_buf(), "blogname");
+        let blog_dir = tmp_dir.path().join("blogname");
+        let posts_dir = tmp_dir.path().join("blogname").join("posts");
+        let pages_dir = tmp_dir.path().join("blogname").join("pages");
+        let meta_dir = tmp_dir.path().join("blogname").join("meta");
+        let css_dir = tmp_dir.path().join("blogname").join("css");
+        let assets_dir = tmp_dir.path().join("blogname").join("assets");
+        let cfg_file = tmp_dir.path().join("blogname").join("mublog.toml");
+        assert!(res.is_ok());
+        assert!(blog_dir.exists() && blog_dir.is_dir());
+        assert!(blog_dir.exists() && blog_dir.is_dir());
+        assert!(posts_dir.exists() && posts_dir.is_dir());
+        assert!(pages_dir.exists() && pages_dir.is_dir());
+        assert!(meta_dir.exists() && meta_dir.is_dir());
+        assert!(css_dir.exists() && css_dir.is_dir());
+        assert!(assets_dir.exists() && assets_dir.is_dir());
+        assert!(cfg_file.exists() && cfg_file.is_file());
+        tmp_dir
+            .close()
+            .expect("Expected temp dir deletion to succeed");
+    }
+
+    #[test]
+    fn blog_init_no_init_in_existing_blog_dir() {
+        // Create outer blog dir
+        let tmp_dir = TempDir::new("blog_init_no_init_in_existing_blog_dir")
+            .expect("Expected temp dir creation to succeed");
+        let res = init(tmp_dir.path().to_path_buf(), "blogname");
+        assert!(res.is_ok());
+        // Try create inner blog dir
+        let res = init(tmp_dir.path().join("blogname").to_path_buf(), "blogname2");
+        assert!(res.is_err());
+        assert_eq!(
+            res.unwrap_err().to_string(),
+            "Can't initialize blog environment in existing blog environment"
+        );
+        tmp_dir
+            .close()
+            .expect("Expected temp dir deletion to succeed");
+    }
 }
