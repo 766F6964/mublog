@@ -1,11 +1,15 @@
+use crate::asset::Asset;
+use crate::page;
 use crate::page::Page;
-
 use crate::post;
 use crate::post::Post;
-use crate::{page, stylesheet::Stylesheet};
-use anyhow::{bail, Context, Ok};
+use crate::stylesheet::Stylesheet;
+use anyhow::bail;
+use anyhow::Context;
+use anyhow::Ok;
 use std::ffi::OsStr;
-use std::fs::{self, read_to_string};
+use std::fs;
+use std::fs::read_to_string;
 use std::path::PathBuf;
 use walkdir::WalkDir;
 
@@ -13,6 +17,7 @@ use walkdir::WalkDir;
 pub struct SiteComponentRegistry {
     pages: Vec<Page>,
     posts: Vec<Post>,
+    assets: Vec<Asset>,
     stylesheets: Vec<Stylesheet>,
 }
 
@@ -21,6 +26,7 @@ impl SiteComponentRegistry {
         Self {
             pages: vec![],
             posts: vec![],
+            assets: vec![],
             stylesheets: vec![],
         }
     }
@@ -43,8 +49,10 @@ impl SiteComponentRegistry {
             .context("Failed to load stylesheets from disk")?)
     }
 
-    pub fn init_assets(_assets_dir: &PathBuf) {
-        unimplemented!("Asset loading not yet implemented")
+    pub fn init_assets(&mut self, assets_dir: &PathBuf) -> anyhow::Result<()> {
+        Ok(self
+            .load_assets_from_disk(assets_dir)
+            .context("Failed to load assets from disk")?)
     }
 
     pub fn register_post(&mut self, mut post: Post) -> anyhow::Result<()> {
@@ -87,6 +95,14 @@ impl SiteComponentRegistry {
 
     pub fn get_stylesheets(&self) -> &Vec<Stylesheet> {
         &self.stylesheets
+    }
+
+    pub fn get_assets_mut(&mut self) -> &mut Vec<Asset> {
+        &mut self.assets
+    }
+
+    pub fn get_assets(&self) -> &Vec<Asset> {
+        &self.assets
     }
 
     pub fn get_page_filename(&self, page: &Page) -> anyhow::Result<(String, String)> {
@@ -183,6 +199,28 @@ impl SiteComponentRegistry {
                 self.stylesheets.push(Stylesheet {
                     content: file_content,
                     filename: css_filename,
+                });
+            }
+        }
+        Ok(())
+    }
+
+    fn load_assets_from_disk(&mut self, assets_dir: &PathBuf) -> anyhow::Result<()> {
+        let entries = WalkDir::new(assets_dir);
+        for entry in entries.into_iter().filter_map(std::result::Result::ok) {
+            let asset_path = entry.path();
+            let asset_filename = asset_path
+                .file_name()
+                .context("Failed to obtain filename for asset")?
+                .to_string_lossy()
+                .to_string();
+            if asset_path.is_file() {
+                let file_content = fs::read(asset_path).with_context(|| {
+                    format!("Failed to open stylesheet file '{asset_filename}' for reading")
+                })?;
+                self.assets.push(Asset {
+                    content: file_content,
+                    filename: asset_filename,
                 });
             }
         }

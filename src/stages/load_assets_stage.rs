@@ -1,7 +1,6 @@
 use crate::blog::BlogContext;
-
 use crate::pipeline::pipeline_stage::PipelineStage;
-
+use anyhow::Context;
 
 pub struct LoadAssetsStage;
 
@@ -11,14 +10,16 @@ impl PipelineStage for LoadAssetsStage {
         Ok(())
     }
 
-    fn process(&self, _ctx: &mut BlogContext) -> anyhow::Result<()> {
+    fn process(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("LoadAssetsStage: Process ...");
-        // TODO: Temporarily disabled this stage
 
-        // let assets_resources = embedded_resources::get_resources("assets")
-        // .context("Failed to extract resources from embedded directory 'assets'")?;
-        // ctx.assets = assets_resources;
-        // println!("Loaded {} assets", ctx.assets.len());
+        ctx.registry
+            .init_assets(&ctx.paths.assets_dir)
+            .context("Failed to load assets from disk")?;
+        for asset in ctx.registry.get_assets() {
+            println!("Asset: {}", asset.filename);
+        }
+
         Ok(())
     }
 

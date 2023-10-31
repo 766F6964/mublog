@@ -14,7 +14,6 @@ impl PipelineStage for WriteStylesheetsStage {
 
     fn process(&self, ctx: &mut BlogContext) -> anyhow::Result<()> {
         println!("WriteStylesheetsStage: Process ...");
-        // TODO: Temporarily disabled for now
 
         for stylesheet in ctx.registry.get_stylesheets() {
             fs::write(

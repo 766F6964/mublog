@@ -9,6 +9,7 @@ use clap::Parser;
 
 use std::env;
 
+mod asset;
 mod blog;
 mod blog_registry;
 mod cli;
