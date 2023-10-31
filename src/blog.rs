@@ -451,9 +451,9 @@ mod test {
     }
 
     #[test]
-    fn blog_init_no_init_in_existing_blog_dir() {
+    fn blog_init_abort_in_existing_blog_dir() {
         // Create outer blog dir
-        let tmp_dir = TempDir::new("blog_init_no_init_in_existing_blog_dir")
+        let tmp_dir = TempDir::new("blog_init_abort_in_existing_blog_dir")
             .expect("Expected temp dir creation to succeed");
         let res = init(tmp_dir.path().to_path_buf(), "blogname");
         assert!(res.is_ok());
@@ -463,6 +463,59 @@ mod test {
         assert_eq!(
             res.unwrap_err().to_string(),
             "Can't initialize blog environment in existing blog environment"
+        );
+        tmp_dir
+            .close()
+            .expect("Expected temp dir deletion to succeed");
+    }
+
+    #[test]
+    fn blog_build() {
+        let tmp_dir = TempDir::new("blog_build").expect("Expected temp dir creation to succeed");
+        let blogname = "blogname";
+        let res_init = init(tmp_dir.path().to_path_buf(), blogname);
+        assert!(res_init.is_ok());
+
+        let res_build = build(tmp_dir.path().join(blogname).to_path_buf());
+        let build_dir = tmp_dir.path().join(blogname).join("build");
+        let build_css_dir = tmp_dir.path().join(blogname).join("build").join("css");
+        let build_assets_dir = tmp_dir.path().join(blogname).join("build").join("assets");
+        let build_posts_dir = tmp_dir.path().join(blogname).join("build").join("posts");
+        let build_index_page = tmp_dir
+            .path()
+            .join(blogname)
+            .join("build")
+            .join("index.html");
+        let build_about_page = tmp_dir
+            .path()
+            .join(blogname)
+            .join("build")
+            .join("about.html");
+        let build_posts_page = tmp_dir
+            .path()
+            .join(blogname)
+            .join("build")
+            .join("posts.html");
+
+        assert!(res_build.is_ok());
+        assert!(build_dir.exists() && build_dir.is_dir());
+        assert!(build_css_dir.exists() && build_css_dir.is_dir());
+        assert!(build_assets_dir.exists() && build_assets_dir.is_dir());
+        assert!(build_posts_dir.exists() && build_posts_dir.is_dir());
+        assert!(build_index_page.exists() && build_index_page.is_file());
+        assert!(build_about_page.exists() && build_about_page.is_file());
+        assert!(build_posts_page.exists() && build_posts_page.is_file());
+    }
+
+    #[test]
+    fn blog_build_abort_outside_blog_env() {
+        let tmp_dir = TempDir::new("blog_build_abort_outside_blog_env")
+            .expect("Expected temp dir creation to succeed");
+        let res = build(tmp_dir.path().to_path_buf());
+        assert!(res.is_err());
+        assert_eq!(
+            res.unwrap_err().to_string(),
+            "The current directory is not a mublog environment"
         );
         tmp_dir
             .close()
