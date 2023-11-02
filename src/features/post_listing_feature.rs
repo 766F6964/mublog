@@ -1,14 +1,15 @@
 use crate::features::FeatureConfig;
-// use crate::config::{FeatureConfig, SortingOrder};
-use crate::blog::BlogContext;
 use crate::pipeline::feature::Feature;
 use crate::pipeline::feature_registry::FeatureRegistry;
 use crate::pipeline::pipeline_stage_lifetime::PipelineStageLifetime;
+use crate::post::Post;
 use crate::stages::ConvertPagesStage;
-use anyhow::bail;
-// use anyhow::{bail, Context};
+use crate::{blog::BlogContext, stages::ConvertPostsStage};
+use anyhow::{bail, Context, Ok};
 use build_html::{Container, ContainerType, Html, HtmlContainer};
+use chrono::format;
 use serde::Deserialize;
+use std::collections::HashMap;
 use std::{any::TypeId, path::Path};
 pub struct PostListingFeature;
 
@@ -17,8 +18,11 @@ impl Feature for PostListingFeature {
     where
         Self: Sized,
     {
+        registry.register::<ConvertPostsStage, Self>(PipelineStageLifetime::PostProcess, Self);
         registry.register::<ConvertPagesStage, Self>(PipelineStageLifetime::PostProcess, Self);
     }
+
+    // TODO: Have a generic get_config fn in the Feature trait
 
     fn run(
         &mut self,
@@ -31,21 +35,19 @@ impl Feature for PostListingFeature {
             && lifetime == PipelineStageLifetime::PostProcess
         {
             let features: Vec<FeatureConfig> = ctx.config.features.clone();
-
-            // Extract and work with post_cfg
             if let Some(post_cfg) = features.iter().find_map(|config| {
                 if let FeatureConfig::Postlisting(post_config) = config {
-                    Some(post_config.clone()) // Clone post_config to avoid borrow conflicts
+                    Some(post_config)
                 } else {
                     None
                 }
             }) {
-                // Mutable borrow of ctx here is fine because post_cfg is a cloned copy
-                let ctx = &mut *ctx;
-                println!("SORT ORDER: {:#?}", post_cfg.sort);
-                inject_post_listing_html(ctx, &post_cfg)?;
+                // TODO: Add pagination support, configurable via config
+                // let post_listing_page = try_get_post_listing_page(ctx, post_cfg)?;
+                insert_tags_in_posts(ctx, post_cfg)?;
+                insert_tags_listing_in_page(ctx, post_cfg)?;
+                insert_post_listing_in_page(ctx, post_cfg)?;
             } else {
-                // Handle case when PostListingConfig is not found in features
                 bail!("PostListingConfig not found in the vector");
             }
         }
@@ -54,33 +56,87 @@ impl Feature for PostListingFeature {
 }
 
 #[derive(Debug, Deserialize, Clone)]
-pub enum SortingOrder {
+pub enum PostSortingOrder {
     OldestOnTop,
     NewestOnTop,
 }
 
 #[derive(Debug, Deserialize, Clone)]
-pub struct PostlistingConfig {
-    pub sort: SortingOrder,
+pub enum TagSortingOrder {
+    Count,
+    Alphabetic,
 }
 
-// TODO: Add pagination support, configurable via config
-fn inject_post_listing_html(ctx: &mut BlogContext, cfg: &PostlistingConfig) -> anyhow::Result<()> {
-    let html = generate_post_listing_html(ctx, &cfg.sort);
-    for page in ctx.registry.get_pages_mut() {
-        page.content = page.content.replace("{{{POST_LISTING}}}", html.as_str());
+#[derive(Debug, Deserialize, Clone)]
+pub struct PostlistingConfig {
+    pub tags_enabled: bool,
+    pub tag_listing_page: String,
+    pub tag_listing_order: TagSortingOrder,
+    pub post_listing_page: String,
+    pub post_listing_order: PostSortingOrder,
+}
+
+fn insert_tags_in_posts(ctx: &mut BlogContext, cfg: &PostlistingConfig) -> anyhow::Result<()> {
+    let registry = &mut ctx.registry;
+    for post in registry.get_posts_mut() {
+        let tag_html = generate_post_tags_html(&post, &cfg);
+        post.content.push_str(&tag_html);
     }
     Ok(())
 }
 
-fn generate_post_listing_html(ctx: &mut BlogContext, sort: &SortingOrder) -> String {
+fn insert_tags_listing_in_page(
+    ctx: &mut BlogContext,
+    cfg: &PostlistingConfig,
+) -> anyhow::Result<()> {
+    // TODO: How do we verify that the content contains the replacement pattern? Maybe with .contains() ?
+    let mut inserted_tag_listing = false;
+    let html = generate_tag_listing_html(ctx, cfg);
+    for page in ctx.registry.get_pages_mut() {
+        if page.md_filename == cfg.tag_listing_page {
+            // TODO: Insert tag listing html, error if page is missing
+            page.content = page.content.replace("{{{TAG_LISTING}}}", html.as_str());
+            inserted_tag_listing = true;
+        }
+    }
+    if !inserted_tag_listing {
+        bail!(format!(
+            "No marker found in {} to insert tag listing",
+            cfg.tag_listing_page
+        ));
+    }
+    Ok(())
+}
+
+fn insert_post_listing_in_page(
+    ctx: &mut BlogContext,
+    cfg: &PostlistingConfig,
+) -> anyhow::Result<()> {
+    let html = generate_post_listing_html(ctx, &cfg.post_listing_order);
+    let mut inserted_post_listing = false;
+    for page in ctx.registry.get_pages_mut() {
+        if page.md_filename == cfg.post_listing_page {
+            page.content = page.content.replace("{{{POST_LISTING}}}", html.as_str());
+            inserted_post_listing = true;
+        }
+    }
+    if !inserted_post_listing {
+        bail!(format!(
+            "No marker found in {} to insert post listing",
+            cfg.post_listing_page
+        ));
+    }
+    Ok(())
+}
+
+fn generate_post_listing_html(ctx: &mut BlogContext, sort: &PostSortingOrder) -> String {
     let posts = ctx.registry.get_posts_mut();
 
     match sort {
-        SortingOrder::OldestOnTop => {
+        PostSortingOrder::OldestOnTop => {
             posts.sort_by(|a, b| a.date.cmp(&b.date));
         }
-        SortingOrder::NewestOnTop => {
+        PostSortingOrder::NewestOnTop => {
             posts.sort_by(|a, b| b.date.cmp(&a.date));
         }
     }
@@ -105,3 +161,55 @@ fn generate_post_listing_html(ctx: &mut BlogContext, sort: &SortingOrder) -> Str
     }
     articles.to_html_string()
 }
+
+fn generate_tag_listing_html(ctx: &mut BlogContext, cfg: &PostlistingConfig) -> String {
+    let posts = ctx.registry.get_posts();
+    let mut tag_counts: HashMap<String, usize> = HashMap::new();
+    for post in posts {
+        for tag in &post.tags {
+            let count = tag_counts.entry(tag.clone()).or_insert(0);
+            *count += 1;
+        }
+    }
+    // TODO: Seems like there is an issue where tag names are not trimmed
+    let tags: Vec<(String, usize)> = tag_counts.into_iter().collect();
+    // TODO: Replace the following with proper HTML construction.
+
+    let mut post_tags =
+        Container::new(build_html::ContainerType::Div).with_attributes(vec![("class", "tags")]);
+    for tag in tags {
+        // TODO: we need the html filename here
+        let query_url = Path::new("posts").join(&cfg.post_listing_page);
+        let post_tag = Container::new(ContainerType::Div)
+            .with_attributes(vec![
+                ("class", "tag"),
+                ("onclick", query_url.display().to_string().as_str()),
+            ])
+            .with_container(Container::new(ContainerType::Div))
+            .with_attributes(vec![("class", "tag-text")])
+            .with_link(format!("http://localhost:8000/posts.html"), tag.0.as_str());
+        post_tags = post_tags.with_html(post_tag)
+    }
+    post_tags.to_html_string()
+}
+
+fn generate_post_tags_html(post: &Post, cfg: &PostlistingConfig) -> String {
+    // TODO: Validate that the post_listing_page from the config actually exists
+    let mut post_tags =
+        Container::new(build_html::ContainerType::Div).with_attributes(vec![("class", "tags")]);
+    for tag in &post.tags {
+        let query_url = Path::new("posts").join(&cfg.post_listing_page);
+        let post_tag = Container::new(ContainerType::Div)
+            .with_attributes(vec![
+                ("class", "tag"),
+                ("onclick", query_url.display().to_string().as_str()),
+            ])
+            .with_container(Container::new(ContainerType::Div))
+            .with_attributes(vec![("class", "tag-text")])
+            .with_link("http://localhost:8000", tag.as_str());
+        post_tags = post_tags.with_html(post_tag)
+    }
+    post_tags.to_html_string()
+}
+
+// fn generate_tags_listing_html() {}

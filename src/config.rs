@@ -1,6 +1,7 @@
 use crate::features::navbar_feature::NavbarConfig;
+use crate::features::post_listing_feature::PostSortingOrder;
 use crate::features::post_listing_feature::PostlistingConfig;
-use crate::features::post_listing_feature::SortingOrder;
+use crate::features::post_listing_feature::TagSortingOrder;
 use crate::features::FeatureConfig;
 use anyhow::bail;
 use anyhow::Context;
@@ -60,18 +61,39 @@ pub fn conf_get_features(doc: &Document) -> anyhow::Result<Vec<FeatureConfig>> {
 }
 
 pub fn parse_postlisting_conf(doc: &Document) -> anyhow::Result<FeatureConfig> {
-    let cfgstr_order = conf_get_string(doc, "feature-postlisting", "order")
+    let tags_enabled = conf_get_bool(doc, "feature-postlisting", "tags_enabled")
         .context("Failed to parse feature configuration: feature-postlising")?;
-
-    let order = match cfgstr_order.as_str() {
-        "oldestontop" => SortingOrder::OldestOnTop,
-        "newestontop" => SortingOrder::NewestOnTop,
+    let post_listing_page = conf_get_string(doc, "feature-postlisting", "post_listing_page")
+        .context("Failed to parse feature configuration: feature-postlising")?;
+    let post_listing_order = match conf_get_string(doc, "feature-postlisting", "post_listing_order")
+        .context("Failed to parse feature configuration: feature-postlising")?
+        .as_str()
+    {
+        "oldestontop" => PostSortingOrder::OldestOnTop,
+        "newestontop" => PostSortingOrder::NewestOnTop,
         _ => {
-            bail!("Invalid configuration for field: 'sort' in feature: 'feature-postlisting'");
+            bail!("Invalid configuration for field: 'post_listing_order' in feature: 'feature-postlisting'");
         }
     };
+    let tag_listing_order = match conf_get_string(doc, "feature-postlisting", "tag_listing_order")
+        .context("Failed to parse feature configuration: feature-postlising")?
+        .as_str()
+    {
+        "count" => TagSortingOrder::Count,
+        "alphabetic" => TagSortingOrder::Alphabetic,
+        _ => {
+            bail!("Invalid configuration for field: 'tag_listing_order' in feature: 'feature-postlisting'");
+        }
+    };
+    let tag_listing_page = conf_get_string(doc, "feature-postlisting", "tag_listing_page")
+        .context("Failed to parse feature configuration: feature-postlising")?;
+
     Ok(FeatureConfig::Postlisting(PostlistingConfig {
-        sort: order,
+        tags_enabled,
+        tag_listing_page,
+        tag_listing_order,
+        post_listing_page,
+        post_listing_order,
     }))
 }
 

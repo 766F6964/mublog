@@ -8,8 +8,9 @@ features = ["navbar", "postlisting"]
 links = ["home.md", "posts.md", "about.md"]
 
 [feature-postlisting]
-order = "newestontop"
- 
-[feature-tags]
-sort_by = "count" # Order by name
+tags_enabled = true
+post_listing_page = "posts.md"
+post_listing_order = "newestontop"
+tag_listing_order = "count"
+tag_listing_page = "tags.md"
 
