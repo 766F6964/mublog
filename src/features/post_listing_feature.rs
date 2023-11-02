@@ -1,4 +1,5 @@
 use crate::features::FeatureConfig;
+use crate::page::Page;
 use crate::pipeline::feature::Feature;
 use crate::pipeline::feature_registry::FeatureRegistry;
 use crate::pipeline::pipeline_stage_lifetime::PipelineStageLifetime;
@@ -77,12 +78,28 @@ pub struct PostlistingConfig {
 }
 
 fn insert_tags_in_posts(ctx: &mut BlogContext, cfg: &PostlistingConfig) -> anyhow::Result<()> {
-    let registry = &mut ctx.registry;
-    for post in registry.get_posts_mut() {
-        let tag_html = generate_post_tags_html(&post, &cfg);
+    let pages = ctx.registry.get_pages_mut();
+    let html_filename = find_html_filename(pages, cfg)?;
+    let posts = ctx.registry.get_posts_mut();
+
+    for post in posts {
+        let tag_html = generate_post_tags_html(post, html_filename.clone(), &cfg);
         post.content.push_str(&tag_html);
     }
+
     Ok(())
+}
+
+fn find_html_filename(pages: &mut Vec<Page>, cfg: &PostlistingConfig) -> anyhow::Result<String> {
+    for page in pages.iter() {
+        if page.md_filename == cfg.post_listing_page {
+            return Ok(page.html_filename.clone());
+        }
+    }
+
+    Err(anyhow::anyhow!(
+        "Failed to find the posts page specified in the config"
+    ))
 }
 
 fn insert_tags_listing_in_page(
@@ -193,23 +210,30 @@ fn generate_tag_listing_html(ctx: &mut BlogContext, cfg: &PostlistingConfig) -> 
     post_tags.to_html_string()
 }
 
-fn generate_post_tags_html(post: &Post, cfg: &PostlistingConfig) -> String {
+fn generate_post_tags_html(post: &Post, html_filename: String, cfg: &PostlistingConfig) -> String {
     // TODO: Validate that the post_listing_page from the config actually exists
     let mut post_tags =
         Container::new(build_html::ContainerType::Div).with_attributes(vec![("class", "tags")]);
+
     for tag in &post.tags {
-        let query_url = Path::new("posts").join(&cfg.post_listing_page);
+        let query_url = format!("/{}?tag={}", html_filename, tag);
         let post_tag = Container::new(ContainerType::Div)
             .with_attributes(vec![
                 ("class", "tag"),
-                ("onclick", query_url.display().to_string().as_str()),
+                (
+                    "onclick",
+                    format!("location.href='{}'", query_url)
+                        .to_string()
+                        .as_str(),
+                ),
             ])
-            .with_container(Container::new(ContainerType::Div))
-            .with_attributes(vec![("class", "tag-text")])
-            .with_link("http://localhost:8000", tag.as_str());
+            .with_container(
+                Container::new(ContainerType::Div)
+                    .with_attributes(vec![("class", "tag-text")])
+                    .with_raw(tag),
+            );
         post_tags = post_tags.with_html(post_tag)
     }
+
     post_tags.to_html_string()
 }
-
-// fn generate_tags_listing_html() {}
